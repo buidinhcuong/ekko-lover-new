@@ -1,0 +1,30 @@
+/*
+  Thang chữ của app, lấy đúng trang "Typography" trong Figma
+  "[Ekko UI] - Design System" (text styles Bricolage Grotesque). Mỗi bậc là
+  một cặp cỡ chữ / chiều cao dòng; độ đậm chỉ có 300 · 400 · 500 · 600
+  (Light · Regular · Medium · SemiBold) — không có Bold.
+
+  Tệp riêng của app, không phải bản gói của design system (tokens.css và các
+  ekko-*.css phải giữ giống từng byte với skill). Cần cỡ chữ thì dùng token ở
+  đây, không gõ số px lệch thang.
+*/
+:root {
+  --font-size-display-2xl: 72px; --line-height-display-2xl: 80px;
+  --font-size-display-xl: 60px;  --line-height-display-xl: 68px;
+  --font-size-display-lg: 48px;  --line-height-display-lg: 56px;
+  --font-size-display-md: 36px;  --line-height-display-md: 44px;
+  --font-size-display-sm: 30px;  --line-height-display-sm: 38px;
+  --font-size-display-xs: 24px;  --line-height-display-xs: 32px;
+  --font-size-text-xl: 20px;     --line-height-text-xl: 30px;
+  --font-size-text-lg: 18px;     --line-height-text-lg: 28px;
+  --font-size-text-md: 16px;     --line-height-text-md: 24px;
+  --font-size-text-sm: 14px;     --line-height-text-sm: 20px;
+  --font-size-text-xs: 12px;     --line-height-text-xs: 18px;
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}
+
+html, body { font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); }

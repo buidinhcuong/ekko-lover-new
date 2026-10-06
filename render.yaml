@@ -1,0 +1,41 @@
+# Render Blueprint — bản thử nghiệm nội bộ (đăng ký bằng email + mã nội bộ).
+# Render → New → Blueprint → chọn repo này: tự tạo dịch vụ web + ổ đĩa bên dưới.
+# Biến có `sync: false` Render sẽ hỏi bạn điền lúc tạo (không lưu trong repo).
+services:
+  - type: web
+    name: ekko-gdtc
+    runtime: node
+    rootDir: app
+    plan: starter            # cần gói trả phí mới gắn được ổ đĩa (disk)
+    region: singapore        # gần Việt Nam nhất
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: false        # chỉ deploy khi bạn bấm, không tự deploy mỗi lần push
+    disk:
+      name: ekko-data
+      mountPath: /var/data   # SQLite + ảnh hoá đơn nằm ở đây, giữ qua các lần deploy
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production    # tắt /dev/login, người dùng mẫu, dữ liệu mẫu
+      - key: HOST
+        value: 0.0.0.0
+      - key: EKKO_DATA_DIR
+        value: /var/data
+      - key: EKKO_TZ
+        value: Asia/Ho_Chi_Minh
+      - key: EKKO_SESSION_SECRET
+        generateValue: true
+      - key: EKKO_SSO_SECRET
+        generateValue: true
+      - key: EKKO_ADMIN_SUBJECTS
+        sync: false          # email quản trị, cách nhau bằng dấu phẩy
+      - key: EKKO_SIGNUP_CODE
+        sync: false          # mã đăng ký nội bộ gửi cho người thử (6–20 chữ/số)
+      - key: ANTHROPIC_API_KEY
+        sync: false          # khoá riêng cho server, khác khoá ở máy bạn
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-5-5

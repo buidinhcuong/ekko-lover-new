@@ -1,0 +1,43 @@
+# Cơ sở dữ liệu chạy máy nào máy đó tự tạo. KHÔNG đưa lên git và cũng không nên
+# để Google Drive đồng bộ: SQLite ở chế độ WAL bị đồng bộ giữa hai máy là cách
+# nhanh nhất để hỏng dữ liệu. Máy mới chỉ cần `npm start`, nội dung khoá học tự
+# nạp lại từ seed.
+app/data/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Tệp rác của Finder tên đúng là "Icon" + một ký tự CR. Trước đây viết `Icon?`,
+# nhưng dấu `?` khớp MỌI ký tự, và git trên macOS bật `core.ignorecase`, nên nó
+# nuốt luôn thư mục `icons/` — bộ icon của app từng bị bỏ ra ngoài repo vì dòng
+# này. Dòng dưới kết thúc bằng HAI ký tự CR: git bỏ bớt một cái ở cuối dòng (để
+# chịu được tệp CRLF), còn lại đúng một CR để khớp tên thật. Đừng "dọn" nó.
+Icon
+
+
+# Rác của trình soạn thảo
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/settings.json
+
+# Node (dự án không có dependency, nhưng phòng khi thêm về sau)
+node_modules/
+npm-debug.log*
+
+# Khoá API và cấu hình riêng của từng máy. Tuyệt đối không đưa lên git.
+.env
+.env.*
+!.env.example
+app/.env
+app/.env.*
+!app/.env.example
+
+# Cấu hình Claude Code / preview riêng của từng máy (đường dẫn cục bộ)
+.claude/
+app/.claude/
+
+# Thư mục dữ liệu khi chạy Docker / thử production ở máy
+deploy/.env

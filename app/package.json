@@ -1,0 +1,16 @@
+{
+  "name": "ekko-gdtc",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ekko - Giao duc tai chinh (Financial Education). Gamified learning world + admin portal.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "reset": "node server/reset.js",
+    "smoke": "node test/smoke.js"
+  }
+}

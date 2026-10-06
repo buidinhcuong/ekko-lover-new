@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Playfair+Display:ital,wght@1,500;1,600;1,700&display=block" rel="stylesheet">
+<style>
+:root {
+  --blue: #3E58F1; --blue-d: #2F45D6; --lime: #B3F42C; --lime-l: #D6FB86; --mid: #00034F;
+  --jade: #CDEBE6; --jade-d: #AEDFDA; --violet: #7B61FF; --white: #fff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+body { font-family: 'Bricolage Grotesque', sans-serif; color: var(--mid); -webkit-font-smoothing: antialiased; }
+.scene { position: absolute; inset: 0; overflow: hidden; opacity: 0; }
+.abs { position: absolute; }
+em { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 600; letter-spacing: -0.01em; }
+.swirl { position: absolute; inset: 0; pointer-events: none; }
+
+/* phone */
+.phone { position: absolute; border-radius: 64px; background: #0B0D1A; padding: 13px;
+  box-shadow: 0 40px 80px rgba(0, 3, 79, .28), 0 10px 24px rgba(0, 3, 79, .18), inset 0 0 0 2px #2a2d40; }
+.phone .scr { position: relative; width: 100%; height: 100%; border-radius: 52px; overflow: hidden; background: #fff; }
+.phone .scr img { position: absolute; left: 0; top: 38px; width: 100%; height: auto; }
+.phone .scr::before { content: '9:41'; position: absolute; z-index: 2; left: 0; right: 0; top: 0; height: 38px; padding: 9px 0 0 34px;
+  background: #fff; font: 600 17px 'Bricolage Grotesque', sans-serif; color: #000; }
+.phone .scr::after { content: ''; position: absolute; z-index: 2; right: 30px; top: 13px; width: 26px; height: 12px; border-radius: 3px; border: 2px solid #000; }
+.phone .island { position: absolute; z-index: 3; top: 24px; left: 50%; width: 31%; height: 30px; transform: translateX(-50%); border-radius: 20px; background: #000; }
+
+.title-xl { font-size: 200px; font-weight: 700; letter-spacing: -0.04em; line-height: .95; }
+.h1 { font-size: 92px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.02; }
+.h2 { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.08; }
+.lead { font-size: 40px; font-weight: 500; line-height: 1.25; }
+.eyebrow { font-size: 22px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.chip { display: inline-flex; align-items: center; gap: 12px; padding: 12px 24px; border-radius: 999px; font-size: 26px; font-weight: 600; }
+.chip i { width: 12px; height: 12px; border-radius: 50%; background: currentColor; display: inline-block; }
+.steps { display: grid; gap: 22px; }
+.step { display: flex; align-items: center; gap: 18px; font-size: 32px; font-weight: 500; }
+.step b { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; background: var(--lime); color: var(--mid); }
+.list { display: grid; gap: 14px; }
+.list .it { display: flex; align-items: center; gap: 16px; font-size: 27px; font-weight: 500; }
+.list .it b { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; background: var(--blue); color: #fff; }
+.cap { font-size: 26px; font-weight: 600; text-align: center; }
+.cap small { display: block; font-size: 19px; font-weight: 500; opacity: .65; margin-top: 2px; }
+
+/* subtitles */
+#sub { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); max-width: 1500px; z-index: 50;
+  padding: 14px 30px; border-radius: 16px; background: rgba(0, 3, 79, .82); color: #fff; font-size: 32px; font-weight: 500;
+  line-height: 1.3; text-align: center; white-space: nowrap; opacity: 0; }
+</style>
+</head>
+<body>
+
+<!-- 1 · HOOK -->
+<section class="scene" data-scene="hook" style="background:var(--blue)">
+  <svg class="swirl" viewBox="0 0 1920 1080"><path d="M-80 260 C 400 -40, 760 520, 1080 420 S 1500 -60, 1260 300 S 1460 980, 2040 820" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="150" stroke-linecap="round" data-a="draw@0+3"/></svg>
+  <div class="abs h1" style="left:0;right:0;top:420px;text-align:center;color:#fff" data-a="up@0.3+0.7" data-out="L1-0.2">Ứng lương giúp bạn <em style="color:var(--lime)">vượt qua</em> hôm nay</div>
+  <div class="abs h1" style="left:0;right:0;top:420px;text-align:center;color:#fff" data-a="up@L1-0.1+0.7">Hiểu tiền giúp bạn <em style="color:var(--lime)">đi xa hơn</em></div>
+</section>
+
+<!-- 2 · TITLE -->
+<section class="scene" data-scene="title" style="background:var(--blue)">
+  <svg class="swirl" viewBox="0 0 1920 1080"><path d="M980 1180 C 1180 820, 1260 760, 1500 520 S 1840 230, 2100 260" fill="none" stroke="var(--lime)" stroke-width="10" stroke-linecap="round" data-a="draw@0.3+2.2"/></svg>
+  <img class="abs" src="assets/Ekko_Primary_Logo_Midnight.svg" style="left:150px;top:230px;height:84px;filter:brightness(0) invert(1)" data-a="up@0.2+0.6">
+  <div class="abs title-xl" style="left:140px;top:350px;color:#fff" data-a="up@0.4+0.7">Học tập</div>
+  <div class="abs lead" style="left:150px;top:590px;color:#fff" data-a="up@L1+0.6">Giáo dục tài chính, <em style="color:var(--lime)">ngay trong</em> app Ekko</div>
+  <div class="abs" style="left:150px;top:680px;display:flex;gap:16px">
+    <span class="chip" style="background:rgba(255,255,255,.14);color:#fff" data-a="pop@L1+1.4+0.4"><i style="color:var(--lime)"></i>Bài học ngắn gọn</span>
+    <span class="chip" style="background:rgba(255,255,255,.14);color:#fff" data-a="pop@L1+2.2+0.4"><i style="color:var(--lime)"></i>Vui như chơi game</span>
+    <span class="chip" style="background:var(--lime);color:var(--mid)" data-a="pop@L1+3+0.4"><i></i>Mới: Học cùng bạn bè</span>
+  </div>
+  <div class="phone" style="left:1260px;top:100px;width:390px;height:853px;transform:rotate(-6deg)" data-a="phone@0.2+1">
+    <div class="island"></div><div class="scr"><img src="shots/home-teamxp.png"></div>
+  </div>
+</section>
+
+<!-- 3 · PIGS -->
+<section class="scene" data-scene="pigs" style="background:#fff">
+  <svg class="swirl" viewBox="0 0 1920 1080"><ellipse cx="960" cy="1250" rx="1300" ry="560" fill="#EAF6F3"/></svg>
+  <div class="abs h2" style="left:0;right:0;top:110px;text-align:center" data-a="up@0.1+0.6">Một chú heo, <em style="color:var(--blue)">mười</em> cấp độ</div>
+  <div class="abs" style="left:0;right:0;top:225px;display:flex;justify-content:center;gap:16px">
+    <span class="chip" style="background:var(--lime)" data-a="pop@L1+0.4+0.4">+30 XP mỗi bài học</span>
+    <span class="chip" style="background:var(--lime)" data-a="pop@L1+2.6+0.4">+50 XP bài test mô đun</span>
+    <span class="chip" style="background:#EDF0FE;color:var(--blue)" data-a="pop@L2+0.3+0.4">+10 XP check-in mỗi ngày</span>
+  </div>
+  <img class="abs" src="assets/pig-1.png" style="left:810px;top:380px;width:300px" data-a="pop@0.4+0.6" data-out="L3-0.2">
+  <div id="pigrow" class="abs" style="left:70px;right:70px;top:360px;display:flex;justify-content:space-between;align-items:flex-end">
+    <!-- filled by script -->
+  </div>
+</section>
+
+<!-- 4 · PATH -->
+<section class="scene" data-scene="path" style="background:var(--jade)">
+  <svg class="swirl" viewBox="0 0 1920 1080"><path d="M-100 900 C 300 600, 500 1100, 900 780 S 1300 200, 1000 120" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="140" stroke-linecap="round"/></svg>
+  <div class="abs eyebrow" style="left:150px;top:150px;color:var(--blue)" data-a="up@0+0.5">Lộ trình học</div>
+  <div class="abs h1" style="left:150px;top:190px" data-a="up@0.15+0.6">8 mô đun · 34 bài</div>
+  <div class="abs list" style="left:150px;top:340px" id="modlist"></div>
+  <span class="abs chip" style="left:150px;top:800px;background:var(--mid);color:#fff" data-a="pop@L3+0.4">Mỗi bài chỉ <em style="color:var(--lime);font-size:30px">vài phút</em></span>
+  <div class="phone" style="left:1290px;top:70px;width:420px;height:918px" data-a="phone@0.1+0.9">
+    <div class="island"></div><div class="scr"><img src="shots/explore.png" data-a="pan@0.5+12" data-pan="0,-0"></div>
+  </div>
+</section>
+
+<!-- 5 · LEARN -->
+<section class="scene" data-scene="learn" style="background:#E3F3F0">
+  <div class="abs h1" style="left:150px;top:250px" data-a="up@0+0.6">Học <em style="color:var(--blue)">nhẹ nhàng</em>,<br>nhớ lâu</div>
+  <div class="abs" style="left:150px;top:520px;font-size:32px;line-height:1.35" data-a="up@0.6+0.6"><b>Trang ngắn, hình rõ</b><br><span style="opacity:.7">vuốt nhẹ là sang trang</span></div>
+  <div class="abs" style="left:150px;top:660px;font-size:32px;line-height:1.35" data-a="up@L1+0.6"><b>Trắc nghiệm</b><br><span style="opacity:.7">cuối mỗi mô đun để ôn lại</span></div>
+  <div class="phone" style="left:880px;top:80px;width:410px;height:896px" data-a="phone@0.1+0.9">
+    <div class="island"></div><div class="scr">
+      <img src="shots/lesson-1.png">
+      <img src="shots/lesson-2.png" data-a="slide@2.4+0.6">
+    </div>
+  </div>
+  <div class="phone" style="left:1380px;top:80px;width:410px;height:896px" data-a="phonein@L1-0.2+0.9">
+    <div class="island"></div><div class="scr"><img src="shots/quiz.png"></div>
+  </div>
+</section>
+
+<!-- 6 · APPLY -->
+<section class="scene" data-scene="apply" style="background:#fff">
+  <div class="abs h2" style="left:0;right:0;top:80px;text-align:center" data-a="up@0+0.6">Học xong, <em style="color:var(--blue)">làm ngay</em></div>
+  <div id="applyrow" class="abs" style="left:150px;right:150px;top:200px;display:flex;justify-content:space-between"></div>
+  <div class="abs" style="left:0;right:0;top:860px;text-align:center" data-a="up@L4+0.5"><span class="chip" style="background:var(--mid);color:#fff">Tất cả ở cùng một nơi</span></div>
+</section>
+
+<!-- 7 · QUICK LOG -->
+<section class="scene" data-scene="quick" style="background:var(--blue)">
+  <svg class="swirl" viewBox="0 0 1920 1080"><path d="M-60 840 C 500 960, 900 640, 1300 820 S 1800 700, 2000 560" fill="none" stroke="var(--lime)" stroke-width="10" stroke-linecap="round" data-a="draw@0.2+2"/></svg>
+  <div class="abs h1" style="left:150px;top:150px;color:#fff" data-a="up@0+0.6">Ấn giữ để <em style="color:var(--lime)">ghi nhanh</em></div>
+  <div class="abs steps" style="left:150px;top:330px;color:#fff">
+    <div class="step" data-a="up@0.6+0.5"><b>1</b>Ấn giữ mascot khoảng 2 giây</div>
+    <div class="step" data-a="up@2.4+0.5"><b>2</b>Gõ “phở 45k, cà phê 25k”</div>
+    <div class="step" data-a="up@L1+0.5"><b>3</b>AI tách thành 2 khoản — xong!</div>
+  </div>
+  <div class="abs" style="left:150px;top:640px" data-a="pop@L2+0.5">
+    <span class="chip" style="background:rgba(255,255,255,.16);color:#fff;padding:14px 26px 14px 14px"><img src="assets/ekko-lover-mascot.png" style="width:52px;height:52px;object-fit:contain">Có thắc mắc? <em style="color:var(--lime);font-size:30px">Hỏi Ekko bot</em></span>
+  </div>
+  <div class="phone" style="left:1280px;top:70px;width:420px;height:918px" data-a="phone@0.1+0.9">
+    <div class="island"></div><div class="scr">
+      <img src="shots/quickbar.png">
+      <img src="shots/expenses.png" data-a="slide@L1+0.2+0.6">
+      <img src="shots/bot.png" data-a="slide@L2+0.2+0.6">
+    </div>
+  </div>
+</section>
+
+<!-- 8 · DAILY -->
+<section class="scene" data-scene="daily" style="background:var(--lime)">
+  <div class="abs h1" style="left:150px;top:200px" data-a="up@0+0.6">Mỗi ngày<br><em style="color:var(--blue)">một bước</em></div>
+  <div class="abs" style="left:150px;top:470px;display:grid;gap:16px;justify-items:start">
+    <span class="chip" style="background:var(--mid);color:#fff" data-a="pop@L1+0.2+0.4"><i style="color:var(--lime)"></i>Giữ chuỗi ngày học</span>
+    <span class="chip" style="background:var(--mid);color:#fff" data-a="pop@L1+1.4+0.4"><i style="color:var(--lime)"></i>Thử thách hằng ngày</span>
+    <span class="chip" style="background:var(--blue);color:#fff" data-a="pop@L1+3.0+0.4"><i></i>Sưu tầm huy hiệu</span>
+  </div>
+  <div class="phone" style="left:880px;top:80px;width:410px;height:896px" data-a="phone@0.1+0.9">
+    <div class="island"></div><div class="scr"><img src="shots/challenges.png"></div>
+  </div>
+  <div class="phone" style="left:1380px;top:80px;width:410px;height:896px" data-a="phonein@L1+2.6+0.9">
+    <div class="island"></div><div class="scr"><img src="shots/badges.png"></div>
+  </div>
+</section>
+
+<!-- 9 · DREAM TEAM (mới) -->
+<section class="scene" data-scene="team" style="background:linear-gradient(135deg,var(--blue),var(--violet))">
+  <svg class="swirl" viewBox="0 0 1920 1080"><path d="M-80 300 C 300 120, 600 520, 900 380 S 1200 40, 1500 160" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="140" stroke-linecap="round"/></svg>
+  <span class="abs chip" style="left:150px;top:150px;background:var(--lime);color:var(--mid);font-size:22px;padding:8px 18px" data-a="pop@0+0.4">MỚI</span>
+  <div class="abs h1" style="left:150px;top:210px;color:#fff" data-a="up@0.1+0.6">Heo <em style="color:var(--lime)">Dream Team</em></div>
+  <div class="abs steps" style="left:150px;top:400px;color:#fff">
+    <div class="step" data-a="up@L1+0.2+0.5"><b>1</b>Mời bạn bằng mã ID</div>
+    <div class="step" data-a="up@L1+2.4+0.5"><b>2</b>Nhắc nhau giữ streak</div>
+    <div class="step" data-a="up@L2+0.5"><b>3</b>Bạn học, mình được thêm XP</div>
+  </div>
+  <div class="abs" style="left:150px;top:690px;display:flex;align-items:center;gap:18px;color:#fff;font-size:30px;font-weight:600" data-a="up@L2+1.6+0.5">
+    <span style="display:inline-block;width:380px;height:22px;border-radius:12px;background:rgba(255,255,255,.25);overflow:hidden"><i style="display:inline-block;height:100%;width:52%;background:var(--lime)"></i><i style="display:inline-block;height:100%;width:22%;background:#FCC902"></i></span>
+    <span><b style="color:#FCC902">●</b> XP từ Dream Team</span>
+  </div>
+  <div class="phone" style="left:880px;top:80px;width:410px;height:896px" data-a="phone@0.1+0.9">
+    <div class="island"></div><div class="scr"><img src="shots/team-top.png"><img src="shots/team.png" data-a="slide@L1+2.2+0.6"></div>
+  </div>
+  <div class="phone" style="left:1380px;top:80px;width:410px;height:896px" data-a="phonein@L2+0.2+0.9">
+    <div class="island"></div><div class="scr"><img src="shots/home-teamxp.png"></div>
+  </div>
+</section>
+
+<!-- 10 · OUTRO -->
+<section class="scene" data-scene="outro" style="background:var(--lime)">
+  <svg class="swirl" viewBox="0 0 1920 1080"><path d="M300 1200 C 200 600, 700 200, 1100 420 S 1500 1100, 900 900 S 600 300, 1300 120 S 2000 200, 2100 500" fill="none" stroke="var(--lime-l)" stroke-width="170" stroke-linecap="round" data-a="draw@0+4"/></svg>
+  <div class="abs h2" style="left:0;right:0;top:420px;text-align:center" data-a="up@L1-0.2+0.7" data-out="L2+1.8">Hiểu tiền hơn <em>mỗi ngày</em>,<br>sống <em>vững vàng</em> hơn mỗi tháng.</div>
+  <div class="abs" style="left:0;right:0;top:300px;text-align:center;font-size:96px;font-weight:500;letter-spacing:-0.02em" data-a="up@L2+2.1+0.7">Ekko – Mỗi ngày đều <em>đáng giá.</em></div>
+  <div class="abs" style="left:0;right:0;top:560px;display:grid;justify-items:center;gap:14px" data-a="up@L2+2.6+0.7">
+    <img src="shots/qr.png" style="width:220px;height:220px;image-rendering:pixelated;border-radius:8px">
+    <b style="font-size:40px">Tải Ekko ngay!</b>
+  </div>
+  <img class="abs" src="assets/Ekko_Primary_Logo_Midnight.svg" style="left:0;right:0;margin:auto;top:150px;height:92px" data-a="up@0.1+0.6" data-out="L1-0.3">
+</section>
+
+<div id="sub"></div>
+
+<script>
+const TL = __TIMELINE__;
+const MODULES = ['Đặt mục tiêu tài chính', 'Quản lý tiền bạc thông minh', 'Tự tin dùng sản phẩm, dịch vụ tài chính', 'Bảo hiểm và quản lý rủi ro', 'Phòng chống lừa đảo tài chính', 'Hiểu và bảo vệ quyền lợi lao động', 'Dùng dịch vụ tài chính số thông minh', 'Xây dựng tương lai gia đình'];
+const PIGS = [['pig-1', 'Heo Mầm Non'], ['pig-study-2', 'Heo Đi Học'], ['pig-2', 'Heo Học Việc'], ['pig-office-2', 'Heo Nhân Viên'], ['pig-family-2', 'Heo Gia Đình'], ['pig-grow-2', 'Heo Phát Triển'], ['pig-saver', 'Heo Tích Lũy'], ['pig-4', 'Heo No Đủ'], ['pig-5', 'Heo Đầu Tư'], ['pig-6', 'Heo Thịnh Vượng']];
+const APPLY = [['goal-advice', 'Mục tiêu', 'AI tư vấn khả thi', 'L1'], ['budget', 'Ngân sách', 'Lập hạn mức chi tiêu', 'L2'], ['expenses', 'Ghi chép', 'Biết tiền đi đâu', 'L2+1.1'], ['savings', 'Tiết kiệm', 'Lãi khi đáo hạn', 'L3']];
+
+document.getElementById('modlist').innerHTML = MODULES.map((m, i) =>
+  `<div class="it" data-a="up@${i < 3 ? `L1+${i * 0.8}` : i < 6 ? `L2+${(i - 3) * 0.7}` : `L2+${2.1 + (i - 6) * 0.5}`}+0.45"><b>${i + 1}</b>${m}</div>`).join('');
+document.getElementById('pigrow').innerHTML = PIGS.map(([img, name], i) =>
+  `<div style="display:grid;justify-items:center;gap:8px;width:160px" data-a="pop@L3+${(i * 0.32).toFixed(2)}+0.45">
+     <img src="assets/${img}.png" style="height:${200 + i * 16}px;object-fit:contain">
+     <div style="font-size:19px;font-weight:700;color:var(--blue)">Cấp ${i + 1}</div>
+     <div style="font-size:20px;font-weight:600;text-align:center;line-height:1.1">${name}</div></div>`).join('');
+document.getElementById('applyrow').innerHTML = APPLY.map(([img, name, note, at]) =>
+  `<div style="display:grid;justify-items:center;gap:18px" data-a="phonein@${at}+0.8">
+     <div class="phone" style="position:relative;width:300px;height:665px;border-radius:48px;padding:10px"><div class="island" style="top:18px;height:22px"></div><div class="scr" style="border-radius:39px"><img src="shots/${img}.png"></div></div>
+     <div class="cap">${name}<small>${note}</small></div></div>`).join('');
+
+// --- timeline ------------------------------------------------------------
+const scenes = [...document.querySelectorAll('.scene')].map((node) => {
+  const meta = TL.scenes.find((s) => s.id === node.dataset.scene);
+  return { node, meta };
+});
+const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+const back = (x) => { x = Math.min(1, Math.max(0, x)); const c = 1.70158; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+/** "L2+0.4" → giây tính từ đầu cảnh (L2 = lúc câu thứ 3 bắt đầu). */
+function at(expr, meta) {
+  const m = /^L(\d+)(.*)$/.exec(expr);
+  if (!m) return parseFloat(expr);
+  const line = meta.lines[Number(m[1])];
+  const extra = m[2] ? Function(`return ${m[2]}`)() : 0;
+  return line.start - meta.start + extra;
+}
+function parse(spec, meta) {
+  // type@start+dur  (start có thể là L1+0.3, nên tách phần dur cuối cùng)
+  const [type, rest] = spec.split('@');
+  const i = rest.lastIndexOf('+');
+  return { type, start: at(rest.slice(0, i), meta), dur: parseFloat(rest.slice(i + 1)) };
+}
+for (const { node, meta } of scenes) {
+  node.querySelectorAll('[data-a]').forEach((el) => {
+    el._a = parse(el.dataset.a, meta);
+    el._out = el.dataset.out ? at(el.dataset.out, meta) : null;
+    if (el.tagName === 'path') { const L = el.getTotalLength(); el._len = L; el.style.strokeDasharray = L; }
+  });
+}
+function apply(el, t) {
+  const { type, start, dur } = el._a;
+  const p = (t - start) / dur;
+  const e = ease(p);
+  let o = Math.min(1, Math.max(0, p * 1.6));
+  let tf = '';
+  const base = el.dataset.baseTransform ?? (el.dataset.baseTransform = el.style.transform || '');
+  if (type === 'up') tf = `translateY(${(1 - e) * 46}px)`;
+  else if (type === 'pop') tf = `scale(${0.6 + 0.4 * back(p)})`;
+  else if (type === 'phone') tf = `translateY(${(1 - e) * 140}px)`;
+  else if (type === 'phonein') tf = `translateX(${(1 - e) * 220}px)`;
+  else if (type === 'slide') { tf = `translateX(${(1 - e) * 100}%)`; o = 1; if (p <= 0) o = 0; }
+  else if (type === 'draw') { el.style.strokeDashoffset = el._len * (1 - e); return; }
+  else if (type === 'pan') { tf = ''; o = 1; }
+  if (el._out !== null && t > el._out) o *= Math.max(0, 1 - (t - el._out) / 0.35);
+  el.style.opacity = o;
+  el.style.transform = `${base} ${tf}`.trim();
+}
+window.renderAt = (T) => {
+  let current = null;
+  for (const { node, meta } of scenes) {
+    const visible = T >= meta.start && T < meta.end + 0.45;
+    if (!visible) { node.style.opacity = 0; continue; }
+    const t = T - meta.start;
+    node.style.opacity = Math.min(1, t / 0.45);
+    node.style.zIndex = scenes.findIndex((s) => s.node === node);
+    node.querySelectorAll('[data-a]').forEach((el) => apply(el, t));
+    if (T < meta.end) current = meta;
+  }
+  const sub = document.getElementById('sub');
+  const line = current && current.lines.find((l) => T >= l.start - 0.05 && T < l.end + 0.25);
+  if (line) { sub.textContent = line.text; sub.style.opacity = 1; } else sub.style.opacity = 0;
+};
+window.renderAt(0);
+</script>
+</body>
+</html>

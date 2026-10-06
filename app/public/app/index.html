@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Thẻ meta không nhận var(): đây là token --ekko-payday-blue viết thẳng. -->
+<meta name="theme-color" content="#3E58F1">
+<title>Giáo dục tài chính · Ekko</title>
+<link rel="icon" href="/assets/logo/Ekko_Symbol_Logo_PaydayBlue.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600&display=swap">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/typography.css">
+<!-- Component CSS của Ekko Design System: app dùng .ekko-toast và .ekko-icon từ
+     đây. Nạp trước style.css để lớp chuyển động của app đặt lên trên phần hình
+     thức của DS. -->
+<link rel="stylesheet" href="/shared/ekko-components-extra.css">
+<link rel="stylesheet" href="/shared/ekko-icons.css">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!--
+    The whole member UI lives inside the iPhone mockup exported from
+    "iphone mockup.fig": a 450 x 920 pt chassis whose 402 x 874 pt screen is
+    transparent, so the real, interactive app renders through it.
+
+    `data-device` picks the chassis colour: black | natural | copper.
+    On viewports too small to host the mockup the frame drops away and the app
+    goes edge to edge, because a phone drawn inside a phone helps nobody.
+  -->
+  <div class="device" data-device="black">
+    <!--
+      Hai lớp lồng nhau là có chủ đích. `.device__screen` mang `transform` để
+      làm mốc neo cho `position: fixed`, nhưng chính nó KHÔNG cuộn; phần cuộn
+      nằm ở `.device__scroll` bên trong. Nếu gộp làm một thì mọi lớp nổi sẽ
+      trôi theo nội dung khi cuộn, vì `transform` biến `fixed` thành neo theo
+      hộp của phần tử chứ không theo khung nhìn.
+    -->
+    <div class="device__screen" id="screen">
+      <div class="device__scroll" id="scroll">
+        <div id="app" class="app">
+          <div class="boot">
+            <img src="/assets/mascot/ekko-bot.png" alt="" width="72" height="72">
+            <p>Đang mở hành trình học của bạn…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status bar: drawn here because the mockup PNG carries the Dynamic
+           Island but not the clock or the radio glyphs. -->
+      <div class="statusbar" aria-hidden="true">
+        <span class="statusbar__time" id="statusTime">9:41</span>
+        <span class="statusbar__icons">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor" role="presentation">
+            <rect x="0"  y="8" width="3" height="4"  rx="1"/>
+            <rect x="5"  y="6" width="3" height="6"  rx="1"/>
+            <rect x="10" y="3" width="3" height="9"  rx="1"/>
+            <rect x="15" y="0" width="3" height="12" rx="1"/>
+          </svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" role="presentation">
+            <path d="M1 4.2a10.5 10.5 0 0 1 14 0"/>
+            <path d="M3.8 7a6.6 6.6 0 0 1 8.4 0"/>
+            <path d="M6.6 9.7a2.7 2.7 0 0 1 2.8 0"/>
+          </svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" role="presentation">
+            <rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" stroke-opacity=".38"/>
+            <rect x="2" y="2" width="15" height="8" rx="2" fill="currentColor"/>
+            <path d="M23 4.2v3.6a2 2 0 0 0 0-3.6Z" fill="currentColor" fill-opacity=".38"/>
+          </svg>
+        </span>
+      </div>
+
+      <div class="homebar" aria-hidden="true"></div>
+    </div>
+
+    <img class="device__chassis" src="/assets/device/iphone-black.png" alt="" aria-hidden="true">
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

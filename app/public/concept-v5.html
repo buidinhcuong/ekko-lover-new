@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ekko Lover - Concept V5</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .device-frame {
+            width: 402px;
+            height: 874px;
+            margin: 0 auto;
+            background: #fff;
+            border: 12px solid #000;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .device-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 30px 30px;
+            z-index: 10;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            padding-top: 10px;
+        }
+
+        .screen::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .screen::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .screen::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            padding: 16px 14px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+            height: 290px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .profile-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .profile-section::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -30%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .neon-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, #00ff88 25%, #00ff88 75%, transparent 100%);
+            box-shadow: 0 0 15px #00ff88, 0 0 30px rgba(0, 255, 136, 0.5);
+            opacity: 0.7;
+            animation: slideNeon 4s ease-in-out infinite;
+        }
+
+        @keyframes slideNeon {
+            0%, 100% {
+                box-shadow: 0 0 15px #00ff88, 0 0 30px rgba(0, 255, 136, 0.3);
+                opacity: 0.5;
+            }
+            50% {
+                box-shadow: 0 0 25px #00ff88, 0 0 50px rgba(0, 255, 136, 0.7);
+                opacity: 0.9;
+            }
+        }
+
+        .profile-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .heo-avatar-large {
+            font-size: 120px;
+            line-height: 1;
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+            animation: bounce 3s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .profile-info {
+            text-align: center;
+            color: white;
+            width: 100%;
+        }
+
+        .profile-info h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            letter-spacing: -0.5px;
+        }
+
+        .profile-info p {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .xp-progress {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .xp-label {
+            color: white;
+            font-size: 11px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .xp-bar {
+            width: 100%;
+            height: 7px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .xp-fill {
+            width: 62%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc6f);
+            border-radius: 4px;
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.8);
+            animation: fillGrow 2s ease-out;
+        }
+
+        @keyframes fillGrow {
+            from { width: 0; }
+            to { width: 62%; }
+        }
+
+        .buttons-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            min-width: 130px;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .btn-action::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-action:hover::before {
+            left: 100%;
+        }
+
+        .btn-icon {
+            font-size: 18px;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 20px;
+            padding: 0 16px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .section-icon {
+            font-size: 18px;
+        }
+
+        .view-all-btn {
+            font-size: 12px;
+            color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .view-all-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateX(2px);
+        }
+
+        /* Budget Section */
+        .budget-item {
+            background: white;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .budget-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #6366f1, #8b5cf6);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .budget-item:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .budget-item:hover::before {
+            opacity: 1;
+        }
+
+        .budget-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .budget-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 7px;
+            background: linear-gradient(90deg, #e2e8f0, #cbd5e1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00cc6f, #00ff88);
+            border-radius: 4px;
+            transition: all 0.4s ease;
+            position: relative;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ff9500, #ff6b35);
+            box-shadow: 0 0 8px rgba(255, 107, 53, 0.4);
+        }
+
+        .budget-value {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 12px;
+        }
+
+        /* News Carousel - REDESIGNED COMPACT */
+        .news-section {
+            margin-bottom: 20px;
+            padding: 0 16px;
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .news-carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+
+        .news-carousel {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            padding-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .news-carousel::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .news-carousel::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 2px;
+        }
+
+        .news-carousel::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border-radius: 2px;
+        }
+
+        .news-slide {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            scroll-snap-align: start;
+            flex: 0 0 calc(100% - 16px);
+            min-height: 110px;
+        }
+
+        .news-slide:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.25);
+        }
+
+        .news-image {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+        }
+
+        .news-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            justify-content: space-between;
+        }
+
+        .news-badge {
+            font-size: 10px;
+            color: #6366f1;
+            background: rgba(99, 102, 241, 0.15);
+            padding: 3px 7px;
+            border-radius: 5px;
+            width: fit-content;
+            font-weight: 600;
+        }
+
+        .news-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.3;
+            letter-spacing: -0.2px;
+        }
+
+        .news-desc {
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .news-meta {
+            font-size: 9px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .carousel-dots {
+            display: flex;
+            gap: 6px;
+            padding: 8px 16px;
+            justify-content: center;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            width: 24px;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Chart Section */
+        .chart-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            padding: 18px;
+            margin: 0 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 140px;
+            gap: 7px;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .chart::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px 6px 0 0;
+            position: relative;
+            min-height: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .chart-bar:hover {
+            filter: brightness(1.15);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .chart-bar.high {
+            background: linear-gradient(180deg, #ff9500 0%, #ff6b35 100%);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+        }
+
+        .chart-bar.high:hover {
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-around;
+            gap: 7px;
+        }
+
+        .chart-label-item {
+            flex: 1;
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+
+        /* Chatbot Section */
+        .chatbot-section {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            margin: 0 16px 24px 16px;
+            border-radius: 18px;
+            padding: 14px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chatbot-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .chatbot-mascot {
+            font-size: 52px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+            animation: wiggle 3s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+        }
+
+        .chatbot-input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chatbot-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 11px 14px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+        }
+
+        .chatbot-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .chatbot-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+        }
+
+        .chatbot-send {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+
+        .chatbot-send:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .chatbot-send:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="screen">
+            <!-- Profile Section -->
+            <div class="profile-section">
+                <div class="neon-line"></div>
+
+                <div class="profile-left">
+                    <div class="heo-avatar-large"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#piggy-bank"/></svg></div>
+
+                    <div class="profile-info">
+                        <h2>Cấp 5 - Heo Thắng Lợi</h2>
+                        <p><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#sparkles"/></svg> Đang tiến bộ tốt!</p>
+                    </div>
+
+                    <div class="xp-progress">
+                        <div class="xp-label">
+                            <span><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#flash"/></svg> Tiến độ</span>
+                            <span>75/100 XP</span>
+                        </div>
+                        <div class="xp-bar">
+                            <div class="xp-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="buttons-stack">
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#books-01"/></svg></span>
+                        Học tập
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#task-01"/></svg></span>
+                        Kế hoạch
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#money-bag-02"/></svg></span>
+                        Ngân sách
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#note-edit"/></svg></span>
+                        Ghi chép
+                    </button>
+                </div>
+            </div>
+
+            <!-- Budget Section -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#credit-card"/></svg></span>
+                        Ngân sách
+                    </div>
+                    <button class="view-all-btn">Xem tất cả →</button>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#restaurant-01"/></svg> Ăn uống</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill warning" style="width: 82%;"></div>
+                        </div>
+                        <div class="budget-value">820k / 1M</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#car-01"/></svg> Giao thông</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="budget-value">300k / 500k</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#coffee-01"/></svg> Giải trí</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%;"></div>
+                        </div>
+                        <div class="budget-value">225k / 500k</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Carousel - COMPACT HORIZONTAL -->
+            <div class="news-section">
+                <div class="news-header">
+                    <div class="section-title">
+                        <span class="section-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#news"/></svg></span>
+                        Tin tức
+                    </div>
+                    <span style="font-size: 12px; color: #6366f1; font-weight: 600;">See more</span>
+                </div>
+
+                <div class="news-carousel-wrapper">
+                    <div class="news-carousel" id="newsCarousel">
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#analytics-01"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#bulb"/></svg> Mẹo</div>
+                                <div class="news-title">Cách quản lý chi tiêu</div>
+                                <div class="news-desc">Mẹo quản lý tiền bạc hiệu quả...</div>
+                                <div class="news-meta">5 min read</div>
+                            </div>
+                        </div>
+
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#money-bag-02"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#books-01"/></svg> Kiến thức</div>
+                                <div class="news-title">Tiết kiệm tiền hàng tháng</div>
+                                <div class="news-desc">5 cách đơn giản để tiết kiệm...</div>
+                                <div class="news-meta">8 min read</div>
+                            </div>
+                        </div>
+
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#target-02"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#award-01"/></svg> Thành tích</div>
+                                <div class="news-title">Đạt mục tiêu tài chính</div>
+                                <div class="news-desc">Lập kế hoạch và theo dõi...</div>
+                                <div class="news-meta">6 min read</div>
+                            </div>
+                        </div>
+
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#chart-increase"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#bulb"/></svg> Mẹo</div>
+                                <div class="news-title">Phân bổ ngân sách 50/30/20</div>
+                                <div class="news-desc">Quy tắc vàng quản lý tiền...</div>
+                                <div class="news-meta">7 min read</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="carousel-dots">
+                    <div class="dot active" onclick="scrollToSlide(0)"></div>
+                    <div class="dot" onclick="scrollToSlide(1)"></div>
+                    <div class="dot" onclick="scrollToSlide(2)"></div>
+                    <div class="dot" onclick="scrollToSlide(3)"></div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-container">
+                <div class="chart-title">
+                    <span><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#chart-increase"/></svg></span>
+                    Chi tiêu tuần này
+                </div>
+                <div class="chart">
+                    <div class="chart-bar" style="height: 70%;"></div>
+                    <div class="chart-bar high" style="height: 95%;"></div>
+                    <div class="chart-bar" style="height: 60%;"></div>
+                    <div class="chart-bar" style="height: 75%;"></div>
+                    <div class="chart-bar" style="height: 50%;"></div>
+                    <div class="chart-bar high" style="height: 88%;"></div>
+                    <div class="chart-bar" style="height: 40%;"></div>
+                </div>
+                <div class="chart-labels">
+                    <div class="chart-label-item">Thứ 2</div>
+                    <div class="chart-label-item">Thứ 3</div>
+                    <div class="chart-label-item">Thứ 4</div>
+                    <div class="chart-label-item">Thứ 5</div>
+                    <div class="chart-label-item">Thứ 6</div>
+                    <div class="chart-label-item">Thứ 7</div>
+                    <div class="chart-label-item">CN</div>
+                </div>
+            </div>
+
+            <!-- Chatbot Section -->
+            <div class="chatbot-section">
+                <div class="chatbot-mascot"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#piggy-bank"/></svg></div>
+                <div class="chatbot-input-wrapper">
+                    <input type="text" class="chatbot-input" placeholder="Ghi nhanh chi tiêu...">
+                    <button class="chatbot-send"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#tick-02"/></svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const carousel = document.getElementById('newsCarousel');
+        const dots = document.querySelectorAll('.dot');
+
+        function scrollToSlide(index) {
+            const slideWidth = carousel.children[0].offsetWidth + 12;
+            carousel.scrollLeft = slideWidth * index;
+            updateDots(index);
+        }
+
+        function updateDots(activeIndex) {
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === activeIndex);
+            });
+        }
+
+        carousel.addEventListener('scroll', () => {
+            const slideWidth = carousel.children[0].offsetWidth + 12;
+            const activeIndex = Math.round(carousel.scrollLeft / slideWidth);
+            updateDots(Math.min(activeIndex, dots.length - 1));
+        });
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        carousel.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        carousel.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const slideWidth = carousel.children[0].offsetWidth + 12;
+            const currentIndex = Math.round(carousel.scrollLeft / slideWidth);
+
+            if (touchStartX - touchEndX > 50) {
+                scrollToSlide(Math.min(currentIndex + 1, dots.length - 1));
+            } else if (touchEndX - touchStartX > 50) {
+                scrollToSlide(Math.max(currentIndex - 1, 0));
+            }
+        }
+    </script>
+</body>
+</html>

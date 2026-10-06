@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ekko Lover - Concept V2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .device-frame {
+            width: 402px;
+            height: 874px;
+            margin: 0 auto;
+            background: #fff;
+            border: 12px solid #000;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .device-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 30px 30px;
+            z-index: 10;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            padding-top: 10px;
+        }
+
+        .screen::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .screen::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .screen::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Profile Section - Enhanced */
+        .profile-section {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            padding: 24px 16px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .profile-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .profile-section::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -30%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .neon-line {
+            position: absolute;
+            top: 25px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, #00ff88 25%, #00ff88 75%, transparent 100%);
+            box-shadow: 0 0 15px #00ff88, 0 0 30px rgba(0, 255, 136, 0.5);
+            opacity: 0.7;
+            animation: slideNeon 4s ease-in-out infinite;
+        }
+
+        @keyframes slideNeon {
+            0%, 100% {
+                box-shadow: 0 0 15px #00ff88, 0 0 30px rgba(0, 255, 136, 0.3);
+                opacity: 0.5;
+            }
+            50% {
+                box-shadow: 0 0 25px #00ff88, 0 0 50px rgba(0, 255, 136, 0.7);
+                opacity: 0.9;
+            }
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: white;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: bounce 3s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .profile-info h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .profile-info p {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .xp-progress {
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .xp-label {
+            color: white;
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+        }
+
+        .xp-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .xp-fill {
+            width: 62%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc6f);
+            border-radius: 4px;
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.8);
+            animation: fillGrow 2s ease-out;
+        }
+
+        @keyframes fillGrow {
+            from { width: 0; }
+            to { width: 62%; }
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-action::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-action:hover::before {
+            left: 100%;
+        }
+
+        .btn-icon {
+            font-size: 24px;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 20px;
+            padding: 0 16px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .section-icon {
+            font-size: 18px;
+        }
+
+        .view-all-btn {
+            font-size: 12px;
+            color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .view-all-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateX(2px);
+        }
+
+        /* Budget Section */
+        .budget-item {
+            background: white;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .budget-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #6366f1, #8b5cf6);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .budget-item:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .budget-item:hover::before {
+            opacity: 1;
+        }
+
+        .budget-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .budget-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 7px;
+            background: linear-gradient(90deg, #e2e8f0, #cbd5e1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00cc6f, #00ff88);
+            border-radius: 4px;
+            transition: all 0.4s ease;
+            position: relative;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ff9500, #ff6b35);
+            box-shadow: 0 0 8px rgba(255, 107, 53, 0.4);
+        }
+
+        .budget-value {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .empty-state-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        /* News Section */
+        .news-section {
+            margin-bottom: 20px;
+            padding: 0 16px;
+        }
+
+        .news-slide {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            display: flex;
+            gap: 14px;
+            padding: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .news-slide:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .news-image {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            border-radius: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .news-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .news-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            letter-spacing: -0.3px;
+        }
+
+        .news-desc {
+            font-size: 11px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        /* Chart Section */
+        .chart-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            padding: 18px;
+            margin: 0 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 140px;
+            gap: 7px;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .chart::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px 6px 0 0;
+            position: relative;
+            min-height: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .chart-bar:hover {
+            filter: brightness(1.15);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .chart-bar.high {
+            background: linear-gradient(180deg, #ff9500 0%, #ff6b35 100%);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+        }
+
+        .chart-bar.high:hover {
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-around;
+            gap: 7px;
+        }
+
+        .chart-label-item {
+            flex: 1;
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+
+        /* Chatbot Section */
+        .chatbot-section {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            margin: 0 16px 24px 16px;
+            border-radius: 18px;
+            padding: 14px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chatbot-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .chatbot-mascot {
+            font-size: 52px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+            animation: wiggle 3s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+        }
+
+        .chatbot-input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chatbot-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 11px 14px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+        }
+
+        .chatbot-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .chatbot-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+        }
+
+        .chatbot-send {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+
+        .chatbot-send:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .chatbot-send:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="screen">
+            <!-- Profile Section - Enhanced -->
+            <div class="profile-section">
+                <div class="neon-line"></div>
+
+                <div>
+                    <div class="profile-header">
+                        <div class="profile-avatar"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#piggy-bank"/></svg></div>
+                        <div class="profile-info">
+                            <h2>Cấp 5 - Heo Thắng Lợi</h2>
+                            <p><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#sparkles"/></svg> Đang tiến bộ tốt!</p>
+                        </div>
+                    </div>
+
+                    <div class="xp-progress">
+                        <div class="xp-label">
+                            <span><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#flash"/></svg> Tiến độ Level</span>
+                            <span>75/100 XP</span>
+                        </div>
+                        <div class="xp-bar">
+                            <div class="xp-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="buttons-grid">
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#books-01"/></svg></span>
+                        Học tập
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#task-01"/></svg></span>
+                        Lập kế hoạch
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#money-bag-02"/></svg></span>
+                        Lập ngân sách
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#note-edit"/></svg></span>
+                        Ghi chép
+                    </button>
+                </div>
+            </div>
+
+            <!-- Budget Section -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#credit-card"/></svg></span>
+                        Ngân sách
+                    </div>
+                    <button class="view-all-btn">Xem tất cả →</button>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#restaurant-01"/></svg> Ăn uống</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill warning" style="width: 82%;"></div>
+                        </div>
+                        <div class="budget-value">820k / 1M</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#car-01"/></svg> Giao thông</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="budget-value">300k / 500k</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#coffee-01"/></svg> Giải trí</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%;"></div>
+                        </div>
+                        <div class="budget-value">225k / 500k</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Section -->
+            <div class="news-section">
+                <div class="section-header" style="padding: 0 0 8px 0; margin-bottom: 0;">
+                    <div class="section-title">
+                        <span class="section-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#news"/></svg></span>
+                        Tin tức
+                    </div>
+                </div>
+                <div class="news-slide">
+                    <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#analytics-01"/></svg></div>
+                    <div class="news-content">
+                        <div class="news-title">Cách quản lý chi tiêu thông minh</div>
+                        <div class="news-desc">Học các mẹo quản lý tiền bạc hiệu quả và tiết kiệm hơn...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-container">
+                <div class="chart-title">
+                    <span><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#chart-increase"/></svg></span>
+                    Chi tiêu tuần này
+                </div>
+                <div class="chart">
+                    <div class="chart-bar" style="height: 70%;"></div>
+                    <div class="chart-bar high" style="height: 95%;"></div>
+                    <div class="chart-bar" style="height: 60%;"></div>
+                    <div class="chart-bar" style="height: 75%;"></div>
+                    <div class="chart-bar" style="height: 50%;"></div>
+                    <div class="chart-bar high" style="height: 88%;"></div>
+                    <div class="chart-bar" style="height: 40%;"></div>
+                </div>
+                <div class="chart-labels">
+                    <div class="chart-label-item">Thứ 2</div>
+                    <div class="chart-label-item">Thứ 3</div>
+                    <div class="chart-label-item">Thứ 4</div>
+                    <div class="chart-label-item">Thứ 5</div>
+                    <div class="chart-label-item">Thứ 6</div>
+                    <div class="chart-label-item">Thứ 7</div>
+                    <div class="chart-label-item">CN</div>
+                </div>
+            </div>
+
+            <!-- Chatbot Section -->
+            <div class="chatbot-section">
+                <div class="chatbot-mascot"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#piggy-bank"/></svg></div>
+                <div class="chatbot-input-wrapper">
+                    <input type="text" class="chatbot-input" placeholder="Ghi nhanh chi tiêu...">
+                    <button class="chatbot-send"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#tick-02"/></svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+/* Ekko Design System — Icon helper
+   Requires tokens.css. Apply to inline <svg> icons (HugeIcons or the generic
+   starter set in icons-core.svg). Icons inherit color from the surrounding
+   text token via currentColor, so they theme light/dark automatically. */
+
+.ekko-icon {
+  width: 24px; height: 24px;
+  flex: none;
+  vertical-align: middle;
+  color: currentColor;              /* inherit surrounding text token */
+}
+/* Stroke-style icons */
+.ekko-icon[stroke], .ekko-icon .stroke { stroke: currentColor; fill: none; stroke-width: 1.5; }
+/* Solid-style icons */
+.ekko-icon .solid { fill: currentColor; }
+
+/* Sizes */
+.ekko-icon--16 { width: 16px; height: 16px; }
+.ekko-icon--20 { width: 20px; height: 20px; }
+.ekko-icon--24 { width: 24px; height: 24px; }
+.ekko-icon--32 { width: 32px; height: 32px; }
+
+/* Convenience color overrides (otherwise inherits text color) */
+.ekko-icon--muted { color: var(--text-tertiary); }
+.ekko-icon--brand { color: var(--text-brand-500); }
+.ekko-icon--success { color: var(--text-success); }
+.ekko-icon--warning { color: var(--text-warning); }
+.ekko-icon--error { color: var(--text-error); }

@@ -1,0 +1,80 @@
+/* Ekko Design System — Checkbox & Radio
+   Requires tokens.css. Markup:
+   <label class="ekko-choice">
+     <input type="checkbox" class="ekko-checkbox"> <span>Label</span>
+   </label>
+   <label class="ekko-choice">
+     <input type="radio" name="g" class="ekko-radio"> <span>Label</span>
+   </label>
+   Styles the native input so keyboard/AX behaviour is preserved. */
+
+.ekko-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;                          /* spacing-8 */
+  font-family: 'Bricolage Grotesque', system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-10);
+}
+.ekko-choice:hover { background: var(--bg-grey-200); }
+
+.ekko-checkbox, .ekko-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  margin: 0; flex: none;
+  background: var(--bg-primary);
+  border: 1px solid var(--grey-300);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: background-color .12s ease, border-color .12s ease;
+}
+.ekko-checkbox { border-radius: var(--radius-6); }
+.ekko-radio    { border-radius: 50%; }
+
+/* Checked fill (brand) for both */
+.ekko-checkbox:checked, .ekko-radio:checked {
+  background: var(--bg-brand-500);
+  border-color: var(--bg-brand-500);
+}
+
+/* White check mark (checkbox) */
+.ekko-checkbox:checked::after {
+  content: "";
+  width: 9px; height: 5px;
+  border: 2px solid var(--text-white);
+  border-top: none; border-right: none;
+  transform: translateY(-1px) rotate(-45deg);
+}
+/* Indeterminate dash */
+.ekko-checkbox:indeterminate {
+  background: var(--bg-brand-500);
+  border-color: var(--bg-brand-500);
+}
+.ekko-checkbox:indeterminate::after {
+  content: "";
+  width: 8px; height: 2px;
+  background: var(--text-white);
+}
+/* White center dot (radio) */
+.ekko-radio:checked::after {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-white);
+}
+
+/* Focus ring */
+.ekko-checkbox:focus-visible, .ekko-radio:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--border-brand);
+}
+
+/* Disabled */
+.ekko-checkbox:disabled, .ekko-radio:disabled { cursor: not-allowed; opacity: .5; }
+.ekko-choice:has(:disabled) { color: var(--text-tertiary); cursor: not-allowed; }
+.ekko-choice:has(:disabled):hover { background: transparent; }

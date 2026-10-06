@@ -1,0 +1,23 @@
+/* Ekko Design System — Status dot component
+   Requires tokens.css. Markup:
+   <span class="ekko-dot ekko-dot--online ekko-dot--md"></span>
+   States: --online --away --busy --offline    Sizes: --xs --sm --md --lg --xl
+   Add ekko-dot--outline for a white ring (use on avatars). */
+
+.ekko-dot { display: inline-block; border-radius: 50%; flex: none; }
+
+/* Sizes */
+.ekko-dot--xs { width: 8px;  height: 8px;  }
+.ekko-dot--sm { width: 10px; height: 10px; }
+.ekko-dot--md { width: 12px; height: 12px; }
+.ekko-dot--lg { width: 14px; height: 14px; }
+.ekko-dot--xl { width: 16px; height: 16px; }
+
+/* States */
+.ekko-dot--online  { background: var(--success-500); }
+.ekko-dot--away    { background: var(--warning-500); }
+.ekko-dot--busy    { background: var(--error-500); }
+.ekko-dot--offline { background: var(--grey-500); }
+
+/* Outline ring for placement on avatars / busy surfaces */
+.ekko-dot--outline { box-shadow: 0 0 0 2px var(--bg-primary); }

@@ -1,0 +1,51 @@
+/* Ekko Design System — Table component
+   Requires tokens.css. Markup:
+   <div class="ekko-table-wrap">
+     <table class="ekko-table">
+       <thead><tr><th>Header</th>…</tr></thead>
+       <tbody><tr><td>Cell</td>…</tr>…</tbody>
+     </table>
+   </div>
+   Zebra striping on tbody rows is automatic. Add class="num" on th/td for right-aligned numeric columns. */
+
+.ekko-table-wrap {
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-16);
+  overflow: hidden;                 /* clip rows to the rounded corners */
+  background: var(--bg-primary);
+}
+.ekko-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Bricolage Grotesque', system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Header row (40px) */
+.ekko-table thead th {
+  height: 40px;
+  padding: 8px 16px;
+  text-align: left;
+  font-weight: 500;                 /* Medium */
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  white-space: nowrap;
+}
+
+/* Data rows (48px) */
+.ekko-table tbody td {
+  height: 48px;
+  padding: 12px 16px;
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+.ekko-table tbody tr { background: var(--bg-primary); }
+.ekko-table tbody tr:nth-child(even) { background: var(--bg-secondary); }   /* zebra */
+
+/* Right-align numeric / currency columns */
+.ekko-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Sub-text inside a cell (e.g. email under a name) */
+.ekko-table .sub { display: block; font-size: 12px; color: var(--text-secondary); }

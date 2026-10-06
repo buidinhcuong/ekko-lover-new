@@ -1,0 +1,218 @@
+/* Profile Section */
+.profile-section {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  padding: 24px 20px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  overflow: visible;
+  overflow-y: hidden;
+}
+
+.profile-bg-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1), transparent 50%),
+              radial-gradient(circle at 80% 50%, rgba(168, 85, 247, 0.1), transparent 50%);
+  pointer-events: none;
+  border-radius: 24px;
+}
+
+/* Left Side - Heo + Info */
+.profile-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.heo-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-ring-wrapper {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.1);
+  stroke-width: 4;
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: url(#progressGradient);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.heo-character {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+.profile-info {
+  text-align: center;
+}
+
+.profile-level {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.profile-info h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+}
+
+/* Right Side - Buttons */
+.buttons-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.btn-action:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-action:active {
+  transform: translateX(2px);
+}
+
+.btn-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.btn-text {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Collapsed state - shows only icon */
+.btn-action.collapsed {
+  padding: 10px;
+  gap: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.btn-action.collapsed .btn-text {
+  display: none;
+}
+
+.btn-action.collapsed:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+/* Tooltip for collapsed buttons */
+.btn-action.collapsed::after {
+  content: attr(data-title);
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 12px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.btn-action.collapsed:hover::after {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .profile-section {
+    flex-direction: column;
+    padding: 20px 16px;
+  }
+
+  .profile-left {
+    order: 1;
+  }
+
+  .buttons-stack {
+    margin-left: 0;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    order: 2;
+    width: 100%;
+  }
+
+  .btn-action {
+    flex: 0 1 auto;
+  }
+
+  .heo-container {
+    width: 120px;
+    height: 120px;
+  }
+
+  .progress-ring-wrapper {
+    width: 120px;
+    height: 120px;
+  }
+
+  .heo-character {
+    width: 85px;
+    height: 85px;
+  }
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img">
+  <rect width="640" height="400" rx="28" fill="#EDF0FE"/>
+
+  <g transform="translate(320 200)">
+    <circle r="126" fill="none" stroke="#3E58F1" stroke-width="52" stroke-dasharray="396 396" transform="rotate(-90)"/>
+    <circle r="126" fill="none" stroke="#B3F42C" stroke-width="52" stroke-dasharray="238 554" transform="rotate(90)"/>
+    <circle r="126" fill="none" stroke="#BCC6F8" stroke-width="52" stroke-dasharray="158 634" transform="rotate(212)"/>
+  </g>
+  <text x="320" y="212" text-anchor="middle" font-family="system-ui, sans-serif" font-size="46" font-weight="700" fill="#00034F">50/30/20</text>
+</svg>

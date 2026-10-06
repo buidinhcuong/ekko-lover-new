@@ -1,0 +1,29 @@
+# systemd — chạy app trực tiếp bằng Node (không Docker).
+# Cài: sudo cp ekko-gdtc.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#      sudo systemctl enable --now ekko-gdtc
+[Unit]
+Description=Ekko - Giao duc tai chinh
+After=network.target
+
+[Service]
+Type=simple
+User=ekko
+WorkingDirectory=/opt/ekko-gdtc/app
+# Biến bí mật đặt trong tệp này (chmod 600, chủ sở hữu ekko), mẫu ở app/.env.example
+EnvironmentFile=/etc/ekko-gdtc.env
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=4321
+Environment=EKKO_DATA_DIR=/var/lib/ekko-gdtc
+ExecStart=/usr/bin/node server/index.js
+Restart=always
+RestartSec=5
+# Hạn chế quyền
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ekko-gdtc
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

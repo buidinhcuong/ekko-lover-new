@@ -1,0 +1,225 @@
+{
+ "duration": 120.815,
+ "scenes": [
+  {
+   "id": "hook",
+   "start": 0.0,
+   "end": 8.259,
+   "lines": [
+    {
+     "text": "Ứng lương giúp bạn vượt qua những ngày khó khăn.",
+     "start": 0.7,
+     "end": 3.373
+    },
+    {
+     "text": "Nhưng để đi xa, bạn cần hiểu và làm chủ đồng tiền của mình.",
+     "start": 3.693,
+     "end": 7.659
+    }
+   ]
+  },
+  {
+   "id": "title",
+   "start": 8.259,
+   "end": 17.775,
+   "lines": [
+    {
+     "text": "Đó là lý do Ekko ra mắt tính năng Học tập:",
+     "start": 8.959,
+     "end": 11.823
+    },
+    {
+     "text": "những bài học tài chính ngắn gọn, ngay trong app Ekko, vui như chơi game.",
+     "start": 12.143,
+     "end": 16.875
+    }
+   ]
+  },
+  {
+   "id": "pigs",
+   "start": 17.775,
+   "end": 34.565,
+   "lines": [
+    {
+     "text": "Mỗi người có một chú heo của riêng mình.",
+     "start": 18.475,
+     "end": 20.967
+    },
+    {
+     "text": "Học xong một bài được 30 XP, làm bài kiểm tra được 50 XP,",
+     "start": 21.287,
+     "end": 26.194
+    },
+    {
+     "text": "ghé app mỗi ngày còn được thêm 10 XP.",
+     "start": 26.514,
+     "end": 28.971
+    },
+    {
+     "text": "Chú heo lớn dần qua mười cấp độ, từ Heo Mầm Non đến Heo Thịnh Vượng.",
+     "start": 29.291,
+     "end": 33.665
+    }
+   ]
+  },
+  {
+   "id": "path",
+   "start": 34.565,
+   "end": 47.734,
+   "lines": [
+    {
+     "text": "Lộ trình gồm 8 mô đun, 34 bài học,",
+     "start": 35.265,
+     "end": 38.379
+    },
+    {
+     "text": "từ đặt mục tiêu, quản lý tiền bạc, bảo hiểm,",
+     "start": 38.699,
+     "end": 41.897
+    },
+    {
+     "text": "đến phòng chống lừa đảo và quyền lợi lao động.",
+     "start": 42.217,
+     "end": 44.835
+    },
+    {
+     "text": "Mỗi bài chỉ mất vài phút.",
+     "start": 45.155,
+     "end": 46.834
+    }
+   ]
+  },
+  {
+   "id": "learn",
+   "start": 47.734,
+   "end": 57.894,
+   "lines": [
+    {
+     "text": "Bài học là những trang ngắn, hình ảnh rõ ràng, vuốt nhẹ là sang trang.",
+     "start": 48.434,
+     "end": 53.132
+    },
+    {
+     "text": "Cuối mỗi mô đun có bài trắc nghiệm để bạn ôn lại kiến thức.",
+     "start": 53.452,
+     "end": 56.994
+    }
+   ]
+  },
+  {
+   "id": "apply",
+   "start": 57.894,
+   "end": 72.829,
+   "lines": [
+    {
+     "text": "Học xong, làm ngay:",
+     "start": 58.594,
+     "end": 60.018
+    },
+    {
+     "text": "đặt mục tiêu và nhờ AI tư vấn xem có khả thi không,",
+     "start": 60.338,
+     "end": 64.639
+    },
+    {
+     "text": "lập ngân sách, ghi chép chi tiêu,",
+     "start": 64.959,
+     "end": 67.167
+    },
+    {
+     "text": "theo dõi tiết kiệm và tiền lãi khi đáo hạn.",
+     "start": 67.487,
+     "end": 70.105
+    },
+    {
+     "text": "Tất cả ở cùng một nơi.",
+     "start": 70.425,
+     "end": 71.929
+    }
+   ]
+  },
+  {
+   "id": "quick",
+   "start": 72.829,
+   "end": 86.81,
+   "lines": [
+    {
+     "text": "Ấn giữ chú bạch tuộc Ekko, gõ “phở 45k, cà phê 25k”,",
+     "start": 73.529,
+     "end": 78.941
+    },
+    {
+     "text": "AI tự tách thành hai khoản và ghi giúp bạn.",
+     "start": 79.261,
+     "end": 82.619
+    },
+    {
+     "text": "Có thắc mắc về tiền bạc, cứ hỏi Ekko bot.",
+     "start": 82.939,
+     "end": 85.91
+    }
+   ]
+  },
+  {
+   "id": "daily",
+   "start": 86.81,
+   "end": 94.294,
+   "lines": [
+    {
+     "text": "Mỗi ngày một bước:",
+     "start": 87.51,
+     "end": 88.586
+    },
+    {
+     "text": "giữ chuỗi ngày học, hoàn thành thử thách hằng ngày, và sưu tầm huy hiệu.",
+     "start": 88.906,
+     "end": 93.394
+    }
+   ]
+  },
+  {
+   "id": "team",
+   "start": 94.294,
+   "end": 106.873,
+   "lines": [
+    {
+     "text": "Học cùng bạn bè còn vui hơn.",
+     "start": 94.994,
+     "end": 96.895
+    },
+    {
+     "text": "Lập Heo Dream Team bằng mã ID của nhau, nhắc nhau giữ streak mỗi ngày,",
+     "start": 97.215,
+     "end": 101.791
+    },
+    {
+     "text": "và khi bạn cùng đội học, bạn cũng được thưởng thêm XP.",
+     "start": 102.111,
+     "end": 105.973
+    }
+   ]
+  },
+  {
+   "id": "outro",
+   "start": 106.873,
+   "end": 120.815,
+   "lines": [
+    {
+     "text": "Học tập trong app Ekko.",
+     "start": 107.573,
+     "end": 109.171
+    },
+    {
+     "text": "Hiểu tiền hơn mỗi ngày, sống vững vàng hơn mỗi tháng.",
+     "start": 109.491,
+     "end": 112.889
+    },
+    {
+     "text": "Mở app Ekko và bắt đầu bài học đầu tiên ngay hôm nay.",
+     "start": 113.209,
+     "end": 116.815
+    }
+   ]
+  }
+ ]
+}

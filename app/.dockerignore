@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+data
+node_modules
+.vercel
+.claude
+test
+tools
+src
+api
+*.md
+public/assets/video/ekko-hoc-tap-v1*

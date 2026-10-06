@@ -1,0 +1,466 @@
+/* Home Screen Layout */
+.homescreen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.homescreen-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Section Styling */
+.section {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  font-size: 24px;
+}
+
+.view-all-btn {
+  background: none;
+  border: none;
+  color: #6366f1;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+}
+
+/* Budget Items */
+.budget-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.budget-item {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+}
+
+.budget-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.budget-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff88, #00cc6f);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-fill.high {
+  background: linear-gradient(90deg, #ff6b6b, #ff5252);
+}
+
+.budget-progress span {
+  font-size: 12px;
+  color: #666;
+}
+
+/* News Carousel */
+.news-carousel-wrapper {
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.news-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 0;
+}
+
+.news-carousel::-webkit-scrollbar {
+  height: 4px;
+}
+
+.news-carousel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.news-card {
+  flex-shrink: 0;
+  width: 280px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  border-radius: 16px;
+  overflow: hidden;
+  color: white;
+}
+
+.news-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.news-content {
+  padding: 12px;
+}
+
+.news-category {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.news-card h3 {
+  font-size: 14px;
+  margin: 0 0 6px 0;
+}
+
+.news-card p {
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0 0 8px 0;
+  opacity: 0.9;
+}
+
+.news-time {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 0 0 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.dot.active {
+  background: rgba(99, 102, 241, 1);
+}
+
+/* Chart */
+.chart-container {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.chart-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 120px;
+  margin-bottom: 16px;
+}
+
+.chart-bar {
+  flex: 1;
+  margin: 0 4px;
+  background: linear-gradient(180deg, #00ff88, #00cc6f);
+  border-radius: 8px 8px 0 0;
+  min-height: 20px;
+  transition: background 0.3s;
+}
+
+.chart-bar.high {
+  background: linear-gradient(180deg, #ff6b6b, #ff5252);
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-around;
+  gap: 4px;
+}
+
+.chart-label-item {
+  font-size: 12px;
+  color: #666;
+  flex: 1;
+  text-align: center;
+}
+
+/* Chatbot Section */
+.chatbot-section {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+
+.chatbot-mascot {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.chatbot-input-wrapper {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.chatbot-input {
+  flex: 1;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  padding: 12px 16px;
+  font-size: 14px;
+  outline: none;
+}
+
+.chatbot-input:focus {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.chatbot-send {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chatbot-send:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+/* Plan Items */
+.plan-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plan-card {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.plan-title-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.plan-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.plan-title-section h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.plan-meta {
+  font-size: 12px;
+  color: #666;
+  display: block;
+  margin-top: 2px;
+}
+
+.expand-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.expand-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.plan-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff88, #00cc6f);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-percent {
+  font-size: 12px;
+  color: #666;
+  min-width: 35px;
+  text-align: right;
+}
+
+.plan-tasks {
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.task-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.task-title {
+  font-size: 13px;
+  color: #333;
+}
+
+.task-title.completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.add-task-btn {
+  background: none;
+  border: 1px dashed #ddd;
+  color: #666;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.add-task-btn:hover {
+  background: rgba(99, 102, 241, 0.05);
+  border-color: #ccc;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 20px 12px;
+  color: #999;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .homescreen {
+    padding: 12px;
+    gap: 16px;
+  }
+
+  .news-card {
+    width: 260px;
+  }
+
+  .chatbot-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chatbot-mascot {
+    align-self: flex-start;
+  }
+}

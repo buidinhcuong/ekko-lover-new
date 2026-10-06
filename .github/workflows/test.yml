@@ -1,0 +1,22 @@
+# Chạy bộ kiểm thử (app/test/smoke.js, ~390 kiểm tra) mỗi lần đẩy code hoặc mở
+# pull request. Bước deploy tự động sẽ thêm sau khi team chốt nơi deploy, và chỉ
+# chạy khi bước này đạt.
+name: Kiểm thử
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: npm run smoke
+        run: npm run smoke

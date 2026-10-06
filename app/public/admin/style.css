@@ -1,0 +1,515 @@
+/*
+  Admin portal. Dense product UI, so it leans on the Ekko design-system
+  component CSS (button / input / table / badge) and only adds layout on top.
+*/
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  font-family: 'Bricolage Grotesque', system-ui, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; }
+a { color: var(--text-brand-500); }
+
+.admin-boot { padding: var(--spacing-48); color: var(--text-secondary); }
+
+/* ------------------------------------------------------------- shell */
+.shell { display: grid; grid-template-columns: 248px 1fr; min-height: 100dvh; }
+
+.sidebar {
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-secondary);
+  padding: var(--spacing-20) var(--spacing-12);
+  display: flex; flex-direction: column; gap: var(--spacing-4);
+  position: sticky; top: 0;
+  height: 100dvh;
+  min-height: 0;      /* grid items mặc định min-height:auto và không chịu co lại */
+  overflow-y: auto;
+}
+.sidebar__brand { display: flex; align-items: center; gap: var(--spacing-10); padding: 0 var(--spacing-8) var(--spacing-20); }
+.sidebar__brand img { height: 26px; }
+.sidebar__brand span { font-size: var(--font-size-text-xs); color: var(--text-secondary); line-height: 16px; }
+.sidebar__group { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--text-tertiary); padding: var(--spacing-16) var(--spacing-12) var(--spacing-6); }
+
+.navlink {
+  display: flex; align-items: center; gap: var(--spacing-10);
+  padding: var(--spacing-10) var(--spacing-12);
+  border-radius: var(--radius-12);
+  border: 0; background: none; width: 100%; text-align: left;
+  font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-primary); cursor: pointer;
+}
+.navlink:hover { background: var(--bg-secondary); }
+.navlink[aria-current="page"] { background: var(--bg-brand-50); color: var(--text-brand-500); font-weight: var(--font-weight-semibold); }
+.navlink em { margin-left: auto; font-style: normal; font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+
+.sidebar__foot { margin-top: auto; padding: var(--spacing-16) var(--spacing-12) 0; border-top: 1px solid var(--border-secondary); font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); }
+
+/* Không chặn bề ngang: đây là bảng điều khiển, càng rộng càng xem được nhiều
+   cột. Chặn ở 1280px thì màn 1728px thừa hẳn 200px trống bên phải. Chỉ có đoạn
+   văn xuôi mới cần giới hạn để đọc được (xem `.page-head p`). */
+.main { padding: var(--spacing-32) var(--spacing-40) var(--spacing-64); min-width: 0; }
+.page-head { display: flex; align-items: flex-start; gap: var(--spacing-16); margin-bottom: var(--spacing-24); }
+.page-head h1 { margin: 0 0 4px; font-size: var(--font-size-display-xs); line-height: var(--line-height-display-xs); font-weight: var(--font-weight-semibold); }
+.page-head p { margin: 0; color: var(--text-secondary); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); max-width: 62ch; }
+.page-head__actions { margin-left: auto; display: flex; gap: var(--spacing-8); flex: none; }
+
+/* ------------------------------------------------------------- pieces */
+.panel {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-16);
+  padding: var(--spacing-20);
+}
+.panel + .panel { margin-top: var(--spacing-16); }
+.panel__head { display: flex; align-items: center; gap: var(--spacing-12); margin-bottom: var(--spacing-16); }
+.panel__head h2 { margin: 0; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); font-weight: var(--font-weight-semibold); flex: 1; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-12); margin-bottom: var(--spacing-16); }
+.stat {
+  background: var(--bg-primary); border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-16); padding: var(--spacing-16);
+}
+.stat__label { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-secondary); }
+.stat__value { font-size: var(--font-size-display-sm); font-weight: var(--font-weight-semibold); line-height: 36px; margin-top: 4px; }
+.stat__hint { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-16); }
+@media (max-width: 1080px) { .split { grid-template-columns: 1fr; } }
+/* Màn hẹp: cột điều hướng thành một dải tab cuộn ngang, ghim trên đỉnh.
+   Trước đây nó vẫn xếp dọc và ăn hết màn hình đầu tiên — muốn xem nội dung phải
+   cuộn qua bảy mục, còn trang thì bị kéo rộng ra 844px. */
+@media (max-width: 900px) {
+  /* `grid-template-rows` phải khai báo rõ: khung có min-height 100dvh, mà lưới thì
+     chia đều phần dư cho các hàng auto — không nói gì thì dải tab bị kéo cao 174px
+     cho "đủ màn hình". */
+  .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .sidebar {
+    position: sticky; top: 0; z-index: 20;
+    height: auto; min-height: 0;
+    /* Ô lưới mặc định không co nhỏ hơn nội dung, nên thiếu dòng này thì dải tab
+       kéo cả trang rộng ra 836px thay vì tự cuộn ngang trong khung. */
+    min-width: 0;
+    flex-direction: row; flex-wrap: nowrap;
+    gap: var(--spacing-4);
+    padding: var(--spacing-8) var(--spacing-12);
+    border-right: 0; border-bottom: 1px solid var(--border-secondary);
+    overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+  .sidebar__brand { padding: 0 var(--spacing-8) 0 0; flex: none; }
+  .sidebar__brand span { display: none; }
+  .sidebar__group, .sidebar__foot { display: none; }
+  .navlink { width: auto; flex: none; white-space: nowrap; padding: var(--spacing-8) var(--spacing-12); }
+  /* Căn giữa theo chiều dọc để các mục cao đúng bằng nội dung, không bị kéo giãn. */
+  .sidebar { align-items: center; }
+  .navlink em { display: none; }
+
+  /* Cùng lý do: bảng dài phải cuộn trong khung, không được kéo giãn cả trang. */
+  .main { min-width: 0; padding: var(--spacing-16) var(--spacing-16) var(--spacing-40); }
+  .page-head { flex-direction: column; gap: var(--spacing-12); }
+  .page-head__actions { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  .toolbar .ekko-input { min-width: 0; flex: 1; }
+
+  /* Bảng nhiều cột thì cho cuộn ngang trong khung của nó. Mặc định của Design
+     System là `hidden`, tức là cột cuối bị cắt mất và không cách nào xem được. */
+  .ekko-table-wrap { overflow-x: auto; }
+  .ekko-table { min-width: 620px; }
+}
+
+.toolbar { display: flex; align-items: center; gap: var(--spacing-8); margin-bottom: var(--spacing-16); flex-wrap: wrap; }
+.toolbar .ekko-input { min-width: 240px; }
+
+.cellmeta { display: block; font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); font-weight: var(--font-weight-regular); }
+.actions { display: flex; gap: var(--spacing-6); justify-content: flex-end; flex: none; }
+img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(--radius-8); background: var(--bg-secondary); flex: none; }
+
+.bars { display: grid; gap: var(--spacing-10); }
+.barrow { display: grid; grid-template-columns: 160px 1fr 56px; align-items: center; gap: var(--spacing-12); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); }
+.barrow__track { height: 10px; border-radius: var(--radius-full); background: var(--bg-grey-200); overflow: hidden; }
+.barrow__fill { height: 100%; background: var(--bg-brand-500); }
+.barrow__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+
+.spark { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 90px; }
+.spark div { flex: 1; max-width: 32px; background: var(--bg-brand-500); border-radius: var(--radius-4) var(--radius-4) 0 0; min-height: 2px; }
+.spark-labels { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
+.spark-labels span { flex: 1; max-width: 32px; text-align: center; font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+
+/* -------------------------------------------------------------- modal */
+.modal-backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--grey-900) 55%, transparent); z-index: 60; }
+.modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100vw - var(--spacing-48));
+  max-height: calc(100vh - var(--spacing-64));
+  background: var(--bg-primary);
+  border-radius: var(--radius-24);
+  z-index: 61;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--ekko-midnight) 28%, transparent);
+  animation: modal-in .2s cubic-bezier(.16, 1, .3, 1);
+}
+@keyframes modal-in { from { transform: translate(-50%, -48%); opacity: 0; } to { transform: translate(-50%, -50%); opacity: 1; } }
+.modal__head { display: flex; align-items: center; gap: var(--spacing-12); padding: var(--spacing-24) var(--spacing-24) var(--spacing-8); }
+.modal__head h2 { margin: 0; font-size: var(--font-size-text-xl); line-height: var(--line-height-text-xl); font-weight: var(--font-weight-semibold); flex: 1; }
+.modal__body { flex: 1; overflow-y: auto; padding: var(--spacing-16) var(--spacing-24); display: grid; gap: var(--spacing-16); }
+.modal__foot { padding: var(--spacing-16) var(--spacing-24) var(--spacing-24); display: flex; gap: var(--spacing-8); justify-content: flex-end; }
+
+/* Hộp xác nhận xoá: nằm trên cả hộp thoại đang mở, nút Xoá màu đỏ. */
+.confirm-backdrop { z-index: 80; }
+.confirm { z-index: 81; max-width: 440px; }
+.confirm__text { margin: 0; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); color: var(--text-secondary); }
+.confirm .modal__body { padding-top: var(--spacing-4); }
+.ekko-btn.confirm__ok { background: var(--bg-error-600); border-color: var(--bg-error-600); }
+.ekko-btn.confirm__ok:hover { background: color-mix(in srgb, var(--bg-error-600) 88%, var(--grey-900)); }
+
+.iconbtn {
+  width: 32px; height: 32px; flex: none;
+  border: 0; border-radius: var(--radius-full);
+  background: transparent; color: var(--text-secondary);
+  font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); cursor: pointer;
+  display: grid; place-items: center;
+}
+.iconbtn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+/* A row of one field fills the width; two fields split it. */
+.formrow { display: grid; gap: var(--spacing-16); }
+.formrow--2 { grid-template-columns: 1fr 1fr; }
+.formrow--3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 720px) {
+  .formrow--2,
+  .formrow--3 { grid-template-columns: 1fr; }
+}
+
+/* ------------------------------------------------- module cards (content)
+   Mỗi mô-đun là một thẻ mở rộng được: gập lại chỉ thấy tên và mô tả, mở ra thấy
+   danh sách bài học và bộ trắc nghiệm cuối mô-đun. */
+.modlist { display: grid; gap: var(--spacing-12); }
+
+.modcard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-16);
+  overflow: hidden;
+}
+.modcard.is-open { border-color: var(--warning-400); box-shadow: 0 0 0 1px var(--warning-400); }
+
+.modcard__head { display: flex; align-items: center; gap: var(--spacing-16); padding: var(--spacing-16) var(--spacing-20); }
+.modcard__emoji { font-size: var(--font-size-display-sm); line-height: 1; flex: none; }
+.modcard__text { flex: 1; min-width: 0; }
+.modcard__eyebrow { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); }
+.modcard__title { font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); font-weight: var(--font-weight-semibold); margin-top: 2px; display: flex; align-items: center; gap: var(--spacing-8); }
+.modcard__summary { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-secondary); margin-top: 2px; }
+
+.modcard__body { padding: 0 var(--spacing-20) var(--spacing-20); display: grid; gap: var(--spacing-24); }
+
+.modsection__head { display: flex; align-items: center; gap: var(--spacing-8); margin-bottom: var(--spacing-12); }
+.modsection__head h3 { margin: 0; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); font-weight: var(--font-weight-semibold); }
+.modsection__icon { font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); }
+.modsection__add { margin-top: var(--spacing-12); }
+
+/* --- end-of-module quiz --- */
+.qcard {
+  display: flex; align-items: flex-start; gap: var(--spacing-12);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-14);
+  padding: var(--spacing-16);
+  margin-bottom: var(--spacing-10);
+}
+.qcard__main { flex: 1; min-width: 0; }
+.qcard__eyebrow { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); }
+.qcard__question { font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); font-weight: var(--font-weight-semibold); margin: 2px 0 var(--spacing-10); }
+.qcard__options { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.qcard__options li { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-secondary); }
+.qcard__options li::before { content: '· '; }
+.qcard__options li.is-correct { color: var(--text-brand-500); font-weight: var(--font-weight-semibold); }
+.qcard__options li.is-correct::before { content: ''; }
+
+/* --- text pages --- */
+.pagelist { display: grid; gap: var(--spacing-8); }
+.pagerow {
+  display: flex; align-items: center; gap: var(--spacing-12);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-12);
+  padding: var(--spacing-10) var(--spacing-12);
+}
+.pagerow__num {
+  width: 26px; height: 26px; flex: none;
+  border-radius: var(--radius-full);
+  background: var(--bg-secondary);
+  display: grid; place-items: center;
+  font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); font-weight: var(--font-weight-semibold);
+}
+.pagerow__main { flex: 1; min-width: 0; }
+.pagerow__title { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-medium); }
+
+.optioninput {
+  flex: 1; width: 100%;
+  border: 1px solid var(--border-primary); border-radius: var(--radius-10);
+  padding: var(--spacing-8) var(--spacing-10);
+  font: inherit; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm);
+  background: var(--bg-primary); color: var(--text-primary);
+}
+.optionrow { margin-bottom: var(--spacing-10); }
+
+/* --------------------------------------------------------- dialog tabs */
+.dialogtabs {
+  display: flex; gap: var(--spacing-4);
+  border-bottom: 1px solid var(--border-secondary);
+  margin-bottom: var(--spacing-20);
+}
+.dialogtabs button {
+  border: 0; background: none; cursor: pointer;
+  padding: var(--spacing-10) var(--spacing-14);
+  margin-bottom: -1px;
+  font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+}
+.dialogtabs button:hover { color: var(--text-primary); }
+.dialogtabs button[aria-selected="true"] {
+  color: var(--text-brand-500); font-weight: var(--font-weight-semibold);
+  border-bottom-color: var(--bg-brand-500);
+}
+
+/* ------------------------------------------------ expense group rows */
+.catpanel { display: grid; gap: var(--spacing-8); }
+
+.catrow {
+  display: flex; align-items: flex-start; gap: var(--spacing-12);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-12);
+  padding: var(--spacing-12);
+}
+.catrow--editing { display: grid; gap: var(--spacing-12); background: var(--bg-secondary); }
+.catrow__icon { font-size: var(--font-size-display-xs); line-height: 1.2; flex: none; }
+.catrow__main { flex: 1; min-width: 0; }
+.catrow__name { display: flex; align-items: center; gap: var(--spacing-8); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); }
+.catrow__name code { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); font-weight: var(--font-weight-regular); color: var(--text-tertiary); }
+.catrow__swatch { width: 10px; height: 10px; border-radius: var(--radius-full); flex: none; }
+.catrow__keywords {
+  font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.catrow__limit { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); margin-top: 2px; }
+.catrow__grid { display: grid; grid-template-columns: 88px 1fr 76px 1fr; gap: var(--spacing-12); }
+@media (max-width: 720px) { .catrow__grid { grid-template-columns: 1fr 1fr; } }
+.catrow__color { width: 100%; height: 38px; padding: 2px; border: 1px solid var(--border-primary); border-radius: var(--radius-10); background: var(--bg-primary); }
+.catrow__foot { display: flex; gap: var(--spacing-8); justify-content: flex-end; }
+
+.catfield { display: grid; gap: 6px; }
+.catfield > span { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); }
+.catfield textarea { resize: vertical; }
+
+/* ------------------------------------------------------ status toggle */
+.statustoggle { display: inline-flex; align-items: center; gap: var(--spacing-10); cursor: pointer; }
+.statustoggle__label { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-secondary); white-space: nowrap; }
+
+/* ------------------------------------------------------- icon actions */
+.iconaction {
+  width: 34px; height: 34px;
+  border: 0; border-radius: var(--radius-10);
+  background: transparent; color: var(--text-secondary);
+  font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); cursor: pointer;
+  display: grid; place-items: center;
+}
+.iconaction svg { fill: currentColor; }
+.iconaction:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.iconaction--danger { color: var(--text-error); }
+.iconaction--danger:hover { background: var(--bg-error-50); color: var(--bg-error-600); }
+
+/* ------------------------------------------------------------- drawer */
+.drawer-backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--grey-900) 42%, transparent); z-index: 50; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw);
+  background: var(--bg-primary); z-index: 51;
+  display: flex; flex-direction: column;
+  box-shadow: -12px 0 40px color-mix(in srgb, var(--ekko-midnight) 16%, transparent);
+  animation: slide-in .24s cubic-bezier(.16,1,.3,1);
+}
+@keyframes slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.drawer__head { display: flex; align-items: center; gap: var(--spacing-12); padding: var(--spacing-20); border-bottom: 1px solid var(--border-secondary); }
+.drawer__head h2 { margin: 0; font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); font-weight: var(--font-weight-semibold); flex: 1; }
+.drawer__body { flex: 1; overflow-y: auto; padding: var(--spacing-20); display: grid; gap: var(--spacing-16); }
+.drawer__foot { padding: var(--spacing-16) var(--spacing-20); border-top: 1px solid var(--border-secondary); display: flex; gap: var(--spacing-8); justify-content: flex-end; }
+
+.ekko-field textarea {
+  width: 100%; min-height: 96px; resize: vertical;
+  border: 1px solid var(--border-primary); border-radius: var(--radius-16);
+  padding: var(--spacing-12) var(--spacing-16);
+  font: inherit; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-primary);
+  background: var(--bg-primary);
+}
+.ekko-field textarea:focus-visible { outline: none; border-color: var(--border-brand); }
+.ekko-field select {
+  height: 44px; border: 1px solid var(--border-primary); border-radius: var(--radius-16);
+  padding: 0 var(--spacing-12); font: inherit; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); background: var(--bg-primary); color: var(--text-primary);
+}
+.ekko-field select:focus-visible { outline: none; border-color: var(--border-brand); }
+
+/* --------------------------------------------------------- image slot
+   Một ô ảnh duy nhất. Bấm vào ô để chọn tệp, bấm dấu x đỏ để bỏ ảnh. Không còn
+   dải thư viện để cuộn: đổi ảnh nghĩa là tải ảnh mới lên. */
+.assetslot { display: flex; align-items: flex-start; gap: var(--spacing-16); }
+.assetslot__tile { position: relative; flex: none; }
+
+.assettile {
+  position: relative;
+  width: 132px; height: 132px;
+  padding: 6px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-14);
+  background: var(--bg-primary);
+  cursor: pointer;
+  overflow: hidden;
+  display: grid; place-items: center;
+}
+.assettile:hover { border-color: var(--border-brand); }
+.assettile:focus-visible { outline: none; border-color: var(--border-brand); box-shadow: 0 0 0 3px var(--bg-brand-50); }
+.assettile img { width: 100%; height: 100%; object-fit: contain; }
+.assettile[data-filled="false"] { border-style: dashed; background: var(--bg-secondary); }
+.assettile[data-filled="false"] img { display: none; }
+.assettile[data-filled="true"] .assettile__empty { display: none; }
+.assettile__empty { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-tertiary); }
+.assettile__hover {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--grey-900) 50%, transparent); color: var(--text-white);
+  font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold);
+  opacity: 0; transition: opacity .16s ease;
+}
+.assettile[data-filled="true"]:hover .assettile__hover,
+.assettile[data-filled="true"]:focus-visible .assettile__hover { opacity: 1; }
+.assettile.is-busy { opacity: .55; pointer-events: none; }
+
+.assettile__clear {
+  position: absolute; top: -8px; right: -8px;
+  width: 26px; height: 26px;
+  border: 2px solid var(--bg-primary);
+  border-radius: var(--radius-full);
+  background: var(--bg-error-500); color: var(--text-white);
+  font-size: var(--font-size-text-xs); line-height: 1;
+  cursor: pointer;
+  display: grid; place-items: center;
+  z-index: 2;
+}
+.assettile__clear:hover { background: var(--bg-error-600); }
+
+/* Slide artwork is authored at 1 : 1.371, so the preview enforces it. */
+.slide-preview {
+  aspect-ratio: 1 / 1.371; width: 180px;
+  border: 1px dashed var(--border-primary); border-radius: var(--radius-12);
+  display: grid; place-items: center; background: var(--bg-secondary); overflow: hidden;
+}
+.slide-preview img { width: 100%; height: 100%; object-fit: contain; }
+
+.hotspot-editor { display: grid; gap: var(--spacing-10); }
+.hotspot-editor__row { display: grid; grid-template-columns: 56px 56px 1fr auto; gap: var(--spacing-8); align-items: start; }
+.hotspot-editor input, .hotspot-editor textarea {
+  width: 100%; border: 1px solid var(--border-primary); border-radius: var(--radius-10);
+  padding: var(--spacing-8) var(--spacing-10); font: inherit; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); background: var(--bg-primary); color: var(--text-primary);
+}
+.hotspot-editor textarea { min-height: 56px; resize: vertical; }
+
+.optionrow { display: grid; grid-template-columns: auto 1fr auto; gap: var(--spacing-10); align-items: center; margin-bottom: var(--spacing-8); }
+.optionrow input[type="text"] { width: 100%; border: 1px solid var(--border-primary); border-radius: var(--radius-10); padding: var(--spacing-8) var(--spacing-10); font: inherit; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); }
+
+.tree { display: grid; gap: var(--spacing-8); }
+.tree__module { border: 1px solid var(--border-secondary); border-radius: var(--radius-14); overflow: hidden; }
+.tree__module > summary { padding: var(--spacing-12) var(--spacing-16); cursor: pointer; display: flex; align-items: center; gap: var(--spacing-10); background: var(--bg-secondary); }
+.tree__module > summary h3 { margin: 0; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); flex: 1; min-width: 0; }
+.tree__module > summary .ekko-badge { flex: none; }
+.tree__lessons { padding: var(--spacing-8) var(--spacing-16) var(--spacing-16); display: grid; gap: var(--spacing-6); }
+.tree__lesson { display: flex; align-items: center; gap: var(--spacing-10); padding: var(--spacing-8) var(--spacing-10); border-radius: var(--radius-10); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); }
+.tree__lesson:hover { background: var(--bg-secondary); }
+.tree__lesson span:first-child { flex: 1; }
+
+.toasts { position: fixed; right: var(--spacing-20); bottom: var(--spacing-20); display: grid; gap: var(--spacing-8); z-index: 90; }
+.atoast { padding: var(--spacing-12) var(--spacing-16); border-radius: var(--radius-12); background: var(--grey-900); color: var(--text-white); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); box-shadow: 0 12px 30px color-mix(in srgb, var(--ekko-midnight) 20%, transparent); }
+.atoast--error { background: var(--bg-error-600); }
+.atoast--success { background: var(--bg-success-600); }
+
+.empty-state { padding: var(--spacing-48); text-align: center; color: var(--text-secondary); }
+.hint { font-size: var(--font-size-text-sm); color: var(--text-secondary); line-height: 20px; }
+.hint code { background: var(--bg-secondary); padding: 2px 6px; border-radius: var(--radius-6); font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ------------------------------------------------------------- concept
+   Thẻ concept của màn Khám phá. Ảnh xem trước vẽ bằng CSS chứ không phải file
+   ảnh, nên nó không bao giờ lệch với bản thật khi giao diện đổi. */
+.cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-16); }
+
+.ccard {
+  display: flex; flex-direction: column;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-16);
+  overflow: hidden;
+}
+.ccard[data-active="true"] { border-color: var(--border-brand); box-shadow: 0 0 0 3px var(--bg-brand-50); }
+.ccard__body { padding: var(--spacing-16); flex: 1; }
+.ccard__head { display: flex; align-items: center; gap: var(--spacing-8); margin-bottom: var(--spacing-6); }
+.ccard__index { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); font-weight: var(--font-weight-semibold); letter-spacing: .06em; text-transform: uppercase; color: var(--text-tertiary); }
+.ccard h2 { margin: 0; font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); font-weight: var(--font-weight-semibold); }
+.ccard__tagline { margin: 2px 0 var(--spacing-8); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-secondary); }
+.ccard__list { margin: var(--spacing-10) 0 0; padding-left: var(--spacing-18); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-secondary); }
+.ccard__list li { margin-bottom: 2px; }
+.ccard__foot { padding: 0 var(--spacing-16) var(--spacing-16); }
+
+/* --- ảnh xem trước --- */
+.cpreview { position: relative; height: 150px; overflow: hidden; }
+/* Xem trước concept Ekko Lover: thanh hồ sơ, 5 nút chức năng, thẻ số liệu. */
+.cpreview--lover {
+  display: grid; align-content: start; gap: var(--spacing-8);
+  padding: var(--spacing-12) var(--spacing-16);
+  background: var(--bg-secondary);
+}
+.cpreview__profile {
+  display: flex; align-items: center; height: 34px; padding: 0 var(--spacing-8); border-radius: var(--radius-12);
+  background: linear-gradient(120deg, var(--payday-blue-500), var(--secondary-colors-violet));
+}
+.cpreview__avatar { width: 22px; height: 22px; border-radius: var(--radius-full); border: 2px solid color-mix(in srgb, var(--base-white) 70%, transparent); }
+.cpreview__tabs {
+  display: flex; justify-content: space-between; padding: var(--spacing-6) var(--spacing-10);
+  border-radius: var(--radius-12); background: var(--bg-primary);
+}
+.cpreview__tab { width: 20px; height: 20px; border-radius: var(--radius-full); background: var(--payday-blue-50); border: 1px solid var(--payday-blue-100); }
+.cpreview__card { height: 22px; border-radius: var(--radius-10); background: var(--bg-primary); border: 1px solid var(--border-secondary); }
+.cpreview__card--short { width: 70%; }
+
+.cpreview--colors { background: linear-gradient(180deg, var(--payday-blue-50) 0%, var(--jade-50) 55%, var(--lime-50) 100%); }
+.cpreview--colors .cpreview__profile { background: linear-gradient(120deg, var(--payday-blue-500) 0%, var(--secondary-colors-violet) 58%, var(--error-400) 100%); }
+.cpreview--colors .cpreview__tab[data-tone="goals"] { background: var(--error-50); border-color: var(--error-200); }
+.cpreview--colors .cpreview__tab[data-tone="budget"] { background: var(--lime-100); border-color: var(--lime-300); }
+.cpreview--colors .cpreview__tab[data-tone="expenses"] { background: var(--warning-50); border-color: var(--warning-200); }
+.cpreview--colors .cpreview__tab[data-tone="savings"] { background: var(--jade-50); border-color: var(--jade-200); }
+
+/* Xem trước Simple mode: khối to, ít, dễ chạm. */
+.cpreview--simple { display: grid; align-content: start; gap: var(--spacing-8); padding: var(--spacing-12) var(--spacing-16); background: var(--bg-secondary); }
+.cpreview__hello { display: flex; align-items: center; height: 34px; padding: 0 var(--spacing-8); border-radius: var(--radius-12); background: var(--bg-brand-50); }
+.cpreview__hello .cpreview__avatar { border-color: var(--payday-blue-200); background: var(--bg-primary); }
+.cpreview__voice { display: flex; align-items: center; height: 36px; padding: 0 var(--spacing-8); border-radius: var(--radius-12); background: var(--bg-brand-500); }
+.cpreview__mic { width: 24px; height: 24px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--base-white) 30%, transparent); }
+.cpreview__row { height: 24px; border-radius: var(--radius-10); background: var(--bg-primary); border: 1px solid var(--border-secondary); }
+
+/* Bộ chọn icon (iconPicker): nút hiện icon đang chọn + lưới toàn bộ icon trong
+   ui-icons.svg. Thay cho ô gõ emoji cũ — app không dùng emoji. */
+.iconpick { position: relative; }
+.iconpick__trigger { display: inline-flex; align-items: center; gap: var(--spacing-8); padding: var(--spacing-6) var(--spacing-10); border: 1px solid var(--border-primary); border-radius: var(--radius-10); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+.iconpick__face { display: inline-flex; align-items: center; gap: var(--spacing-8); }
+.iconpick__face code { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); }
+.iconpick__grid { position: absolute; z-index: 20; top: calc(100% + var(--spacing-4)); left: 0; width: 336px; max-height: 260px; overflow: auto; display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--spacing-4); padding: var(--spacing-8); background: var(--bg-primary); border: 1px solid var(--border-secondary); border-radius: var(--radius-12); box-shadow: var(--shadow-card); }
+.iconpick__grid[hidden] { display: none; }
+.iconpick__cell { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid transparent; border-radius: var(--radius-8); background: none; color: var(--text-primary); cursor: pointer; }
+.iconpick__cell:hover { background: var(--bg-secondary); }
+.iconpick__cell[aria-pressed="true"] { border-color: var(--border-brand); color: var(--text-brand-500); background: var(--bg-brand-50); }
+.navlink .ekko-icon, .catrow__icon .ekko-icon { color: currentColor; }

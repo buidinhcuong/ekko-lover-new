@@ -1,0 +1,57 @@
+/* Ekko Design System — Input / form field component
+   Requires tokens.css. Markup:
+   <label class="ekko-field">
+     <span class="ekko-field__label">Label <i>*</i></span>
+     <span class="ekko-input ekko-input--md">
+       <input type="text" placeholder="Placeholder" />
+     </span>
+     <span class="ekko-field__hint">Helper text</span>
+   </label>
+   Add ekko-input--error / --disabled on the .ekko-input wrapper for those states. */
+
+.ekko-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;                        /* spacing-8 */
+  font-family: 'Bricolage Grotesque', system-ui, 'Helvetica Neue', Arial, sans-serif;
+}
+.ekko-field__label {
+  font-size: 16px;
+  font-weight: 500;                /* Medium */
+  color: var(--text-primary);
+}
+.ekko-field__label i { color: var(--text-error); font-style: normal; }
+.ekko-field__hint {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.ekko-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.ekko-input--md { height: 44px; padding: 0 16px; border-radius: var(--radius-16); }
+.ekko-input--sm { height: 36px; padding: 0 12px; border-radius: var(--radius-14); }
+
+.ekko-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;                /* Regular */
+  color: var(--text-primary);
+}
+.ekko-input input::placeholder { color: var(--text-tertiary); }
+
+/* States */
+.ekko-input:focus-within        { border-color: var(--border-brand); box-shadow: 0 0 0 2px var(--border-brand); }
+.ekko-input--error              { border-color: var(--text-error); }
+.ekko-input--error:focus-within { box-shadow: 0 0 0 2px var(--text-error); }
+.ekko-input--disabled           { background: var(--bg-secondary); }
+.ekko-input--disabled input     { color: var(--text-tertiary); cursor: not-allowed; }

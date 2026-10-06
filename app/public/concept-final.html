@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ekko Lover - Final Concept</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .device-frame {
+            width: 402px;
+            height: 874px;
+            margin: 0 auto;
+            background: #fff;
+            border: 12px solid #000;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .device-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 30px 30px;
+            z-index: 10;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            padding-top: 10px;
+        }
+
+        .screen::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .screen::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .screen::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Profile Section - REDESIGNED */
+        .profile-section {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            padding: 20px 16px;
+            position: relative;
+            overflow: visible;
+            overflow-y: hidden;
+            margin-bottom: 20px;
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .profile-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .profile-section::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -30%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .neon-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, #00ff88 25%, #00ff88 75%, transparent 100%);
+            box-shadow: 0 0 15px #00ff88, 0 0 30px rgba(0, 255, 136, 0.5);
+            opacity: 0.7;
+            animation: slideNeon 4s ease-in-out infinite;
+        }
+
+        @keyframes slideNeon {
+            0%, 100% {
+                box-shadow: 0 0 15px #00ff88, 0 0 30px rgba(0, 255, 136, 0.3);
+                opacity: 0.5;
+            }
+            50% {
+                box-shadow: 0 0 25px #00ff88, 0 0 50px rgba(0, 255, 136, 0.7);
+                opacity: 0.9;
+            }
+        }
+
+        /* Heo Character with Circular Progress */
+        .profile-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .heo-container {
+            position: relative;
+            width: 140px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Circular Progress Bar */
+        .progress-ring-wrapper {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            top: 10px;
+            left: 0;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .progress-ring-circle {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 3;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s ease;
+        }
+
+        .progress-ring-circle.filled {
+            stroke: url(#progressGradient);
+            filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.6));
+        }
+
+        /* Heo Character SVG */
+        .heo-character {
+            width: 100px;
+            height: 120px;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+        }
+
+        .heo-head {
+            width: 70px;
+            height: 65px;
+            background: #FFB6A3;
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            top: 0;
+            left: 15px;
+            box-shadow: inset -5px -5px 10px rgba(255, 140, 100, 0.3);
+        }
+
+        .heo-ear {
+            width: 18px;
+            height: 28px;
+            background: #FFB6A3;
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            top: -8px;
+            box-shadow: inset -2px -2px 5px rgba(255, 140, 100, 0.3);
+        }
+
+        .heo-ear.left {
+            left: 18px;
+            transform: rotate(-25deg);
+        }
+
+        .heo-ear.right {
+            right: 18px;
+            transform: rotate(25deg);
+        }
+
+        .heo-eye {
+            width: 8px;
+            height: 10px;
+            background: #000;
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+        }
+
+        .heo-eye.left {
+            left: 25px;
+        }
+
+        .heo-eye.right {
+            right: 25px;
+        }
+
+        .heo-nose {
+            width: 12px;
+            height: 10px;
+            background: #E89080;
+            border-radius: 50%;
+            position: absolute;
+            top: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .heo-snout {
+            width: 10px;
+            height: 6px;
+            background: #FFD4C4;
+            border-radius: 50%;
+            position: absolute;
+            top: 42px;
+            left: 45px;
+        }
+
+        .heo-snout.right {
+            left: auto;
+            right: 45px;
+        }
+
+        .heo-body {
+            width: 75px;
+            height: 60px;
+            background: #FFB6A3;
+            border-radius: 50% 50% 40% 40%;
+            position: absolute;
+            top: 55px;
+            left: 12px;
+            box-shadow: inset -8px -8px 15px rgba(255, 140, 100, 0.2);
+        }
+
+        .heo-leg {
+            width: 14px;
+            height: 30px;
+            background: #FFB6A3;
+            border-radius: 50%;
+            position: absolute;
+            top: 105px;
+            box-shadow: inset -2px -2px 5px rgba(255, 140, 100, 0.3);
+        }
+
+        .heo-leg.l1 { left: 20px; }
+        .heo-leg.l2 { left: 38px; }
+        .heo-leg.l3 { right: 38px; }
+        .heo-leg.l4 { right: 20px; }
+
+        .heo-tail {
+            width: 8px;
+            height: 35px;
+            background: #FFB6A3;
+            border-radius: 50%;
+            position: absolute;
+            top: 65px;
+            right: 8px;
+            transform: rotate(35deg);
+            animation: tailWag 1.5s ease-in-out infinite;
+        }
+
+        @keyframes tailWag {
+            0%, 100% { transform: rotate(35deg); }
+            50% { transform: rotate(55deg); }
+        }
+
+        .profile-info {
+            text-align: center;
+            color: white;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-level {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .profile-info h2 {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        /* Buttons Stack */
+        .buttons-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            justify-content: center;
+            align-items: flex-end;
+            width: auto;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 12px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            gap: 0;
+            position: relative;
+            overflow: visible;
+            white-space: nowrap;
+            width: 48px;
+            height: 48px;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .btn-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 9999;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-tooltip.show {
+            opacity: 1;
+        }
+
+        .btn-action.expanded {
+            width: 140px;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-text {
+            display: none;
+        }
+
+        .btn-action.expanded .btn-text {
+            display: inline;
+        }
+
+        .btn-action::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-action:hover::before {
+            left: 100%;
+        }
+
+        .btn-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 20px;
+            padding: 0 16px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .section-icon {
+            font-size: 18px;
+        }
+
+        .view-all-btn {
+            font-size: 12px;
+            color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .view-all-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateX(2px);
+        }
+
+        /* Budget Section */
+        .budget-item {
+            background: white;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .budget-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #6366f1, #8b5cf6);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .budget-item:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .budget-item:hover::before {
+            opacity: 1;
+        }
+
+        .budget-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .budget-progress {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #64748b;
+            margin-bottom: 0;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 5px;
+            background: linear-gradient(90deg, #e2e8f0, #cbd5e1);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00cc6f, #00ff88);
+            border-radius: 4px;
+            transition: all 0.4s ease;
+            position: relative;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ff9500, #ff6b35);
+            box-shadow: 0 0 8px rgba(255, 107, 53, 0.4);
+        }
+
+        .budget-value {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 12px;
+        }
+
+        /* News Carousel */
+        .news-section {
+            margin-bottom: 20px;
+            padding: 0 16px;
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .news-carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+
+        .news-carousel {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            padding-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .news-carousel::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .news-carousel::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 2px;
+        }
+
+        .news-carousel::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border-radius: 2px;
+        }
+
+        .news-slide {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            scroll-snap-align: start;
+            flex: 0 0 calc(100% - 16px);
+            min-height: 110px;
+        }
+
+        .news-slide:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.25);
+        }
+
+        .news-image {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+        }
+
+        .news-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            justify-content: space-between;
+        }
+
+        .news-badge {
+            font-size: 10px;
+            color: #6366f1;
+            background: rgba(99, 102, 241, 0.15);
+            padding: 3px 7px;
+            border-radius: 5px;
+            width: fit-content;
+            font-weight: 600;
+        }
+
+        .news-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.3;
+            letter-spacing: -0.2px;
+        }
+
+        .news-desc {
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .news-meta {
+            font-size: 9px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .carousel-dots {
+            display: flex;
+            gap: 6px;
+            padding: 8px 16px;
+            justify-content: center;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            width: 24px;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Chart Section */
+        .chart-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            padding: 18px;
+            margin: 0 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 140px;
+            gap: 7px;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .chart::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px 6px 0 0;
+            position: relative;
+            min-height: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .chart-bar:hover {
+            filter: brightness(1.15);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .chart-bar.high {
+            background: linear-gradient(180deg, #ff9500 0%, #ff6b35 100%);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+        }
+
+        .chart-bar.high:hover {
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-around;
+            gap: 7px;
+        }
+
+        .chart-label-item {
+            flex: 1;
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+
+        /* Chatbot Section */
+        .chatbot-section {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+            margin: 0 16px 20px 16px;
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .chatbot-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .chatbot-mascot {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+            animation: wiggle 3s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+            border-radius: 50%;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+        }
+
+        .chatbot-input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chatbot-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 11px 14px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+        }
+
+        .chatbot-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .chatbot-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+        }
+
+        .chatbot-send {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+
+        .chatbot-send:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .chatbot-send:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="screen">
+            <!-- Profile Section -->
+            <div class="profile-section">
+                <div class="neon-line"></div>
+
+                <!-- Left: Heo with Circular Progress -->
+                <div class="profile-left">
+                    <div class="heo-container">
+                        <!-- Circular Progress Ring -->
+                        <div class="progress-ring-wrapper">
+                            <svg class="progress-ring" viewBox="0 0 140 140">
+                                <defs>
+                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#00cc6f;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <circle class="progress-ring-circle" cx="70" cy="70" r="65"></circle>
+                                <circle class="progress-ring-circle filled" cx="70" cy="70" r="65" style="stroke-dasharray: 408; stroke-dashoffset: 155;"></circle>
+                            </svg>
+                        </div>
+
+                        <!-- Heo Character -->
+                        <img src="/assets/levels/pig-5.png" alt="Heo Level 5" class="heo-character" style="width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));" />
+                    </div>
+
+                    <!-- Info below Heo -->
+                    <div class="profile-info">
+                        <div class="profile-level"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#flash"/></svg> Cấp 5</div>
+                        <h2>Heo Thắng Lợi</h2>
+                    </div>
+                </div>
+
+                <!-- Right: Action Buttons -->
+                <div class="buttons-stack">
+                    <button class="btn-action" data-title="Học tập">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#books-01"/></svg></span>
+                        <span class="btn-text">Học tập</span>
+                    </button>
+                    <button class="btn-action" data-title="Kế hoạch">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#task-01"/></svg></span>
+                        <span class="btn-text">Kế hoạch</span>
+                    </button>
+                    <button class="btn-action" data-title="Ngân sách">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#money-bag-02"/></svg></span>
+                        <span class="btn-text">Ngân sách</span>
+                    </button>
+                    <button class="btn-action" data-title="Ghi chép">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#note-edit"/></svg></span>
+                        <span class="btn-text">Ghi chép</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Budget Section -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#credit-card"/></svg></span>
+                        Ngân sách
+                    </div>
+                    <button class="view-all-btn">Xem tất cả →</button>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#restaurant-01"/></svg> Ăn uống</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill warning" style="width: 82%;"></div>
+                        </div>
+                        <div class="budget-value">820k / 1M</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#car-01"/></svg> Giao thông</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="budget-value">300k / 500k</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#coffee-01"/></svg> Giải trí</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%;"></div>
+                        </div>
+                        <div class="budget-value">225k / 500k</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Carousel -->
+            <div class="news-section">
+                <div class="news-header">
+                    <div class="section-title">
+                        <span class="section-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#news"/></svg></span>
+                        Tin tức
+                    </div>
+                    <span style="font-size: 12px; color: #6366f1; font-weight: 600;">See more</span>
+                </div>
+
+                <div class="news-carousel-wrapper">
+                    <div class="news-carousel" id="newsCarousel">
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#analytics-01"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#bulb"/></svg> Mẹo</div>
+                                <div class="news-title">Cách quản lý chi tiêu</div>
+                                <div class="news-desc">Mẹo quản lý tiền bạc hiệu quả...</div>
+                                <div class="news-meta">5 min read</div>
+                            </div>
+                        </div>
+
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#money-bag-02"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#books-01"/></svg> Kiến thức</div>
+                                <div class="news-title">Tiết kiệm tiền hàng tháng</div>
+                                <div class="news-desc">5 cách đơn giản để tiết kiệm...</div>
+                                <div class="news-meta">8 min read</div>
+                            </div>
+                        </div>
+
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#target-02"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#award-01"/></svg> Thành tích</div>
+                                <div class="news-title">Đạt mục tiêu tài chính</div>
+                                <div class="news-desc">Lập kế hoạch và theo dõi...</div>
+                                <div class="news-meta">6 min read</div>
+                            </div>
+                        </div>
+
+                        <div class="news-slide">
+                            <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#chart-increase"/></svg></div>
+                            <div class="news-content">
+                                <div class="news-badge"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#bulb"/></svg> Mẹo</div>
+                                <div class="news-title">Phân bổ ngân sách 50/30/20</div>
+                                <div class="news-desc">Quy tắc vàng quản lý tiền...</div>
+                                <div class="news-meta">7 min read</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="carousel-dots">
+                    <div class="dot active" onclick="scrollToSlide(0)"></div>
+                    <div class="dot" onclick="scrollToSlide(1)"></div>
+                    <div class="dot" onclick="scrollToSlide(2)"></div>
+                    <div class="dot" onclick="scrollToSlide(3)"></div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-container">
+                <div class="chart-title">
+                    <span><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#chart-increase"/></svg></span>
+                    Chi tiêu tuần này
+                </div>
+                <div class="chart">
+                    <div class="chart-bar" style="height: 70%;"></div>
+                    <div class="chart-bar high" style="height: 95%;"></div>
+                    <div class="chart-bar" style="height: 60%;"></div>
+                    <div class="chart-bar" style="height: 75%;"></div>
+                    <div class="chart-bar" style="height: 50%;"></div>
+                    <div class="chart-bar high" style="height: 88%;"></div>
+                    <div class="chart-bar" style="height: 40%;"></div>
+                </div>
+                <div class="chart-labels">
+                    <div class="chart-label-item">Thứ 2</div>
+                    <div class="chart-label-item">Thứ 3</div>
+                    <div class="chart-label-item">Thứ 4</div>
+                    <div class="chart-label-item">Thứ 5</div>
+                    <div class="chart-label-item">Thứ 6</div>
+                    <div class="chart-label-item">Thứ 7</div>
+                    <div class="chart-label-item">CN</div>
+                </div>
+            </div>
+
+            <!-- Chatbot Section -->
+            <div class="chatbot-section">
+                <img src="/assets/mascot/bot-1.png" alt="Octopus Bot" class="chatbot-mascot" />
+                <div class="chatbot-input-wrapper">
+                    <input type="text" class="chatbot-input" placeholder="Ghi nhanh...">
+                    <button class="chatbot-send">
+                        <img src="/assets/mascot/bot-1.png" alt="Send" style="width: 28px; height: 28px; object-fit: contain;" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const carousel = document.getElementById('newsCarousel');
+        const dots = document.querySelectorAll('.dot');
+
+        function scrollToSlide(index) {
+            const slideWidth = carousel.children[0].offsetWidth + 12;
+            carousel.scrollLeft = slideWidth * index;
+            updateDots(index);
+        }
+
+        function updateDots(activeIndex) {
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === activeIndex);
+            });
+        }
+
+        carousel.addEventListener('scroll', () => {
+            const slideWidth = carousel.children[0].offsetWidth + 12;
+            const activeIndex = Math.round(carousel.scrollLeft / slideWidth);
+            updateDots(Math.min(activeIndex, dots.length - 1));
+        });
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let isDragging = false;
+
+        carousel.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            isDragging = true;
+        }, false);
+
+        carousel.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            touchEndX = e.changedTouches[0].screenX;
+        }, false);
+
+        carousel.addEventListener('touchend', e => {
+            isDragging = false;
+            handleSwipe();
+        }, false);
+
+        // Mouse drag support
+        carousel.addEventListener('mousedown', e => {
+            touchStartX = e.screenX;
+            isDragging = true;
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!isDragging || !carousel.contains(e.target)) return;
+            touchEndX = e.screenX;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const slideWidth = carousel.children[0].offsetWidth + 12;
+            const currentIndex = Math.round(carousel.scrollLeft / slideWidth);
+            const swipeThreshold = 30;
+            const diff = Math.abs(touchStartX - touchEndX);
+
+            if (diff < swipeThreshold) return;
+
+            if (touchStartX > touchEndX) {
+                // Swipe left = next
+                scrollToSlide(Math.min(currentIndex + 1, dots.length - 1));
+            } else {
+                // Swipe right = previous
+                scrollToSlide(Math.max(currentIndex - 1, 0));
+            }
+
+            touchStartX = 0;
+            touchEndX = 0;
+        }
+
+        // Button expand/collapse functionality + tooltips + navigation
+        const buttons = document.querySelectorAll('.btn-action');
+        let activeTooltip = null;
+
+        // Mỗi nút chức năng trỏ tới đúng màn hình thật của app (đã có route riêng
+        // trong /app/#/...). Học tập dùng lại màn Khám phá có sẵn.
+        const FEATURE_ROUTES = {
+            'Học tập': '/app/#/explore',
+            'Kế hoạch': '/app/#/plans',
+            'Ngân sách': '/app/#/budget',
+            'Ghi chép': '/app/#/expenses',
+        };
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const alreadyExpanded = btn.classList.contains('expanded');
+
+                // Collapse other buttons
+                buttons.forEach(b => {
+                    if (b !== btn) b.classList.remove('expanded');
+                });
+
+                if (alreadyExpanded) {
+                    // Chạm lần hai (đã hiện tên chức năng): mở đúng màn hình chức năng đó.
+                    const title = btn.getAttribute('data-title');
+                    const route = FEATURE_ROUTES[title];
+                    if (route) window.location.href = route;
+                    return;
+                }
+
+                // Chạm lần đầu: chỉ hiện tên chức năng.
+                btn.classList.add('expanded');
+            });
+
+            // Tooltip on hover
+            btn.addEventListener('mouseenter', (e) => {
+                // Remove previous tooltip
+                if (activeTooltip) activeTooltip.remove();
+
+                // Create tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'btn-tooltip show';
+                tooltip.textContent = btn.getAttribute('data-title');
+                document.body.appendChild(tooltip);
+                activeTooltip = tooltip;
+
+                // Position tooltip
+                const rect = btn.getBoundingClientRect();
+                tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                if (activeTooltip) {
+                    activeTooltip.classList.remove('show');
+                    setTimeout(() => activeTooltip?.remove(), 200);
+                    activeTooltip = null;
+                }
+            });
+        });
+
+        // Click outside to collapse
+        document.addEventListener('click', () => {
+            buttons.forEach(btn => btn.classList.remove('expanded'));
+        });
+    </script>
+</body>
+</html>

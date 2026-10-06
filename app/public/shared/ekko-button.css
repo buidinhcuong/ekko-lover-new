@@ -1,0 +1,46 @@
+/* Ekko Design System — Button component
+   Requires tokens.css (loads the --bg-brand-*, --text-*, --radius-*, --spacing-* vars).
+   Markup: <button class="ekko-btn ekko-btn--primary ekko-btn--md">Label</button>
+   Add ekko-btn--icon for square icon-only buttons. */
+
+.ekko-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;                       /* spacing-8 */
+  font-family: 'Bricolage Grotesque', system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;               /* SemiBold */
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.ekko-btn:disabled { cursor: not-allowed; }
+
+/* ---- Sizes (text buttons) ---- */
+.ekko-btn--sm { height: 28px; padding: 4px 12px;  border-radius: var(--radius-12); font-size: 14px; }
+.ekko-btn--md { height: 36px; padding: 8px 16px;  border-radius: var(--radius-14); font-size: 14px; }
+.ekko-btn--lg { height: 48px; padding: 12px 20px; border-radius: var(--radius-18); font-size: 16px; }
+
+/* ---- Primary ---- */
+.ekko-btn--primary            { background: var(--bg-brand-500); color: var(--text-white); }
+.ekko-btn--primary:hover      { background: var(--bg-brand-600); }
+.ekko-btn--primary:focus-visible { box-shadow: 0 0 0 2px var(--border-brand); outline: none; }
+.ekko-btn--primary:disabled   { background: var(--bg-brand-200); color: var(--text-white-disable); }
+
+/* ---- Secondary ---- */
+.ekko-btn--secondary          { background: var(--bg-secondary); color: var(--text-primary); }
+.ekko-btn--secondary:hover    { background: var(--bg-tertiary); }
+.ekko-btn--secondary:disabled { background: var(--bg-secondary); color: var(--text-tertiary); }
+
+/* ---- Tertiary (text / link) ---- */
+.ekko-btn--tertiary           { background: transparent; color: var(--text-brand-500); }
+.ekko-btn--tertiary:hover     { color: var(--text-brand-600); }
+.ekko-btn--tertiary:disabled  { color: var(--text-tertiary); }
+
+/* ---- Icon-only (square) ---- */
+.ekko-btn--icon.ekko-btn--sm  { width: 36px; height: 36px; padding: 6px;  border-radius: var(--radius-10); }
+.ekko-btn--icon.ekko-btn--md  { width: 44px; height: 44px; padding: 10px; border-radius: var(--radius-12); }
+.ekko-btn--icon.ekko-btn--lg  { width: 52px; height: 52px; padding: 14px; border-radius: var(--radius-18); }
+.ekko-btn--icon               { background: var(--grey-700); color: var(--text-white); }
+.ekko-btn--icon:hover         { background: var(--grey-900); }

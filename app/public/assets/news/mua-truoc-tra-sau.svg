@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img">
+  <rect width="640" height="400" rx="28" fill="#EDF0FE"/>
+  <path d="M 150 140 h 160 l 14 180 h -188 z" fill="#3E58F1"/>
+  <path d="M 190 140 v -24 a 40 40 0 0 1 80 0 v 24" fill="none" stroke="#00034F" stroke-width="12"/>
+  <rect x="370" y="90" width="200" height="220" rx="20" fill="#FFFFFF"/>
+  <rect x="370" y="90" width="200" height="50" rx="20" fill="#00034F"/><rect x="370" y="118" width="200" height="22" fill="#00034F"/>
+  <rect x="392" y="160" width="42" height="34" rx="8" fill="#B3F42C"/><rect x="450" y="160" width="42" height="34" rx="8" fill="#B3F42C"/><rect x="508" y="160" width="42" height="34" rx="8" fill="#B3F42C"/><rect x="392" y="208" width="42" height="34" rx="8" fill="#B3F42C"/><rect x="450" y="208" width="42" height="34" rx="8" fill="#EC5962"/><rect x="508" y="208" width="42" height="34" rx="8" fill="#BCC6F8"/><rect x="392" y="256" width="42" height="34" rx="8" fill="#BCC6F8"/><rect x="450" y="256" width="42" height="34" rx="8" fill="#BCC6F8"/><rect x="508" y="256" width="42" height="34" rx="8" fill="#BCC6F8"/>
+</svg>

@@ -1,0 +1,13 @@
+# Không bao giờ tải lên Vercel: khoá bí mật, database, dữ liệu người dùng.
+.env
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+# Không cần để chạy bản demo.
+test/
+tools/
+.DS_Store
+.env.local
+.env.*.local
+.vercel

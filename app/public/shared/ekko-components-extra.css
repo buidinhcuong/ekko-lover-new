@@ -1,0 +1,155 @@
+/* Ekko Design System — additional components
+   Requires tokens.css. Each block is a self-contained component.
+   Specs extracted from [Ekko UI] - Design System.fig unless noted. */
+
+/* ============ TOGGLE / SWITCH ============ */
+/* Track 52x24, radius-full, padding 2; On = bg-brand-500, Off = grey-300; 20px white knob */
+.ekko-switch { position: relative; display: inline-block; width: 52px; height: 24px; flex: none; }
+.ekko-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.ekko-switch__track {
+  position: absolute; inset: 0; border-radius: var(--radius-full);
+  background: var(--grey-300); transition: background-color .15s ease;
+}
+.ekko-switch__thumb {
+  position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--text-white);
+  transition: transform .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,.15);
+}
+.ekko-switch input:checked ~ .ekko-switch__track { background: var(--bg-brand-500); }
+.ekko-switch input:checked ~ .ekko-switch__thumb { transform: translateX(28px); }
+.ekko-switch input:focus-visible ~ .ekko-switch__track { box-shadow: 0 0 0 2px var(--border-brand); }
+.ekko-switch input:disabled ~ .ekko-switch__track { opacity: .5; }
+
+/* ============ AVATAR ============ */
+/* Circle, sizes 24/32/40/48/56, radius-full; optional white ring for stacks */
+.ekko-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; overflow: hidden; flex: none;
+  background: var(--bg-brand-50); color: var(--text-brand-500);
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 600;
+}
+.ekko-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ekko-avatar--xs { width: 24px; height: 24px; font-size: 10px; }
+.ekko-avatar--sm { width: 32px; height: 32px; font-size: 12px; }
+.ekko-avatar--md { width: 40px; height: 40px; font-size: 14px; }
+.ekko-avatar--lg { width: 48px; height: 48px; font-size: 16px; }
+.ekko-avatar--xl { width: 56px; height: 56px; font-size: 20px; }
+.ekko-avatar--ring { box-shadow: 0 0 0 2px var(--bg-primary); }
+.ekko-avatar-stack { display: inline-flex; }
+.ekko-avatar-stack > .ekko-avatar:not(:first-child) { margin-left: -8px; }
+
+/* ============ CHIP (interactive/removable) ============ */
+/* Like a badge but selectable/removable; radius-12 (sm) / radius-14 (md) */
+.ekko-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 500;
+  background: var(--bg-brand-50); border: 1px solid var(--border-brand); color: var(--text-brand-500);
+  cursor: pointer;
+}
+.ekko-chip--sm { height: 24px; padding: 2px 6px; border-radius: var(--radius-12); font-size: 12px; }
+.ekko-chip--md { height: 32px; padding: 6px 8px; border-radius: var(--radius-14); font-size: 14px; }
+.ekko-chip__close {
+  display: inline-grid; place-content: center; width: 16px; height: 16px;
+  border: none; border-radius: var(--radius-4); background: var(--bg-brand-200);
+  color: var(--text-brand-500); cursor: pointer; font-size: 12px; line-height: 1;
+}
+
+/* ============ ALERT (inline banner) ============ */
+/* radius-24, padding 12, gap 12; color = bg-*-50 + border-* */
+.ekko-alert {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px; border-radius: var(--radius-24); border: 1px solid transparent;
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+}
+.ekko-alert__title { font-weight: 600; font-size: 14px; margin: 0 0 2px; }
+.ekko-alert__body  { font-size: 14px; margin: 0; color: var(--text-secondary); }
+.ekko-alert--brand   { background: var(--bg-brand-50);   border-color: var(--border-brand);   color: var(--text-brand-500); }
+.ekko-alert--success { background: var(--bg-success-50); border-color: var(--border-success); color: var(--text-success); }
+.ekko-alert--warning { background: var(--bg-warning-50); border-color: var(--border-warning); color: var(--text-warning); }
+.ekko-alert--error   { background: var(--bg-error-50);   border-color: var(--border-error);   color: var(--text-error); }
+.ekko-alert--neutral { background: var(--bg-grey-50);    border-color: var(--border-primary); color: var(--text-primary); }
+
+/* ============ TOAST (floating notification) ============ */
+/* radius-24, padding 12, gap 16; bg-primary + border-secondary */
+.ekko-toast {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px; border-radius: var(--radius-24);
+  background: var(--bg-primary); border: 1px solid var(--border-secondary);
+  box-shadow: 0 8px 24px rgba(0,0,0,.10);
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif; max-width: 452px;
+}
+.ekko-toast__icon { width: 36px; height: 36px; border-radius: var(--radius-8); flex: none;
+  display: grid; place-content: center; background: var(--bg-brand-50); color: var(--text-brand-500); }
+.ekko-toast__title { font-weight: 600; font-size: 14px; color: var(--text-primary); margin: 0; }
+.ekko-toast__body  { font-size: 13px; color: var(--text-secondary); margin: 2px 0 0; }
+
+/* ============ TOOLTIP ============ */
+/* radius-12, padding 6x12; bg-primary + border-primary, small text */
+.ekko-tooltip {
+  display: inline-block; padding: 6px 12px; border-radius: var(--radius-12);
+  background: var(--bg-primary); border: 1px solid var(--border-primary);
+  color: var(--text-primary); font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+}
+
+/* ============ DIVIDER ============ */
+.ekko-divider    { border: none; border-top: 1px solid var(--border-primary); margin: 0; }
+.ekko-divider--v { border: none; border-left: 1px solid var(--border-primary); align-self: stretch; width: 0; }
+
+/* ============ BREADCRUMB ============ */
+.ekko-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px;
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
+.ekko-breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.ekko-breadcrumb a:hover { color: var(--text-brand-500); }
+.ekko-breadcrumb__sep { color: var(--text-tertiary); }
+.ekko-breadcrumb__current { color: var(--text-primary); font-weight: 500; }
+
+/* ============ PAGINATION ============ */
+.ekko-pagination { display: flex; align-items: center; gap: 8px;
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
+.ekko-page {
+  min-width: 32px; height: 32px; padding: 0 8px; border: none; border-radius: var(--radius-10);
+  background: transparent; color: var(--text-secondary); font-size: 14px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ekko-page:hover { background: var(--bg-grey-200); }
+.ekko-page--active { background: var(--bg-brand-500); color: var(--text-white); }
+.ekko-page:disabled { color: var(--text-tertiary); cursor: not-allowed; background: transparent; }
+
+/* ============ SLIDER ============ */
+/* track 6px radius-full; filled brand; 20px white knob */
+.ekko-slider { position: relative; height: 20px; display: flex; align-items: center; }
+.ekko-slider__track { position: relative; flex: 1; height: 6px; border-radius: var(--radius-full);
+  background: var(--bg-tertiary); }
+.ekko-slider__fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: var(--radius-full);
+  background: var(--bg-brand-500); }
+.ekko-slider__knob { position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--text-white); border: 1px solid var(--border-primary);
+  transform: translate(-50%, -50%); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+/* ============ TABS (design-system pattern, token-based) ============ */
+.ekko-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-secondary);
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
+.ekko-tab { appearance: none; border: none; background: transparent; cursor: pointer;
+  padding: 8px 12px; font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.ekko-tab:hover { color: var(--text-primary); }
+.ekko-tab--active { color: var(--text-brand-500); border-bottom-color: var(--border-brand); }
+
+/* ============ LOADER (spinner, brand) ============ */
+.ekko-loader { width: 24px; height: 24px; border-radius: 50%;
+  border: 3px solid var(--bg-brand-50); border-top-color: var(--bg-brand-500);
+  animation: ekko-spin .8s linear infinite; }
+@keyframes ekko-spin { to { transform: rotate(360deg); } }
+
+/* ============ FILE UPLOADER ============ */
+/* radius-32, padding 48, dashed border-primary (error = border-error) */
+.ekko-uploader {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 48px; border-radius: var(--radius-32);
+  background: var(--bg-primary); border: 1.5px dashed var(--border-primary);
+  color: var(--text-secondary); text-align: center; cursor: pointer;
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 14px;
+}
+.ekko-uploader:hover { border-color: var(--border-brand); }
+.ekko-uploader--error { border-color: var(--border-error); }

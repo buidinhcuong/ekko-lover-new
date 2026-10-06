@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ekko Lover - Concept Design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f3f7 100%);
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .device-frame {
+            width: 402px;
+            height: 874px;
+            margin: 0 auto;
+            background: white;
+            border: 12px solid #000;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .device-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 30px 30px;
+            z-index: 10;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding-top: 10px;
+        }
+
+        .screen::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .screen::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .screen::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            background: linear-gradient(135deg, #5B3CFF 0%, #8B5CF6 100%);
+            padding: 20px 16px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 16px;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .profile-section::before {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: -100px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .neon-line {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            box-shadow: 0 0 10px #00ff88;
+            opacity: 0.6;
+            animation: slideNeon 3s infinite ease-in-out;
+        }
+
+        @keyframes slideNeon {
+            0%, 100% { transform: translateX(0); opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-avatar {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .profile-info h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .xp-progress {
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .xp-label {
+            color: white;
+            font-size: 12px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .xp-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .xp-fill {
+            width: 62%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc6f);
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            font-size: 18px;
+        }
+
+        /* Budget Section */
+        .section {
+            margin-bottom: 16px;
+            padding: 0 16px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .view-all-btn {
+            font-size: 12px;
+            color: #5B3CFF;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .budget-item {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .budget-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 6px;
+        }
+
+        .budget-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00cc6f, #00ff88);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ff9500, #ff6b35);
+        }
+
+        .budget-value {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* News Section */
+        .news-carousel {
+            position: relative;
+            margin: 0 16px;
+            margin-bottom: 16px;
+        }
+
+        .news-slide {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            scroll-snap-align: start;
+        }
+
+        .news-image {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .news-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .news-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .news-desc {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* Chart Section */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 0 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 120px;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            min-height: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .chart-bar:hover {
+            filter: brightness(1.1);
+        }
+
+        .chart-bar.high {
+            background: linear-gradient(180deg, #ff9500 0%, #ff6b35 100%);
+        }
+
+        .chart-label {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-around;
+            gap: 6px;
+        }
+
+        .chart-label-item {
+            flex: 1;
+            font-size: 11px;
+            color: #999;
+            text-align: center;
+        }
+
+        /* Chatbot Section */
+        .chatbot-section {
+            background: linear-gradient(135deg, #5B3CFF 0%, #8B5CF6 100%);
+            margin: 0 16px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chatbot-mascot {
+            font-size: 48px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .chatbot-input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chatbot-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: white;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chatbot-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .chatbot-send {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chatbot-send:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="screen">
+            <!-- Profile Section -->
+            <div class="profile-section">
+                <div class="neon-line"></div>
+
+                <div>
+                    <div class="profile-header">
+                        <div class="profile-avatar"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#piggy-bank"/></svg></div>
+                        <div class="profile-info">
+                            <h2>Cấp 5 - Heo Thắng Lợi</h2>
+                            <p>Đang tiến bộ tốt!</p>
+                        </div>
+                    </div>
+
+                    <div class="xp-progress">
+                        <div class="xp-label">
+                            <span>Tiến độ</span>
+                            <span>75/100 XP</span>
+                        </div>
+                        <div class="xp-bar">
+                            <div class="xp-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="buttons-grid">
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#books-01"/></svg></span>
+                        Học tập
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#task-01"/></svg></span>
+                        Lập kế hoạch
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#money-bag-02"/></svg></span>
+                        Lập ngân sách
+                    </button>
+                    <button class="btn-action">
+                        <span class="btn-icon"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#note-edit"/></svg></span>
+                        Ghi chép
+                    </button>
+                </div>
+            </div>
+
+            <!-- Budget Section -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#money-bag-02"/></svg> Ngân sách</div>
+                    <button class="view-all-btn">Xem tất cả →</button>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name">Ăn uống</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill warning" style="width: 82%;"></div>
+                        </div>
+                        <div class="budget-value">820k / 1M</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name">Giao thông</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="budget-value">300k / 500k</div>
+                    </div>
+                </div>
+
+                <div class="budget-item">
+                    <div class="budget-name">Giải trí</div>
+                    <div class="budget-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%;"></div>
+                        </div>
+                        <div class="budget-value">225k / 500k</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Section -->
+            <div class="news-carousel">
+                <div class="section-header" style="padding: 0 0 8px 0; margin-bottom: 0;">
+                    <div class="section-title"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#news"/></svg> Tin tức</div>
+                </div>
+                <div class="news-slide">
+                    <div class="news-image"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#analytics-01"/></svg></div>
+                    <div class="news-content">
+                        <div class="news-title">Cách quản lý chi tiêu thông minh</div>
+                        <div class="news-desc">Học các mẹo quản lý tiền bạc hiệu quả...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="chart-container">
+                <div class="chart-title"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#chart-increase"/></svg> Chi tiêu tuần này</div>
+                <div class="chart">
+                    <div class="chart-bar" style="height: 70%;"></div>
+                    <div class="chart-bar high" style="height: 95%;"></div>
+                    <div class="chart-bar" style="height: 60%;"></div>
+                    <div class="chart-bar" style="height: 75%;"></div>
+                    <div class="chart-bar" style="height: 50%;"></div>
+                    <div class="chart-bar high" style="height: 88%;"></div>
+                    <div class="chart-bar" style="height: 40%;"></div>
+                </div>
+                <div class="chart-labels">
+                    <div class="chart-label-item">Thứ 2</div>
+                    <div class="chart-label-item">Thứ 3</div>
+                    <div class="chart-label-item">Thứ 4</div>
+                    <div class="chart-label-item">Thứ 5</div>
+                    <div class="chart-label-item">Thứ 6</div>
+                    <div class="chart-label-item">Thứ 7</div>
+                    <div class="chart-label-item">CN</div>
+                </div>
+            </div>
+
+            <!-- Chatbot Section -->
+            <div class="chatbot-section">
+                <div class="chatbot-mascot"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#piggy-bank"/></svg></div>
+                <div class="chatbot-input-wrapper">
+                    <input type="text" class="chatbot-input" placeholder="Ghi nhanh chi tiêu...">
+                    <button class="chatbot-send"><svg class="ekko-icon" width="20" height="20" aria-hidden="true"><use href="/assets/icons/ui-icons.svg#tick-02"/></svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

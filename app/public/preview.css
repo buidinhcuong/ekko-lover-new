@@ -1,0 +1,136 @@
+/*
+  Trang preview: khung ngoài mỏng, phần lớn không gian nhường cho giao diện thật
+  bên trong iframe. Dùng token của Ekko Design System cho mọi màu và khoảng cách.
+*/
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: 'Bricolage Grotesque', system-ui, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; }
+a { color: var(--text-brand-500); }
+
+.pv {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------------------ header */
+.pv__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-24);
+  padding: var(--spacing-12) var(--spacing-20);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  flex: none;
+}
+
+.pv__brand { display: flex; align-items: center; gap: var(--spacing-10); flex: none; }
+.pv__brand img { height: 24px; }
+.pv__brand span { font-size: var(--font-size-text-xs); color: var(--text-secondary); line-height: 16px; }
+
+.pv__tabs { display: flex; gap: var(--spacing-4); }
+.pv__tabs button {
+  display: flex; align-items: center; gap: var(--spacing-8);
+  border: 0; background: none; cursor: pointer;
+  height: 38px; padding: 0 var(--spacing-14);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+.pv__tabs button:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.pv__tabs button[aria-selected="true"] {
+  background: var(--bg-brand-50);
+  color: var(--text-brand-500);
+  font-weight: var(--font-weight-semibold);
+}
+.pv__tabs em { font-style: normal; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); }
+
+.pv__right { margin-left: auto; display: flex; align-items: center; gap: var(--spacing-12); }
+.pv__who { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-secondary); }
+.pv__who b { color: var(--text-primary); font-weight: var(--font-weight-semibold); }
+
+/* Hai người dùng mẫu: nút tròn cùng kiểu nút về trang chính trong app. */
+.pv__personas { display: flex; gap: var(--spacing-8); }
+.pv__persona {
+  display: grid; place-items: center; width: 36px; height: 36px;
+  border-radius: var(--radius-full); border: 1px solid var(--border-secondary);
+  background: var(--bg-primary); color: var(--text-secondary);
+}
+.pv__persona:hover { color: var(--text-brand-500); border-color: var(--border-brand, var(--bg-brand-500)); }
+.pv__sep { width: 1px; height: 24px; background: var(--border-primary); }
+.pv__persona.is-active { background: var(--bg-brand-500); border-color: var(--bg-brand-500); color: var(--text-white); }
+
+/* ------------------------------------------------------------------- stage */
+.pv__stage { flex: 1; min-height: 0; position: relative; }
+
+.pv__panel {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+.pv__panel.is-active { display: block; }
+
+/* The member app draws its own iPhone chassis, so it only needs a plain
+   backdrop. The admin portal is a desktop surface and fills the frame. */
+.pv__panel iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: var(--bg-secondary);
+}
+
+/* Tab Giới thiệu: các bản video 16:9 đặt cạnh nhau để so sánh, lớn nhất vừa khung. */
+.pv__panel--video.is-active {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  gap: var(--spacing-16);
+  padding: var(--spacing-24);
+}
+.pv__videos {
+  width: 100%; height: 100%; min-height: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-content: center; gap: var(--spacing-24);
+  container-type: inline-size;
+}
+.pv__video { margin: 0; display: grid; gap: var(--spacing-8); }
+.pv__video figcaption { display: flex; align-items: baseline; gap: var(--spacing-8); font-size: 14px; }
+.pv__video figcaption span { color: var(--text-secondary, #667); font-size: 13px; }
+.pv__playall {
+  border: 0; cursor: pointer; font: inherit; font-weight: 600; font-size: 14px;
+  padding: 10px 18px; border-radius: 999px; background: var(--bg-brand-500, #3E58F1); color: #fff;
+}
+.pv__panel--video video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-16);
+  background: var(--ekko-midnight);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--ekko-midnight) 22%, transparent);
+}
+
+.pv__note {
+  padding: var(--spacing-32);
+  max-width: 62ch;
+  margin-inline: auto;
+  text-align: center;
+}
+.pv__note h2 { margin: 0 0 var(--spacing-8); font-size: var(--font-size-text-xl); line-height: var(--line-height-text-xl); font-weight: var(--font-weight-semibold); }
+.pv__note p { margin: 0 0 var(--spacing-20); color: var(--text-secondary); font-size: var(--font-size-text-sm); line-height: 22px; }
+
+@media (max-width: 720px) {
+  .pv__bar { flex-wrap: wrap; gap: var(--spacing-12); }
+  .pv__right { margin-left: 0; width: 100%; }
+  .pv__who { order: 2; }
+}
