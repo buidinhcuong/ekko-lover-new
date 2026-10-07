@@ -332,11 +332,15 @@ async function boot() {
 
   mount(root, hudNode, bodyNode);
   screen.append(...buildChrome());
+  // Thanh công cụ của bản demo (về trang preview, đổi người dùng mẫu / concept,
+  // VI / EN) — chỉ hiện ở bản demo; bản chạy thật (NODE_ENV=production) người
+  // dùng không thấy.
+  const demo = await api.get('/api/auth/config').then((c) => Boolean(c.demo)).catch(() => false);
   // Nút đổi ngôn ngữ gắn vào <body>, tức là NGOÀI khung điện thoại.
-  document.body.append(languageSwitch());
+  if (demo) document.body.append(languageSwitch());
   // Mở thẳng /app/ (không qua trang xem trước) thì thêm nút về trang chính,
   // khỏi phải gõ lại địa chỉ. Trong khung xem trước đã có thanh chuyển trang.
-  if (window.self === window.top) {
+  if (demo && window.self === window.top) {
     const label = t('Về trang chính');
     document.body.append(el('a.homelink', { href: '/', title: label, 'aria-label': label }, uiIcon('home-01', 20)));
     // Hai người dùng mẫu của bản demo, ngay cạnh nút về trang chính: mỗi lần
