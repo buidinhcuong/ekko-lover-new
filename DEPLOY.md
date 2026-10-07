@@ -161,6 +161,8 @@ khi cập nhật.
 1. `https://<tên-miền>/healthz` → `"ok":true`.
 2. `https://<tên-miền>/dev/login?role=admin` → **phải bị từ chối** (400). Nếu vào
    được tức là thiếu `NODE_ENV=production` — dừng lại và sửa.
+   Trang chủ `https://<tên-miền>/` tự chuyển tới `/app/` (màn đăng nhập / đăng ký);
+   quản trị viên đã đăng nhập thì `/` mở trang preview (app + Admin cạnh nhau).
 3. **Người quản trị đăng ký trước tiên**: `https://<tên-miền>/app/` → Đăng ký bằng
    email nằm trong `EKKO_ADMIN_SUBJECTS` + mã đăng ký. (Email chưa được xác minh,
    nên làm việc này trước khi phát mã cho ai khác.)

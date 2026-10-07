@@ -148,7 +148,18 @@ function videoPanel(tab) {
   ]);
 }
 
-function renderSignIn(session) {
+/**
+ * Chưa đăng nhập (hoặc không phải quản trị viên). Bản chạy thật (NODE_ENV=production)
+ * không có đăng nhập demo: chuyển thẳng tới /app/ — màn đăng nhập / đăng ký thật.
+ * Quản trị viên đăng nhập ở /admin/ rồi quay lại đây thì xem được trang preview.
+ */
+async function renderSignIn(session) {
+  let auth = null;
+  try { auth = await api.get('/api/auth/config'); } catch { /* coi như bản demo */ }
+  if (auth && !auth.demo) {
+    location.replace('/app/');
+    return;
+  }
   mount(root, el('div.pv__note', { style: { margin: 'auto' } }, [
     el('img', { src: '/assets/logo/Ekko_Primary_Logo_PaydayBlue.svg', alt: 'Ekko', style: { height: '30px', marginBottom: '20px' } }),
     el('h2', {}, 'Mở bản demo'),
