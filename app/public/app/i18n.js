@@ -184,6 +184,7 @@ const EN = {
   'Tư vấn': 'Get advice',
   'Tư vấn & lưu': 'Get advice & save',
   // Đăng nhập / đăng ký nội bộ (auth.js)
+  'Đăng nhập đúng nhưng trình duyệt không giữ được phiên đăng nhập. Báo quản trị viên kiểm tra cookie ekko_gdtc_session trên proxy / cổng đăng nhập.': 'Signed in, but your browser could not keep the session. Ask an admin to check the ekko_gdtc_session cookie on the proxy / login gateway.',
   'Đăng nhập': 'Sign in',
   'Tạo tài khoản': 'Create account',
   'Ít nhất 8 ký tự': 'At least 8 characters',

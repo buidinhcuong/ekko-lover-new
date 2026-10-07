@@ -197,6 +197,14 @@ async function adminLoginForm() {
       submit.disabled = true;
       try {
         await api.post('/api/auth/login', { email: email.value, password: password.value });
+        // Đăng nhập đúng mà phiên không giữ được (cookie bị proxy / gateway chặn):
+        // báo rõ, đừng lặng lẽ hiện lại form trống.
+        const after = await api.get('/api/session/whoami').catch(() => ({ authenticated: false }));
+        if (!after.authenticated) {
+          error.textContent = 'Đăng nhập đúng nhưng trình duyệt không giữ được phiên: cookie ekko_gdtc_session bị chặn trên đường đi (proxy / cổng đăng nhập của công ty, hoặc trang mở bằng http://). Báo team hạ tầng — xem DEPLOY.md, mục Xử lý sự cố.';
+          submit.disabled = false;
+          return;
+        }
         location.reload();
       } catch (err) {
         error.textContent = err instanceof ApiError ? err.message : 'Không kết nối được';

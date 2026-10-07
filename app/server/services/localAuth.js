@@ -91,7 +91,7 @@ export function checkPassword(password, stored) {
 }
 
 /** Mật khẩu tạm Admin đưa cho người dùng, dễ đọc qua điện thoại: Ekko-XXXX-XXXX. */
-function tempPassword() {
+export function tempPassword() {
   const part = () => Array.from({ length: 4 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
   return `Ekko-${part()}-${part()}`;
 }
@@ -190,3 +190,39 @@ export function resetPassword(userId) {
     hashPassword(password), nowIso(), account.user_id);
   return { ok: true, password, email: account.email };
 }
+
+/**
+ * Tài khoản quản trị mặc định từ biến môi trường — cách nhanh nhất để có admin
+ * đầu tiên trên server mới:
+ *
+ *   EKKO_ADMIN_EMAIL=anhnv@ekko.vn
+ *   EKKO_ADMIN_PASSWORD=<ít nhất 8 ký tự>
+ *
+ * Chạy lúc server khởi động: chưa có tài khoản email đó thì tạo (vai trò admin);
+ * đã có thì chỉ bảo đảm vẫn là admin — KHÔNG ghi đè mật khẩu người dùng đã đổi.
+ * Muốn đặt lại mật khẩu thì dùng Admin → Người học hoặc server/cli/create-admin.js.
+ */
+export function ensureBootstrapAdmin(upsertMember) {
+  const email = normalizeEmail(process.env.EKKO_ADMIN_EMAIL);
+  const password = String(process.env.EKKO_ADMIN_PASSWORD || '');
+  if (!email) return null;
+  if (!validEmail(email)) { console.warn('[admin] EKKO_ADMIN_EMAIL không hợp lệ — bỏ qua'); return null; }
+  const existing = get('SELECT user_id FROM local_accounts WHERE email = ?', email);
+  if (existing) {
+    run("UPDATE users SET role = 'admin' WHERE id = ?", existing.user_id);
+    return { email, created: false };
+  }
+  if (password.length < MIN_PASSWORD) {
+    console.warn(`[admin] EKKO_ADMIN_PASSWORD cần ít nhất ${MIN_PASSWORD} ký tự — chưa tạo tài khoản quản trị`);
+    return null;
+  }
+  tx(() => {
+    const user = upsertMember({ sub: `local:${email}`, name: email.split('@')[0], email });
+    run("UPDATE users SET role = 'admin' WHERE id = ?", user.id);
+    run('INSERT INTO local_accounts (user_id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+      user.id, email, hashPassword(password), nowIso(), nowIso());
+  });
+  console.log(`[admin] Đã tạo tài khoản quản trị ${email}`);
+  return { email, created: true };
+}
+

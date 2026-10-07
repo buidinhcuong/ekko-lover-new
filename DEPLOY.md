@@ -140,9 +140,13 @@ Cập nhật phiên bản: chép `app/` mới đè lên `/opt/ekko-gdtc/app` (gi
    sudo certbot --nginx -d hoc-tap.<doanh-nghiep>.vn
    sudo nginx -t && sudo systemctl reload nginx
    ```
-3. Proxy phải gửi `X-Forwarded-For` (giới hạn số lần thử đăng nhập theo IP dựa
+3. Nếu app nằm sau **cổng đăng nhập / gateway của công ty**: gateway phải chuyển
+   nguyên vẹn cookie `ekko_gdtc_session` (header `Set-Cookie` lúc đăng nhập và
+   `Cookie` ở mọi yêu cầu sau). Các đường công khai của app: `/app/`, `/admin/`,
+   `/api/auth/*`, `/healthz` (health check nên cho đi thẳng, không qua đăng nhập).
+4. Proxy phải gửi `X-Forwarded-For` (giới hạn số lần thử đăng nhập theo IP dựa
    vào đó) và **không** để cổng 4321 mở thẳng ra ngoài.
-4. Bắt buộc chạy sau HTTPS: cookie đăng nhập có cờ `Secure`. Chỉ khi thử trong
+5. Bắt buộc chạy sau HTTPS: cookie đăng nhập có cờ `Secure`. Chỉ khi thử trong
    mạng nội bộ không có HTTPS mới đặt `EKKO_INSECURE_COOKIE=1`.
 
 ## 7. Cách C — Render (nếu không có hạ tầng riêng)
@@ -163,9 +167,25 @@ khi cập nhật.
    được tức là thiếu `NODE_ENV=production` — dừng lại và sửa.
    Trang chủ `https://<tên-miền>/` tự chuyển tới `/app/` (màn đăng nhập / đăng ký);
    quản trị viên đã đăng nhập thì `/` mở trang preview (app + Admin cạnh nhau).
-3. **Người quản trị đăng ký trước tiên**: `https://<tên-miền>/app/` → Đăng ký bằng
-   email nằm trong `EKKO_ADMIN_SUBJECTS` + mã đăng ký. (Email chưa được xác minh,
-   nên làm việc này trước khi phát mã cho ai khác.)
+3. **Có tài khoản quản trị đầu tiên** — chọn một trong hai:
+   - **Nhanh nhất (không cần mã đăng ký):** đặt 2 biến `EKKO_ADMIN_EMAIL` +
+     `EKKO_ADMIN_PASSWORD` (mật khẩu tạm ≥ 8 ký tự) rồi khởi động lại. Log có dòng
+     `[admin] Đã tạo tài khoản quản trị <email>`. Người nhận đăng nhập `/admin/`
+     rồi đổi mật khẩu trong app (Cấp độ heo → Tài khoản). Khởi động lại sau đó
+     không ghi đè mật khẩu đã đổi. (Hoặc chạy trên máy chủ
+     `node server/cli/create-admin.js <email> "Tên"` — in mật khẩu tạm một lần.)
+   - **Tự đăng ký:** `https://<tên-miền>/app/` → Đăng ký bằng email nằm trong
+     `EKKO_ADMIN_SUBJECTS` + **mã đăng ký** (xem dưới). Email chưa được xác minh,
+     nên làm việc này trước khi phát mã cho ai khác.
+
+   **Mã đăng ký lấy ở đâu:** là giá trị biến `EKKO_SIGNUP_CODE` nếu đã đặt; để
+   trống thì server tự sinh một mã 8 ký tự ở lần khởi động đầu và in ra log mỗi
+   lần khởi động, dòng `mã đăng ký nội bộ: XXXXXXXX`:
+   ```bash
+   docker compose logs ekko-gdtc | grep "mã đăng ký"     # Docker
+   journalctl -u ekko-gdtc | grep "mã đăng ký"           # systemd
+   ```
+   Vào được Admin thì xem / đổi mã ở **Người học → Đăng ký nội bộ**.
 4. `https://<tên-miền>/admin/` → đăng nhập → **Chức năng → AI**: thấy "Đã có khoá
    API" và đúng model. **Người học**: thấy mã đăng ký, công tắc cho phép đăng ký.
 5. Thử trên điện thoại: ghi nhanh "phở 45k, cà phê 25k" (AI tách 2 khoản), hỏi
@@ -219,6 +239,7 @@ App Ekko ký token JWT (HS256) bằng `EKKO_SSO_SECRET` dùng chung rồi mở
 |---|---|
 | Không khởi động, lỗi `node:sqlite` | Node < 22.5 — nâng Node. |
 | Khởi động lại là mất hết người dùng | Thư mục dữ liệu không bền (container không gắn volume, `/tmp`, serverless). |
+| Đăng nhập xong form trống hiện lại / báo "trình duyệt không giữ được phiên" | Cookie `ekko_gdtc_session` không tới được trình duyệt hoặc không quay lại app. Nếu phía trước có **cổng đăng nhập / API gateway của công ty**: cho phép header `Set-Cookie` (phản hồi) và `Cookie` (yêu cầu) của cookie này đi qua nguyên vẹn, không đổi Path/Domain. Kiểm: đăng nhập rồi mở `/api/session/whoami` — phải là `"authenticated":true`. |
 | Đăng nhập xong vẫn bị đá ra | Chạy production mà truy cập bằng `http://` (cookie `Secure`) — dùng HTTPS hoặc `EKKO_INSECURE_COOKIE=1` khi thử nội bộ. Hoặc `EKKO_SESSION_SECRET` bị đổi giữa các lần khởi động. |
 | Admin báo "Chưa có khoá API" | Biến `ANTHROPIC_API_KEY` chưa tới tiến trình (kiểm `EnvironmentFile`, `env_file`), khởi động lại. |
 | AI chậm / lỗi | App tự chuyển sang phần viết sẵn khi AI quá 12–15 giây; kiểm kết nối ra `api.anthropic.com:443` qua firewall/proxy doanh nghiệp. |

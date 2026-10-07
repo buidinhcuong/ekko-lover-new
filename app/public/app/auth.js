@@ -53,6 +53,14 @@ export function renderAuth(root, config) {
         } else {
           await api.post('/api/auth/register', { name: name.value, email: email.value, password: password.value, code: code.value });
         }
+        // Đăng nhập đúng mà phiên không giữ được (cookie bị proxy / gateway chặn):
+        // báo rõ thay vì tải lại rồi hiện lại đúng màn này.
+        const after = await api.get('/api/session/whoami').catch(() => ({ authenticated: false }));
+        if (!after.authenticated) {
+          error.textContent = t('Đăng nhập đúng nhưng trình duyệt không giữ được phiên đăng nhập. Báo quản trị viên kiểm tra cookie ekko_gdtc_session trên proxy / cổng đăng nhập.');
+          button.disabled = false;
+          return;
+        }
         // Có phiên rồi: tải lại app từ đầu (lấy hồ sơ, concept, dữ liệu…).
         location.replace('/app/#/');
         location.reload();
