@@ -15,13 +15,6 @@ import { t } from './i18n.js';
 import { readReceipt, shrinkImage } from './receiptLocal.js';
 import { dateFromReceipt, openAdd, pickReceiptCategory } from './views/expenses.js';
 
-const OPENERS = [
-  'Streak của tôi thế nào?',
-  'Quy tắc 50/30/20 là gì?',
-  'Tháng này tôi tiêu bao nhiêu?',
-  'Quỹ khẩn cấp cần bao nhiêu?',
-];
-
 export async function openBot(ctx) {
   const chat = el('div.chat');
   const input = el('input.input', {
@@ -212,7 +205,6 @@ export async function openBot(ctx) {
 
   if (!history?.messages?.length) {
     push('bot', t('Chào bạn, mình là **Ekko bot**. Mình giải thích các bài học, cho bạn biết streak và chi tiêu của mình, và ghi chi tiêu giúp bạn chỉ bằng một câu nhắn.'));
-    chat.append(suggestionRow(OPENERS.map((q) => t(q)), send));
   } else {
     for (const message of history.messages) {
       push(message.role, message.text, message.meta, message.source);

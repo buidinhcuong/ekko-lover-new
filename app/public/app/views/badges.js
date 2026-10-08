@@ -438,8 +438,12 @@ export function profileCard(world, board = world.badges, { compact = world.conce
       el('div.profilecard__who', {}, [
         // Tên của chính người dùng — để biết đây là heo của mình (BUG-001).
         world.me?.name ? el('span.profilecard__owner', {}, world.me.name) : null,
-        el('span.profilecard__level', {}, [uiIcon('flash', 16), t('Cấp {n}', { n: level?.order_index ?? 1 })]),
-        el('span.profilecard__name', {}, level?.name || ''),
+        // Cấp và tên cấp heo chung một dòng: "⚡ Cấp 5 · Heo Gia Đình".
+        el('span.profilecard__level', {}, [
+          uiIcon('flash', 16),
+          el('span', {}, t('Cấp {n}', { n: level?.order_index ?? 1 })),
+          level?.name ? el('span.profilecard__name', {}, `· ${level.name}`) : null,
+        ]),
         el('span.profilecard__xp', {}, `${progress.xp} XP`),
         // Ekko Lover: mã ID để bạn bè mời vào Heo Dream Team — bấm để chép.
         compact && world.me?.friendCode ? friendCodeChip(world.me.friendCode, { compact: true }) : null,
