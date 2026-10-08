@@ -221,6 +221,7 @@ const EN = {
   'thu nhập {amount}': 'income {amount}',
   'Thu nhập tháng {amount}, theo các khoản thu nhập đã ghi': 'Monthly income {amount}, from the income you logged',
   'Thu nhập tháng {amount}': 'Monthly income {amount}',
+  'Các mục khác': 'Everything else',
   // Heo Dream Team + tabbar
   '{xp} XP từ Dream Team': '{xp} XP from Dream Team',
   'XP từ Dream Team': 'Dream Team XP',

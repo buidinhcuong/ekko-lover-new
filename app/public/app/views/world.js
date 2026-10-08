@@ -399,7 +399,18 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
   let chartRange = 'week';
   const chartBody = el('div.loverhome__chartbody');
 
-  const renderChartData = (points) => {
+  const renderChartData = (rawPoints) => {
+    // Mỗi cột chỉ tách MÀU của mục chi nhiều nhất trong ngày/tháng đó; mọi mục
+    // còn lại gộp thành một phần xám "Các mục khác" — đọc nhanh hơn một cột
+    // chồng đủ màu của từng nhóm.
+    const REST = 'rest';
+    const points = rawPoints.map((p) => {
+      const list = [...p.cats.values()].sort((a, b) => b.amount - a.amount);
+      if (list.length <= 1) return p;
+      const [top, ...others] = list;
+      const rest = { code: REST, name: t('Các mục khác'), color: 'var(--grey-300)', amount: others.reduce((s, c) => s + c.amount, 0) };
+      return { ...p, cats: new Map([[top.code, top], [REST, rest]]) };
+    });
     const totals = points.map((p) => [...p.cats.values()].reduce((s, c) => s + c.amount, 0));
     const maxVal = Math.max(...totals, 1);
     const axis = [maxVal, (maxVal * 2) / 3, maxVal / 3, 0];
@@ -410,7 +421,9 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     for (const p of points) {
       for (const c of p.cats.values()) totalByCode.set(c.code, (totalByCode.get(c.code) || 0) + c.amount);
     }
-    const order = [...totalByCode.entries()].sort((a, b) => b[1] - a[1]).map(([code]) => code);
+    // Phần xám "Các mục khác" luôn nằm trên, mục chi nhiều nhất nằm sát đáy cột.
+    const order = [...totalByCode.entries()].sort((a, b) => b[1] - a[1]).map(([code]) => code)
+      .sort((a, b) => (a === REST) - (b === REST));
 
     // Chạm vào một lát hay cả cột thì hiện một bong bóng nhỏ ngay phía trên,
     // báo đúng tên nhóm + số tiền — hover/title không có tác dụng trên máy
