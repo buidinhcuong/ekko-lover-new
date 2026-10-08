@@ -598,13 +598,18 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
   // 0b. Đổi mục của khoản chi vừa ghi: "sai rồi, mục mua sắm chứ", "đổi sang
   //     Nhà hàng", hoặc chip "Đổi mục" dưới câu xác nhận ghi chi (BUG-010).
   if (!amount && wantsRecategorize(source)) return recategorizeLast(userId, source, lang);
-  const looksLikeQuestion = /\?|^(la|tai sao|vi sao|the nao|lam sao|nhu the nao|cai gi|khi nao|bao gio)\b/.test(source)
-    || /\b(la gi|nghia la|giai thich|huong dan|tai sao|vi sao)\b/.test(source);
+  // Câu có số tiền nhưng là câu hỏi / xin tư vấn ("lương 5 triệu có nên mua iPhone
+  // 50 triệu trả góp không") thì không ghi chi — để Claude tư vấn ở bước 5.
+  const looksLikeQuestion = /\?|^(la|tai sao|vi sao|the nao|lam sao|nhu the nao|cai gi|khi nao|bao gio|lieu|neu|should|can|how|what|why|is|do)\b/.test(source)
+    || /\b(la gi|nghia la|giai thich|huong dan|tai sao|vi sao|co nen|nen khong|nen lam|nen mua|nen vay|duoc khong|hay khong|co duoc|co du|co sao|bao nhieu|the nao|ra sao|tu van|giup toi|should i|can i|is it|how much|worth it)\b/.test(source)
+    || /\b(khong|chua)\s*$/.test(source);
 
-  if (amount && !looksLikeQuestion) {
-    // Có khoá API thì AI đọc câu (nhiều khoản, ngày, nhóm), không thì bộ đọc viết sẵn.
-    const { items, notExpense } = await readExpenses(message, { userId });
-    if (notExpense) return { kind: 'not_expense', ...speak(lang, 'notExpense') };
+  // Có khoá API thì AI đọc câu (nhiều khoản, ngày, nhóm), không thì bộ đọc viết sẵn.
+  // Đọc ra "không phải khoản chi" thì xử lý như tin nhắn thường ở các bước dưới.
+  const read = amount && !looksLikeQuestion ? await readExpenses(message, { userId }) : null;
+  const notExpense = Boolean(read?.notExpense);
+  if (read && !notExpense) {
+    const { items } = read;
     const list = items.length ? items : [{ amount: amount.amount, note: extractNote(message), category: null, spentOn: undefined }];
     const results = [];
     for (const item of list) {
@@ -693,6 +698,8 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
   }
 
   // 7. Never a dead end.
+  // Câu có số tiền mà không phải khoản chi, và không ai trả lời được: nói rõ là chưa ghi.
+  if (notExpense) return { kind: 'not_expense', ...speak(lang, 'notExpense') };
   const state = readState(userId);
   const level = levelProgress(state.xp).level;
   const suggestion = nextLesson(userId, level ? level.order_index : 1);

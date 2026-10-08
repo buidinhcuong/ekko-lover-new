@@ -212,7 +212,7 @@ async function testStreakRules() {
     config.anthropicApiKey = 'sk-ant-test-key-for-smoke-only-000000';
     config.anthropicBaseUrl = `http://127.0.0.1:${fake.address().port}`;
     const { setSetting } = await import('../server/db.js');
-    setSetting('ai_daily_limit', '3');
+    setSetting('ai_daily_limit', '4');
     const noop = async () => ({ expense: { spent_on: '2026-01-01' }, alerts: [] });
     try {
       const poem = await respond(userId, 'làm thơ đi', { createExpense: noop });
@@ -224,8 +224,13 @@ async function testStreakRules() {
       const money = await respond(userId, 'Lương 10 triệu thì nên chia tiền tiết kiệm thế nào?', { createExpense: noop });
       check('Câu hỏi tài chính: AI trả lời thẳng (không chỉ trích bài học), có kèm số liệu tháng của người dùng',
         money.kind === 'ai' && /Số liệu của người dùng:[\s\S]*Đã chi trong tháng/.test(lastAsked), money.kind);
+      let logged = 0;
+      const countLog = async () => { logged += 1; return noop(); };
+      const iphone = await respond(userId, 'Lương công nhân của tôi là 5 triệu 1 tháng, tôi có nên mua iphone 18 50 triệu, trả góp toàn bộ không', { createExpense: countLog });
+      check('Câu có số tiền nhưng xin tư vấn ("lương 5 triệu có nên mua iPhone 50 triệu trả góp không") → AI tư vấn, không ghi chi',
+        iphone.kind === 'ai' && logged === 0, `${iphone.kind} logged=${logged}`);
       const over = await respond(userId, 'cảm ơn', { createExpense: noop });
-      check('Hết lượt AI hôm nay thì không gọi AI nữa', over.kind === 'ai_limit' && calls === 3 && aiCallsToday(userId) === 3,
+      check('Hết lượt AI hôm nay thì không gọi AI nữa', over.kind === 'ai_limit' && calls === 4 && aiCallsToday(userId) === 4,
         JSON.stringify({ kind: over.kind, calls }));
     } finally {
       config.anthropicApiKey = saved.key;
@@ -528,7 +533,8 @@ async function main() {
       scratch.prepare(`DELETE FROM ${table} WHERE user_id = ?`).run(adviseeId);
     }
     scratch.close();
-    const day = (months) => { const d = new Date(); d.setMonth(d.getMonth() + months); return d.toISOString().slice(0, 10); };
+    // Ngày theo giờ Việt Nam như server (toISOString là giờ UTC: chạy lúc 0–7h sáng sẽ lệch một ngày).
+    const day = (months) => { const d = new Date(); d.setMonth(d.getMonth() + months); return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }); };
     const ask = await post('advisee', '/api/goals/advice', { name: 'Quỹ khẩn cấp', targetAmount: 12000000, deadline: day(12) });
     check('Chưa có dữ liệu thì hỏi thu nhập và số tiền để dành ước tính',
       ask.status === 200 && ask.json.needsInfo.includes('monthlyIncome') && ask.json.needsInfo.includes('monthlySaving') && ask.json.analysis === null,
