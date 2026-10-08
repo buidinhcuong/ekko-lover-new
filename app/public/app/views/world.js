@@ -452,7 +452,15 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
       }, segs);
       // Cột không có lát nào (ngày/tuần không chi gì) vẫn chạm được, báo 0đ.
       if (!segs.length) barEl.addEventListener('click', () => showTip(barEl, p.title, 0));
-      return barEl;
+      // Tổng của cột ghi sẵn ngay trên đầu cột ("53k", "1,2tr") để nhìn lướt là
+      // thấy số mỗi ngày / mỗi tháng, không cần chạm. Không chi gì thì để trống.
+      const height = Math.max(4, Math.round((totals[i] / maxVal) * 100));
+      const total = totals[i] > 0
+        ? el(`span.loverhome__bartotal${totals[i] === maxVal ? '.is-max' : ''}`, { style: { bottom: `${height}%` } }, vndShort(totals[i]))
+        : null;
+      return el('div.loverhome__barcol', {
+        'aria-label': `${p.title}: ${vnd(totals[i])}`,
+      }, [total, barEl]);
     });
 
     const plot = el('div.loverhome__chartplot', {}, [

@@ -942,11 +942,21 @@ body.is-modal .homebar { opacity: 0; }
 .loverhome__chartaxis {
   display: flex; flex-direction: column; justify-content: space-between;
   align-items: flex-end;
-  height: 84px; margin-bottom: 22px; /* 22px = chiều cao hàng nhãn ngày/tuần bên dưới */
+  height: 84px; margin-top: 18px; margin-bottom: 22px; /* 18px = chỗ nhãn tổng trên đầu cột; 22px = hàng nhãn ngày/tuần */
   font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary);
 }
 .loverhome__chartplot { position: relative; flex: 1; min-width: 0; }
-.loverhome__bars { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--spacing-6); height: 84px; margin-bottom: var(--spacing-8); }
+.loverhome__bars { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--spacing-6); height: 84px; margin-top: 18px; margin-bottom: var(--spacing-8); }
+/* Mỗi cột nằm trong một khung cao bằng cả dải (84px) để nhãn tổng đặt ngay trên
+   đầu cột — nhãn không nằm TRONG cột vì cột cắt phần thừa để bo góc. */
+.loverhome__barcol { position: relative; flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+.loverhome__barcol .loverhome__bar { flex: none; width: 100%; }
+.loverhome__bartotal {
+  position: absolute; left: 50%; transform: translate(-50%, -3px);
+  font-size: 10px; line-height: 14px; color: var(--text-secondary); white-space: nowrap;
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.loverhome__bartotal.is-max { color: var(--text-primary); font-weight: var(--font-weight-semibold); }
 /* Chiều cao cả cột (`.loverhome__bar`, đặt trực tiếp qua style — % này tính
    theo `.loverhome__bars` có chiều cao xác định 84px, luôn tính đúng) là tỉ lệ
    tổng-chi-ngày-này / max, y hệt bản cũ — ngày không chi gì vẫn ra một lát
