@@ -444,9 +444,11 @@ export function profileCard(world, board = world.badges, { compact = world.conce
           el('span', {}, t('Cấp {n}', { n: level?.order_index ?? 1 })),
           level?.name ? el('span.profilecard__name', {}, `· ${level.name}`) : null,
         ]),
-        el('span.profilecard__xp', {}, `${progress.xp} XP`),
-        // Ekko Lover: mã ID để bạn bè mời vào Heo Dream Team — bấm để chép.
-        compact && world.me?.friendCode ? friendCodeChip(world.me.friendCode, { compact: true }) : null,
+        // XP và mã ID chung một dòng. Mã ID (Ekko Lover) để bạn bè mời vào Heo Dream Team — bấm để chép.
+        el('div.profilecard__meta', {}, [
+          el('span.profilecard__xp', {}, `${progress.xp} XP`),
+          compact && world.me?.friendCode ? friendCodeChip(world.me.friendCode, { compact: true }) : null,
+        ]),
       ]),
     ]),
     xpBar('div.profilecard__bar', progress),
