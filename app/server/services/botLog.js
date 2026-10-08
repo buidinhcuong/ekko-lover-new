@@ -67,6 +67,6 @@ export function expenseLoggedReply({ amount, category, note }, lang = 'vi') {
     text: renderExpenseLogged(logged, lang),
     action: { type: 'navigate', route: '/app/#/expenses', label: 'Mở sổ chi tiêu' },
     // "Đổi mục": nhờ bot chuyển khoản vừa ghi sang mục khác (BUG-010).
-    suggestions: ['Đổi mục', 'Tháng này tôi tiêu bao nhiêu?', 'Ngân sách còn bao nhiêu?'],
+    suggestions: ['Đổi mục'],
   };
 }

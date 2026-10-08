@@ -549,7 +549,6 @@ function recategorizeLast(userId, source, lang) {
     kind: 'recategorized',
     ...speak(lang, 'fixDone', vars),
     expenseId: last.id,
-    suggestions: ['Tháng này tôi tiêu bao nhiêu?', 'Ngân sách còn bao nhiêu?'],
   };
 }
 
@@ -622,7 +621,7 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
   // 4. Product FAQ.
   const faqHit = FAQ.find((entry) => entry.q.some((k) => source.includes(k)));
   if (faqHit) {
-    return { kind: 'faq', text: faqHit.a, suggestions: ['Streak hoạt động thế nào?', 'Tôi đang ở cấp mấy?'] };
+    return { kind: 'faq', text: faqHit.a };
   }
 
   // 5. Lesson search.
@@ -643,7 +642,6 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
         label: say(lang, 'lessonOpen', { lesson: top.source.lessonTitle }),
         labelSay: { key: 'lessonOpen', vars: { lesson: top.source.lessonTitle } },
       },
-      suggestions: hits.slice(1).map((h) => h.source.lessonTitle),
     };
   }
 
@@ -676,7 +674,6 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
         labelSay: { key: 'lessonNext', vars: { lesson: suggestion.title } },
       }
       : undefined,
-    suggestions: ['Quỹ khẩn cấp là gì?', 'Quy tắc 50/30/20', 'Streak của tôi thế nào?'],
   };
 }
 
