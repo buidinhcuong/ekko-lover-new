@@ -6,7 +6,7 @@
  * re-evaluates the level, and awards badges. Routes never touch user_state
  * directly.
  */
-import { all, get, getSetting, run } from '../db.js';
+import { all, get, getSetting, run, setSetting } from '../db.js';
 import { dayKey, daysBetween, nowIso } from '../lib/time.js';
 import { readState, touchStreak } from './streak.js';
 import { activeConcept } from './concepts.js';
@@ -23,7 +23,7 @@ export const BADGE_RULES = {
   streak_days: 'Độ dài chuỗi streak',
   streak_recovered: 'Số lần cứu được chuỗi đang đóng băng',
   feature_used: 'Số ngày dùng một chức năng',
-  features_distinct: 'Số chức năng khác nhau đã dùng',
+  features_distinct: 'Số chức năng khác nhau đã dùng (tính cả Học tập)',
   expenses_logged: 'Số khoản chi tiêu đã ghi',
   expense_days_streak: 'Số ngày liền nhau có ghi chi tiêu (dài nhất)',
   quick_logs: 'Số khoản ghi nhanh (thanh ghi nhanh, Ekko bot, ảnh hoá đơn)',
@@ -143,7 +143,12 @@ function computeMetric(userId, badge, state) {
         ? count('SELECT COUNT(*) n FROM activity_log WHERE user_id = ? AND kind = ? AND ref = ?', userId, 'feature_used', badge.rule_target)
         : count('SELECT COUNT(*) n FROM activity_log WHERE user_id = ? AND kind = ?', userId, 'feature_used');
     case 'features_distinct':
-      return count("SELECT COUNT(DISTINCT ref) n FROM activity_log WHERE user_id = ? AND kind = 'feature_used' AND ref <> 'explore'", userId);
+      // Các chức năng có làm một việc thật (feature_used), cộng Học tập khi đã
+      // học xong ít nhất một bài. Màn chính Ekko Lover có đúng 5 nút: Học tập,
+      // Mục tiêu, Ngân sách, Ghi chép, Tiết kiệm — trước đây Học tập không được
+      // tính nên người dùng đủ 5 nút vẫn kẹt 4/5 (BUG-006).
+      return count("SELECT COUNT(DISTINCT ref) n FROM activity_log WHERE user_id = ? AND kind = 'feature_used' AND ref <> 'explore'", userId)
+        + (get("SELECT 1 ok FROM lesson_progress WHERE user_id = ? AND status = 'completed' LIMIT 1", userId) ? 1 : 0);
     case 'expenses_logged':
       return count('SELECT COUNT(*) n FROM expenses WHERE user_id = ?', userId);
     case 'expense_days_streak':
@@ -388,3 +393,18 @@ export function useFeature(userId, featureCode, day = dayKey()) {
 
   return { ...recordActivity(userId, { kind: 'feature_used', ref: featureCode, xp: feature.xp_per_day, day }), alreadyToday: false };
 }
+
+/**
+ * Chấm lại huy hiệu cho mọi người dùng — chạy MỘT lần mỗi khi luật tính huy hiệu
+ * đổi (tăng BADGE_RULES_VERSION). Người đã đủ điều kiện theo luật mới nhận ngay
+ * huy hiệu (Ekko Lover: hiện nút "Nhận thưởng"), không phải chờ lần hoạt động sau.
+ */
+const BADGE_RULES_VERSION = '2';   // 2: Nhà thám hiểm tính cả Học tập (BUG-006)
+export function reevaluateBadgesOnce() {
+  if (getSetting('badge_rules_version') === BADGE_RULES_VERSION) return 0;
+  const users = all('SELECT id FROM users');
+  for (const { id } of users) evaluateBadges(id);
+  setSetting('badge_rules_version', BADGE_RULES_VERSION);
+  return users.length;
+}
+

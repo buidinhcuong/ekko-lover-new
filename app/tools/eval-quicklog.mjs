@@ -41,6 +41,9 @@ const CASES = [
   ['mua bỉm sữa cho con 420k', [[420000, 'needs_food']]],
   ['tập gym tháng 300k', [[300000, 'wants_hobby']]],
   ['ăn lẩu với bạn 280k', [[280000, 'wants_dining']]],
+  // BUG-007: đồ mặc vào Mua sắm (có tên hãng xe trong câu cũng không được hiểu là xe).
+  ['Áo phao lông vũ Benz 415k', [[415000, 'wants_shopping']]],
+  ['mua đôi giày 650k', [[650000, 'wants_shopping']]],
 ];
 
 if (keyState() !== 'ok') {

@@ -394,7 +394,7 @@ export const CATEGORIES = [
   { code: 'wants_dining', name: 'Nhà hàng', icon: 'restaurant-01', color: '#FB7185', group_code: 'wants', order_index: 10, daily_limit: 500000, keywords: 'nhà hàng,quán ăn,quán nhậu,ăn ngoài,ship đồ ăn,grabfood,shopeefood,cơm văn phòng,el gaucho,pizza 4p,pizza hut,domino,lotteria,kfc,mcdonald,jollibee,texas chicken,popeyes,gogi house,sumo bbq,manwah,kichi kichi,hutong,al fresco,baemin,buffet,lẩu,nướng,bbq,steak,sushi,food court,cơm tấm,bún đậu,hải sản' },
   { code: 'wants_home', name: 'Gia dụng', icon: 'sofa-01', color: '#A78BFA', group_code: 'wants', order_index: 11, daily_limit: 2000000, keywords: 'nội thất,đồ gia dụng,trang trí nhà,điện máy' },
   { code: 'wants_entertainment', name: 'Cà phê, giải trí', icon: 'coffee-01', color: '#7B61FF', group_code: 'wants', order_index: 12, daily_limit: 1000000, keywords: 'cà phê,cafe,trà sữa,phim,rạp,game,netflix,spotify,karaoke,nhậu,highlands,the coffee house,phúc long,starbucks,katinat,cộng cà phê,trung nguyên,gong cha,toco toco,ding tea,koi thé,cgv,lotte cinema,galaxy cinema,bhd,milano coffee' },
-  { code: 'wants_shopping', name: 'Mua sắm', icon: 'shopping-bag-01', color: '#C000BD', group_code: 'wants', order_index: 13, daily_limit: 2000000, keywords: 'mua,quần áo,giày,mỹ phẩm,shopee,lazada,tiki,tạp hoá,đồ dùng' },
+  { code: 'wants_shopping', name: 'Mua sắm', icon: 'shopping-bag-01', color: '#C000BD', group_code: 'wants', order_index: 13, daily_limit: 2000000, keywords: 'mua,quần áo,áo,quần,váy,đầm,áo khoác,áo phao,giày,dép,túi xách,mũ,nón,thời trang,mỹ phẩm,shopee,lazada,tiki,tạp hoá,đồ dùng,uniqlo,zara' },
   { code: 'wants_travel', name: 'Du lịch', icon: 'airplane-01', color: '#06B6D4', group_code: 'wants', order_index: 14, daily_limit: null, keywords: 'du lịch,vé máy bay,khách sạn,tour,resort' },
   { code: 'wants_hobby', name: 'Sở thích cá nhân', icon: 'paint-board', color: '#F59E0B', group_code: 'wants', order_index: 15, daily_limit: 1000000, keywords: 'sở thích,thể thao,gym,câu lạc bộ,nhạc cụ,sưu tầm' },
   { code: 'wants_gift', name: 'Quà tặng, hiếu hỉ', icon: 'gift', color: '#FCC902', group_code: 'wants', order_index: 16, daily_limit: null, keywords: 'quà,hiếu hỉ,đám cưới,giỗ,biếu,mừng' },
@@ -404,3 +404,15 @@ export const CATEGORIES = [
   // ---------- Sự cố (không có nhóm con — chọn thẳng nhóm này) ----------
   { code: 'incident', name: 'Sự cố', icon: 'alert-02', color: '#D5394A', group_code: 'incident', order_index: 19, daily_limit: null, keywords: 'sự cố,khẩn cấp,tai nạn,mất,hỏng,sửa chữa khẩn cấp' },
 ];
+
+/**
+ * Từ khoá bổ sung cho nhóm chi tiêu đã có trên server — chỉ THÊM từ còn thiếu,
+ * không xoá / đổi từ khoá Admin đã sửa (seed/index.js · addCategoryKeywords).
+ * v2 (08/10/2026): đồ mặc (áo, quần, váy, giày…) vào Mua sắm — "Áo phao lông vũ
+ * 415k" từng rơi vào "Khác" khi không có AI (BUG-007).
+ */
+export const ADDED_KEYWORDS_VERSION = '1';
+export const CATEGORY_KEYWORD_ADDITIONS = {
+  wants_shopping: ['áo', 'quần', 'váy', 'đầm', 'áo khoác', 'áo phao', 'dép', 'túi xách', 'mũ', 'nón', 'thời trang', 'uniqlo', 'zara'],
+};
+

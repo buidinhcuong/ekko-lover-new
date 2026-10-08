@@ -178,6 +178,9 @@ function section(userId, period, today) {
       description: c.description,
       icon: c.icon,
       xp_reward: c.xp_reward,
+      // Để app mở đúng chức năng khi bấm vào thử thách (BUG-002).
+      rule_type: c.rule_type,
+      rule_target: c.rule_target || null,
       target: c.rule_value,
       progress: Math.min(progress, c.rule_value),
       done,

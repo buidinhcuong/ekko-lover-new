@@ -132,7 +132,7 @@ export function buildWorld(userId) {
     },
     challenges: { claimable: challengeBoard(userId).claimable },
     // Heo Dream Team: mã ID để chia sẻ, lời mời đang chờ, lời nhắc giữ streak chưa xem.
-    me: { friendCode: friendCode(userId) },
+    me: { friendCode: friendCode(userId), name: get('SELECT name FROM users WHERE id = ?', userId)?.name || '' },
     team: teamAlerts(userId),
     learning: {
       lessonsDone,

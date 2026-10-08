@@ -10,7 +10,7 @@
  * ghi" — không tự ghi khi người dùng chưa xác nhận.
  */
 import { api, el, formatDay, guard, mount, renderText, toast, uiIcon, vnd } from '/shared/client.js';
-import { celebrateRewards, closeSheet, sheet } from './ui.js';
+import { celebrateRewards, closeSheet, sheet, isImeEnter, trackComposition } from './ui.js';
 import { t } from './i18n.js';
 import { readReceipt, shrinkImage } from './receiptLocal.js';
 import { dateFromReceipt, openAdd, pickReceiptCategory } from './views/expenses.js';
@@ -29,6 +29,7 @@ export async function openBot(ctx) {
     'aria-label': t('Tin nhắn'),
     maxlength: '300',   // khớp giới hạn ở routes/bot.js
   });
+  const ime = trackComposition(input);
   const sendButton = el('button.btn', { style: { width: '52px', padding: '0' }, 'aria-label': t('Gửi') }, '↑');
 
   const scroller = el('div.sheet__body', { style: { flex: '1' } }, [chat]);
@@ -54,6 +55,8 @@ export async function openBot(ctx) {
   }
 
   async function send(text) {
+    // Bấm Gửi khi bộ gõ còn đang soạn chữ: đợi chữ chốt xong rồi mới đọc ô.
+    if (text === undefined) await ime.afterComposition();
     const message = String(text ?? input.value).trim();
     if (!message) return;
 
@@ -182,7 +185,11 @@ export async function openBot(ctx) {
 
   sendButton.addEventListener('click', () => send());
   input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') { event.preventDefault(); send(); }
+    // Enter của bộ gõ tiếng Việt là để chốt chữ đang gõ, không phải gửi — trước
+    // đây gửi luôn nên ký tự còn sót ('ứ', 'k'…) thành một tin riêng (BUG-008).
+    if (event.key !== 'Enter' || isImeEnter(event)) return;
+    event.preventDefault();
+    send();
   });
 
   const panel = sheet({

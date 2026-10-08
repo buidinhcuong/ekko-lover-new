@@ -4,7 +4,7 @@
  */
 import { all, get, run, tx, getSetting, setSetting } from '../db.js';
 import { nowIso } from '../lib/time.js';
-import { BADGES, BANK_INTEREST_RATES, CATEGORIES, CATEGORY_GROUPS, CHALLENGES, FEATURES, LEVELS, MODULE_EMOJI, NEWS, OLD_LEVEL_TO_NEW, OLD_LEVEL_XP, REMOVED_MODULE_SLUGS, SAVINGS_CHANNELS } from './catalogue.js';
+import { BADGES, BANK_INTEREST_RATES, CATEGORIES, CATEGORY_GROUPS, ADDED_KEYWORDS_VERSION, CATEGORY_KEYWORD_ADDITIONS, CHALLENGES, FEATURES, LEVELS, MODULE_EMOJI, NEWS, OLD_LEVEL_TO_NEW, OLD_LEVEL_XP, REMOVED_MODULE_SLUGS, SAVINGS_CHANNELS } from './catalogue.js';
 import { MORE_NEWS } from './news.js';
 import { MODULES } from './curriculum.js';
 import { EN } from '../i18n/en.js';
@@ -111,6 +111,11 @@ export function seed() {
     if (getSetting('category_keywords_version_2') !== CATEGORY_KEYWORDS_VERSION_2) {
       backfillCategoryKeywordsV2();
       setSetting('category_keywords_version_2', CATEGORY_KEYWORDS_VERSION_2);
+    }
+    // Sau các bước đổi nhóm chi tiêu ở trên, để nhóm mới đã có mặt.
+    if (getSetting('added_keywords_version') !== ADDED_KEYWORDS_VERSION) {
+      addCategoryKeywords();
+      setSetting('added_keywords_version', ADDED_KEYWORDS_VERSION);
     }
     if (getSetting('category_limits_version') !== CATEGORY_LIMITS_VERSION) {
       seedCategoryLimits();
@@ -397,6 +402,18 @@ function seedMoreNews() {
        VALUES (?,?,?,?,?,?,?,1)`,
       n.title, n.summary, n.category, n.image, n.body, n.read_minutes, order,
     );
+  }
+}
+
+/** Thêm từ khoá còn thiếu cho nhóm chi tiêu đã có (giữ nguyên từ Admin đã sửa). */
+function addCategoryKeywords() {
+  for (const [code, words] of Object.entries(CATEGORY_KEYWORD_ADDITIONS)) {
+    const row = get('SELECT id, keywords FROM categories WHERE code = ?', code);
+    if (!row) continue;
+    const have = String(row.keywords || '').split(',').map((k) => k.trim()).filter(Boolean);
+    const lower = new Set(have.map((k) => k.toLowerCase()));
+    const add = words.filter((w) => !lower.has(w.toLowerCase()));
+    if (add.length) run('UPDATE categories SET keywords = ? WHERE id = ?', [...have, ...add].join(','), row.id);
   }
 }
 

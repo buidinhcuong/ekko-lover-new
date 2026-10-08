@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { currentUser, requireAdmin, requireUser, upsertMember } from './auth.js';
 import { ensureBootstrapAdmin } from './services/localAuth.js';
+import { reevaluateBadgesOnce } from './services/progression.js';
 import { HttpError, readJson, sendJson, serveStatic } from './lib/http.js';
 import { langOf, translate } from './i18n/index.js';
 import { seed, listSeedTables } from './seed/index.js';
@@ -24,6 +25,8 @@ const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
 seed();
 // Tài khoản quản trị mặc định (EKKO_ADMIN_EMAIL + EKKO_ADMIN_PASSWORD), nếu có đặt.
 ensureBootstrapAdmin(upsertMember);
+// Luật huy hiệu vừa đổi: chấm lại một lần cho mọi người (progression.js).
+reevaluateBadgesOnce();
 
 /**
  * Routers are tried in order. `auth` says what the whole router requires:

@@ -1597,6 +1597,46 @@ async function main() {
       check('Mật khẩu chỉ lưu dạng băm', stored.startsWith('scrypt$') && !stored.includes('matkhau'));
     }
 
+    section('Sửa lỗi theo sổ theo dõi (08/10)');
+    {
+      const r = await get('bugs', '/dev/login?sub=smoke-bugs&name=Bug%20Test');
+      await get('bugs', r.headers.get('location'));
+      // BUG-008/009: ký tự lẻ do bộ gõ gửi sót → trả lời ngắn, không tốn AI, không câu dài.
+      for (const ch of ['ứ', 'k', 'ý', 'k?']) {
+        const reply = (await post('bugs', '/api/bot/message', { text: ch })).json?.reply;
+        check(`Bot: tin "${ch}" được trả lời ngắn, không coi là câu hỏi`, reply?.kind === 'too_short', JSON.stringify(reply).slice(0, 120));
+      }
+      const ok = (await post('bugs', '/api/bot/message', { text: 'Streak của tôi thế nào?' })).json?.reply;
+      check('Bot: câu bình thường vẫn trả lời như cũ', ok && ok.kind !== 'too_short');
+      const lvl = (await post('bugs', '/api/bot/message', { text: 'Tôi đang ở cấp mấy?' })).json?.reply;
+      check('Bot: câu cấp độ ghi đúng tổng 10 cấp', /\/10\)|cấp cao nhất/.test(lvl?.text || ''), lvl?.text);
+      // BUG-006: Nhà thám hiểm tính cả Học tập.
+      const board = (await get('bugs', '/api/me/badges')).json;
+      const explorer = board.all.find((b) => b.code === 'explorer');
+      const lessons = (await get('bugs', '/api/me/world')).json.learning.lessonsDone;
+      check('Huy hiệu Nhà thám hiểm: có học bài thì Học tập được tính một chức năng', explorer && (lessons > 0 ? explorer.progress >= 1 : true), JSON.stringify(explorer).slice(0, 160));
+      // BUG-007: đồ mặc vào Mua sắm (bộ đọc viết sẵn, không cần AI).
+      const cats = (await get('bugs', '/api/categories')).json;
+      const shop = cats.find((c) => c.code === 'wants_shopping');
+      check('Nhóm Mua sắm có từ khoá đồ mặc (áo, váy, áo phao…)', shop && /(^|,)áo(,|$)/.test(shop.keywords) && shop.keywords.includes('áo phao'), shop?.keywords);
+      // BUG-002: thử thách mang theo loại luật để app mở đúng chức năng.
+      const ch = (await get('bugs', '/api/me/challenges')).json;
+      const items = [...(ch.onboarding?.items || []), ...ch.daily.items, ...ch.weekly.items];
+      check('Thử thách có loại luật để mở đúng chức năng', items.length > 0 && items.every((i) => typeof i.rule_type === 'string'));
+      // BUG-001: tên của mình có trong dữ liệu màn chính.
+      check('Màn chính có tên người dùng', (await get('bugs', '/api/me/world')).json.me.name === 'Bug Test');
+      // EK-002: video tải từng đoạn (Safari / iPhone).
+      const v = '/assets/video/ekko-hoc-tap.mp4';
+      const full = await fetch(BASE + v, { method: 'HEAD' });
+      const part = await fetch(BASE + v, { headers: { range: 'bytes=0-99' } });
+      const tail = await fetch(BASE + v, { headers: { range: 'bytes=-10' } });
+      const bad = await fetch(BASE + v, { headers: { range: 'bytes=999999999-' } });
+      check('Video: loại tệp video/mp4, báo hỗ trợ tải từng đoạn', full.headers.get('content-type') === 'video/mp4' && full.headers.get('accept-ranges') === 'bytes');
+      check('Video: tải một đoạn trả 206 đúng 100 byte', part.status === 206 && (await part.arrayBuffer()).byteLength === 100 && /^bytes 0-99\//.test(part.headers.get('content-range')));
+      check('Video: tải 10 byte cuối', tail.status === 206 && (await tail.arrayBuffer()).byteLength === 10);
+      check('Video: đoạn ngoài tệp trả 416', bad.status === 416);
+    }
+
     section('Bảo mật');
     const traversal = await fetch(`${BASE}/assets/../../server/config.js`);
     check('Chặn truy cập ngoài thư mục public', traversal.status !== 200 || !(await traversal.text()).includes('ssoSecret'));

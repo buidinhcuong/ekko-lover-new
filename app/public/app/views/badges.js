@@ -212,6 +212,26 @@ function challengeSection(ctx, board) {
     }
   };
 
+  /**
+   * Bấm vào thử thách chưa xong: tới thẳng chức năng để làm (BUG-002). Làm xong
+   * bấm "←" là về lại màn này, tiến độ tự cập nhật khi vẽ lại.
+   */
+  const FEATURE_ROUTE = { budget: '/budget', goals: '/goals', expenses: '/expenses', savings: '/savings', plans: '/plans', explore: '/explore' };
+  const goDo = (item) => {
+    switch (item.rule_type) {
+      case 'lessons_completed': case 'quizzes_taken': return ctx.navigate('/explore');
+      case 'expenses_logged': case 'expense_days': case 'days_within_limits': return ctx.navigate('/expenses');
+      case 'bot_chats': return ctx.openBot();
+      case 'news_read': return ctx.navigate('/news');
+      case 'goals_created': case 'goal_deposits': return ctx.navigate('/goals');
+      case 'budgets_created': return ctx.navigate('/budget');
+      case 'feature_used': return FEATURE_ROUTE[item.rule_target] ? ctx.navigate(FEATURE_ROUTE[item.rule_target]) : null;
+      default: return null;
+    }
+  };
+  const canGo = (item) => !item.done && !item.claimed && Boolean(item.rule_type)
+    && (item.rule_type !== 'feature_used' || Boolean(FEATURE_ROUTE[item.rule_target]));
+
   const row = (item) => {
     let action;
     if (item.claimable) {
@@ -222,7 +242,13 @@ function challengeSection(ctx, board) {
     } else {
       action = el('span.challenge__xp', {}, `+${item.xp_reward} XP`);
     }
-    return el('div.challenge', { dataset: { state: item.claimed ? 'claimed' : item.claimable ? 'claimable' : 'open' } }, [
+    const go = canGo(item);
+    const node = el(`div.challenge${go ? '.challenge--go' : ''}`, {
+      dataset: { state: item.claimed ? 'claimed' : item.claimable ? 'claimable' : 'open' },
+      role: go ? 'button' : null,
+      tabindex: go ? '0' : null,
+      'aria-label': go ? t('{name} — làm ngay', { name: item.name }) : null,
+    }, [
       el('span.challenge__icon', {}, item.icon || '⭐'),
       el('div.challenge__main', {}, [
         el('div.challenge__name', {}, item.name),
@@ -235,7 +261,13 @@ function challengeSection(ctx, board) {
           : el('small.muted', {}, item.description || ''),
       ]),
       action,
+      go ? el('span.challenge__go', { 'aria-hidden': 'true' }, '›') : null,
     ]);
+    if (go) {
+      node.addEventListener('click', () => goDo(item));
+      node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goDo(item); } });
+    }
+    return node;
   };
 
   const bonusRow = (s, label) => {
@@ -404,6 +436,8 @@ export function profileCard(world, board = world.badges, { compact = world.conce
     el('div.profilecard__head', {}, [
       el('img.profilecard__avatar', { src: level?.character_image || '/assets/levels/pig-1.png', alt: '' }),
       el('div.profilecard__who', {}, [
+        // Tên của chính người dùng — để biết đây là heo của mình (BUG-001).
+        world.me?.name ? el('span.profilecard__owner', {}, world.me.name) : null,
         el('span.profilecard__level', {}, [uiIcon('flash', 16), t('Cấp {n}', { n: level?.order_index ?? 1 })]),
         el('span.profilecard__name', {}, level?.name || ''),
         el('span.profilecard__xp', {}, `${progress.xp} XP`),

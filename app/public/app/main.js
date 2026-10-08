@@ -8,7 +8,7 @@
  * the HUD numbers again after anything that can earn XP.
  */
 import { api, ApiError, el, guard, mount, screenScale, setApiLang, setLocale, setOverlayRoot, setScrollRoot, singleFlight, spriteIcon, toast, uiIcon, vnd } from '/shared/client.js';
-import { celebrateRewards, claimRedirectActive, closeSheet } from './ui.js';
+import { celebrateRewards, claimRedirectActive, closeSheet, isImeEnter } from './ui.js';
 import { openBot } from './bot.js';
 import { getLang, languageSwitch, onLangChange, t } from './i18n.js';
 import { conceptBase } from '/shared/concepts.js';
@@ -168,7 +168,7 @@ function renderHud() {
 
   mount(hudNode,
     // The island map is the hub, so every other screen needs one tap back to it.
-    atHome || isTabRoot() ? null : el('button.hud__back', { onclick: goBack, 'aria-label': t('Quay lại') }, '←'),
+    atHome || isTabRoot() ? null : el('button.hud__back', { type: 'button', onclick: goBack, 'aria-label': t('Quay lại') }, spriteIcon('arrow-left-02-stroke', 20)),
     // Ekko Lover: bấm heo trên thanh đầu mở trang Cấp độ heo; concept khác giữ trang Huy hiệu.
     el('button.hud__level', {
       onclick: () => navigate(concept === 'lover' ? '/level' : '/badges'),
@@ -513,9 +513,9 @@ function buildQuickBar() {
 
   send.addEventListener('click', submit);
   input.addEventListener('keydown', (event) => {
-    // isComposing: bộ gõ tiếng Việt dùng Enter để chốt chữ đang gõ dở, lần Enter
-    // đó không phải là "gửi".
-    if (event.key !== 'Enter' || event.isComposing) return;
+    // Bộ gõ tiếng Việt dùng Enter để chốt chữ đang gõ dở, lần Enter đó không
+    // phải là "gửi" (Safari: isComposing = false nhưng keyCode = 229).
+    if (event.key !== 'Enter' || isImeEnter(event)) return;
     event.preventDefault();
     submit();
   });

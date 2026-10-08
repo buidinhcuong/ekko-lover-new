@@ -211,6 +211,7 @@ const EN = {
   'Mật khẩu hiện tại': 'Current password',
   'Mật khẩu mới': 'New password',
   'Tài khoản': 'Account',
+  '{name} — làm ngay': '{name} — do it now',
   // Heo Dream Team + tabbar
   '{xp} XP từ Dream Team': '{xp} XP from Dream Team',
   'XP từ Dream Team': 'Dream Team XP',

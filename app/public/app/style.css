@@ -330,13 +330,16 @@ body.is-modal .homebar { opacity: 0; }
 }
 
 .hud__back {
-  width: 32px; height: 32px; flex: none;
-  margin-left: -4px;
+  /* Nút tròn cố định 32 × 32, mũi tên là icon SVG căn giữa theo cả hai chiều.
+     Trước đây là ký tự '←' nên lệch theo cách vẽ chữ của từng font (BUG-005). */
+  width: 32px; height: 32px; min-width: 32px; flex: none;
+  margin-left: -4px; padding: 0; border: 0;
   border-radius: var(--radius-full);
   display: grid; place-items: center;
   background: var(--bg-secondary); color: var(--text-primary);
-  font-size: var(--font-size-text-lg); line-height: 1;
+  line-height: 0; cursor: pointer;
 }
+.hud__back svg { display: block; }
 .hud__back:active { transform: scale(.92); }
 
 .hud__level { display: flex; align-items: center; gap: var(--spacing-8); min-width: 0; flex: 1; }
@@ -3074,7 +3077,7 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .teamrow:first-child .teamrow__rank { background: var(--ekko-lime); color: var(--ekko-midnight); }
 .teamrow__pig { flex: none; width: 48px; height: 48px; object-fit: contain; border-radius: var(--radius-full); background: var(--bg-brand-50); }
 .teamrow__main { flex: 1; min-width: 0; display: grid; gap: 4px; }
-.teamrow__name { display: flex; align-items: center; gap: var(--spacing-6); font-weight: var(--font-weight-semibold); min-width: 0; }
+.teamrow__name { display: flex; align-items: flex-start; gap: var(--spacing-6); font-weight: var(--font-weight-semibold); min-width: 0; }
 .teamrow__tag { padding: 0 var(--spacing-6); border-radius: var(--radius-full); font-size: 11px; line-height: 18px; background: var(--bg-brand-500); color: var(--text-white); }
 .teamrow__owner { display: inline-flex; color: var(--warning-500, #F79009); }
 .teamrow__meta { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); }
@@ -3105,7 +3108,15 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 
 /* Cột phải chiếm chỗ: tên và cấp heo dài thì cắt "…" thay vì xuống dòng. */
 .teamrow__meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.teamrow__nametext { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.teamrow__nametext {
+  /* Tên đầy đủ, xuống tối đa 2 dòng thay vì cắt "Võ Than…" (BUG-001). */
+  min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-height: 1.25; word-break: break-word;
+}
+.profilecard__owner {
+  font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold);
+  opacity: .95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .teamrow__tag, .teamrow__owner { flex: none; }
 
 /* ===================================================== Đăng nhập / đăng ký nội bộ (auth.js) */
@@ -3128,4 +3139,10 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .accountcard__who { display: grid; min-width: 0; }
 .accountcard__who span { font-size: var(--font-size-text-sm); overflow: hidden; text-overflow: ellipsis; }
 .accountcard__actions { display: flex; gap: var(--spacing-8); }
+
+/* Thử thách chưa xong bấm được: tới thẳng chức năng để làm (BUG-002). */
+.challenge--go { cursor: pointer; border-radius: var(--radius-12); transition: background .15s ease; }
+.challenge--go:hover, .challenge--go:focus-visible { background: var(--bg-brand-50); outline: none; }
+.challenge--go:active { transform: scale(.99); }
+.challenge__go { flex: none; font-size: 22px; line-height: 1; color: var(--text-secondary); margin-left: 2px; }
 

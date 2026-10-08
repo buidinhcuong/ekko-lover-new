@@ -372,3 +372,32 @@ export function friendCodeChip(code, { compact = false } = {}) {
 
 const COPY_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="13" height="13" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 
+/**
+ * Enter này có phải bộ gõ tiếng Việt (Telex/VNI, bàn phím iPhone) đang chốt chữ
+ * dở không — khi đó KHÔNG được coi là "gửi". Safari báo isComposing = false ở lần
+ * Enter chốt chữ nhưng keyCode = 229, nên phải xét cả hai.
+ */
+export const isImeEnter = (event) => event.isComposing || event.keyCode === 229;
+
+/**
+ * Theo dõi ô nhập có đang soạn chữ (IME) không. `afterComposition()` chờ tới khi
+ * bộ gõ chốt chữ xong (tối đa 300 ms) rồi mới đọc ô — bấm nút Gửi trên iPhone khi
+ * chữ còn gạch chân thì vẫn gửi đủ chữ, không để sót một ký tự thành tin riêng.
+ */
+export function trackComposition(input) {
+  let composing = false;
+  let waiters = [];
+  input.addEventListener('compositionstart', () => { composing = true; });
+  input.addEventListener('compositionend', () => {
+    composing = false;
+    const list = waiters; waiters = [];
+    list.forEach((fn) => fn());
+  });
+  return {
+    get composing() { return composing; },
+    afterComposition: () => (composing
+      ? new Promise((resolve) => { waiters.push(resolve); setTimeout(resolve, 300); })
+      : Promise.resolve()),
+  };
+}
+

@@ -22,7 +22,7 @@ import { dayKey, formatMonth, formatVnd, monthKey } from '../lib/time.js';
 import { extractNote, guessCategory, normalize, parseAmount, similarity, tokenize } from './nlp.js';
 import { expenseLoggedReply } from './botLog.js';
 import { alertLine } from './spendingAlerts.js';
-import { levelProgress } from './progression.js';
+import { levelProgress, levels } from './progression.js';
 import { readState, streakStatus, MAX_FREEZE_DAYS } from './streak.js';
 import { badgeBoard, nextLesson } from './world.js';
 import { tr } from '../i18n/index.js';
@@ -121,7 +121,7 @@ export const SAY = {
     streakToday: 'Chuỗi của bạn là **{count} ngày** và hôm nay đã được tính rồi. Kỷ lục của bạn là {best} ngày.',
     streakPending: 'Chuỗi của bạn là **{count} ngày**, nhưng hôm nay chưa được tính. Làm một việc bất kỳ trong app hôm nay để giữ chuỗi nhé.',
     levelTop: 'Bạn đang ở **{name:level}**, cấp cao nhất, với {xp} XP. Xin chúc mừng.',
-    levelOn: 'Bạn đang ở **{name:level}** (cấp {order}/6) với {xp} XP. Còn **{toNext} XP** nữa là mở khoá {name:next}.',
+    levelOn: 'Bạn đang ở **{name:level}** (cấp {order}/{total}) với {xp} XP. Còn **{toNext} XP** nữa là mở khoá {name:next}.',
     spendNone: 'Tháng này bạn chưa ghi khoản chi nào. Thử nhắn cho mình "cà phê 35k" để ghi khoản đầu tiên.',
     spendSome: 'Tháng này bạn đã chi **{money:month}**, riêng hôm nay là {money:today}.',
     spendTop: ' Nhóm chi nhiều nhất là **{name:category}** với {money:total}.',
@@ -134,6 +134,7 @@ export const SAY = {
     badgesNext: ' Sắp tới có thể là **{name:badge}**: {name:description}',
     badgesAll: ' Bạn đã sưu tầm đủ bộ.',
     empty: 'Bạn muốn hỏi mình điều gì?',
+    tooShort: 'Bạn nhắn thêm chút nữa nhé, ví dụ "cà phê 35k" để ghi chi tiêu, hoặc hỏi "quỹ khẩn cấp là gì?".',
     opening: 'Mình mở **{name:label}** cho bạn.',
     lessonHit: 'Nội dung này nằm trong bài **{name:lesson}** (mô đun {name:module}):\n\n{parts:excerpt}',
     lessonOpen: 'Học bài "{name:lesson}"',
@@ -149,7 +150,7 @@ export const SAY = {
     streakToday: 'Your streak is **{count} days** and today is already counted. Your record is {best} days.',
     streakPending: 'Your streak is **{count} days**, but today is not counted yet. Do anything at all in the app today to keep it.',
     levelTop: 'You are at **{name:level}**, the top level, with {xp} XP. Congratulations.',
-    levelOn: 'You are at **{name:level}** (level {order} of 6) with {xp} XP. **{toNext} XP** more unlocks {name:next}.',
+    levelOn: 'You are at **{name:level}** (level {order} of {total}) with {xp} XP. **{toNext} XP** more unlocks {name:next}.',
     spendNone: 'You have not logged any expenses this month. Try messaging me "coffee 35k" to log your first.',
     spendSome: 'You have spent **{money:month}** this month, and {money:today} today.',
     spendTop: ' Your biggest category is **{name:category}** at {money:total}.',
@@ -162,6 +163,7 @@ export const SAY = {
     badgesNext: ' Next up could be **{name:badge}**: {name:description}',
     badgesAll: ' You have collected the full set.',
     empty: 'What would you like to ask me?',
+    tooShort: 'Tell me a little more, for example "coffee 35k" to log an expense, or ask "what is an emergency fund?".',
     opening: 'Opening **{name:label}** for you.',
     lessonHit: 'This is covered in **{name:lesson}** (module {name:module}):\n\n{parts:excerpt}',
     lessonOpen: 'Open “{name:lesson}”',
@@ -296,7 +298,7 @@ function answerStatus(userId, key, lang) {
     if (!p.next) return speak(lang, 'levelTop', { level: p.level?.name, xp: state.xp });
     return speak(lang, 'levelOn', {
       level: p.level?.name, order: p.level?.order_index, xp: state.xp,
-      toNext: p.xpToNextLevel, next: p.next.name,
+      toNext: p.xpToNextLevel, next: p.next.name, total: levels().length,
     });
   }
 
@@ -482,6 +484,9 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
   const message = String(rawMessage || '').trim();
   const source = normalize(message);
   if (!message) return { kind: 'empty', ...speak(lang, 'empty') };
+  // Tin chỉ có 1 chữ / ký tự lẻ (thường là chữ sót lại của bộ gõ tiếng Việt —
+  // 'ứ', 'k', 'ý'): trả lời ngắn ngay, không tìm bài học, không tốn lượt AI.
+  if (message.replace(/[^\p{L}\p{N}]/gu, '').length < 2) return { kind: 'too_short', ...speak(lang, 'tooShort') };
 
   // 1. Quick expense: only when there is a real money marker.
   const amount = parseAmount(message);

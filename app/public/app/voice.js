@@ -126,7 +126,7 @@ export function openVoiceNote(ctx, { onSaved, typing = false } = {}) {
       placeholder: t('VD: cà phê 35 nghìn'), 'aria-label': t('Khoản chi và số tiền'),
     });
     const go = () => { const text = input.value.trim(); if (text) review(text); else input.focus(); };
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go(); } });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); go(); } });
     mount(body, [
       message ? el('p.voicenote__status', { role: 'status' }, message) : null,
       el('label.voicenote__label', {}, [t('Bạn đã chi gì, bao nhiêu tiền?'), input]),
