@@ -136,7 +136,7 @@ export const SAY = {
     empty: 'Bạn muốn hỏi mình điều gì?',
     fixDone: 'Đã chuyển **{note}** ({money:amount}) từ **{name:from}** sang **{name:to}**.',
     fixSame: 'Khoản **{note}** ({money:amount}) đang ở mục **{name:to}** rồi.',
-    fixWhich: 'Bạn muốn chuyển **{note}** ({money:amount}, đang ở mục **{name:from}**) sang mục nào?',
+    fixWhich: 'Bạn muốn chuyển **{note}** ({money:amount}, đang ở mục **{name:from}**) sang mục nào? Nhắn tên mục, ví dụ "đổi sang Mua sắm".',
     fixNone: 'Bạn chưa có khoản chi nào để đổi mục. Thử nhắn "cà phê 35k" để ghi khoản đầu tiên nhé.',
     tooShort: 'Bạn nhắn thêm chút nữa nhé, ví dụ "cà phê 35k" để ghi chi tiêu, hoặc hỏi "quỹ khẩn cấp là gì?".',
     opening: 'Mình mở **{name:label}** cho bạn.',
@@ -169,7 +169,7 @@ export const SAY = {
     empty: 'What would you like to ask me?',
     fixDone: 'Moved **{note}** ({money:amount}) from **{name:from}** to **{name:to}**.',
     fixSame: '**{note}** ({money:amount}) is already in **{name:to}**.',
-    fixWhich: 'Which category should **{note}** ({money:amount}, now in **{name:from}**) go to?',
+    fixWhich: 'Which category should **{note}** ({money:amount}, now in **{name:from}**) go to? Just name it, e.g. "move to Shopping".',
     fixNone: 'You have no expense to recategorize yet. Try "coffee 35k" to log your first one.',
     tooShort: 'Tell me a little more, for example "coffee 35k" to log an expense, or ask "what is an emergency fund?".',
     opening: 'Opening **{name:label}** for you.',
@@ -533,14 +533,9 @@ function recategorizeLast(userId, source, lang) {
   const vars = { note: last.note || last.category_name || 'Khoản chi', amount: last.amount, from: last.category_name || 'Khác', to: target?.name };
   if (!target) {
     // Không rõ mục nào: hỏi lại, kèm vài mục hay dùng để bấm chọn.
-    const popular = ['wants_shopping', 'wants_dining', 'needs_food', 'needs_transport', 'wants_entertainment', 'needs_bills']
-      .map((code) => categories.find((c) => c.code === code))
-      .filter((c) => c && c.id !== last.category_id)
-      .slice(0, 4);
     return {
       kind: 'recategorize_ask',
       ...speak(lang, 'fixWhich', vars),
-      suggestions: popular.map((c) => (lang === 'en' ? `Move to ${tr(c.name, lang)}` : `Đổi sang ${c.name}`)),
     };
   }
   if (target.id === last.category_id) return { kind: 'recategorize_same', ...speak(lang, 'fixSame', vars) };

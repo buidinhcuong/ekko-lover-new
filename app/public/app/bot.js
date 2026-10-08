@@ -41,7 +41,6 @@ export async function openBot(ctx) {
     chat.append(node);
 
     if (meta?.action) chat.append(actionButton(meta.action, ctx));
-    if (meta?.suggestions?.length) chat.append(suggestionRow(meta.suggestions, send));
 
     toBottom();
     return node;
@@ -224,13 +223,3 @@ function actionButton(action, ctx) {
   return el('button.btn.btn--sm.btn--ghost', { style: { alignSelf: 'flex-start' }, onclick: run }, action.label);
 }
 
-// Bot không gợi ý câu hỏi nữa — chỉ còn nút hành động "Đổi mục" / "Đổi sang X"
-// (lọc cả tin nhắn cũ trong lịch sử, vốn còn lưu chip câu hỏi).
-const isActionChip = (text) => /^(Đổi mục|Đổi sang |Change category|Move to )/.test(text);
-
-function suggestionRow(suggestions, send) {
-  const actions = suggestions.filter(isActionChip);
-  if (!actions.length) return '';
-  return el('div.chips', { style: { marginTop: '4px' } },
-    actions.slice(0, 3).map((text) => el('button.chip', { onclick: () => send(text) }, text)));
-}

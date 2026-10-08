@@ -1635,14 +1635,14 @@ async function main() {
       const same = (await post('bugs', '/api/bot/message', { text: 'đổi sang Mua sắm' })).json?.reply;
       check('Bot: đã đúng mục rồi thì báo, không đổi', same?.kind === 'recategorize_same');
       const ask = (await post('bugs', '/api/bot/message', { text: 'Đổi mục' })).json?.reply;
-      check('Bot: "Đổi mục" không nói mục nào thì hỏi lại kèm mục gợi ý', ask?.kind === 'recategorize_ask' && ask.suggestions?.length >= 2 && ask.suggestions.every((x) => x.startsWith('Đổi sang ')), JSON.stringify(ask?.suggestions));
+      check('Bot: "Đổi mục" không nói mục nào thì hỏi lại (không kèm chip gợi ý)', ask?.kind === 'recategorize_ask' && !ask.suggestions?.length, JSON.stringify(ask?.suggestions));
       const q = (await post('bugs', '/api/bot/message', { text: 'quỹ khẩn cấp phải là bao nhiêu?' })).json?.reply;
       const q2 = (await post('bugs', '/api/bot/message', { text: 'nên chuyển sang gửi tiết kiệm không?' })).json?.reply;
       check('Bot: câu hỏi thường không bị hiểu nhầm là lệnh đổi mục', !String(q?.kind).startsWith('recategoriz') && !String(q2?.kind).startsWith('recategoriz'), `${q?.kind} / ${q2?.kind}`);
       const en = (await call('bugs', 'POST', '/api/bot/message', { text: 'Move to Groceries' }, { lang: 'en' })).json?.reply;
       check('Bot (tiếng Anh): "Move to Groceries" đổi được mục', en?.kind === 'recategorized' && /Moved/.test(en.text), `${en?.kind} ${en?.text}`);
       const loggedReply = (await post('bugs', '/api/bot/message', { text: 'trà sữa 35k' })).json?.reply;
-      check('Câu xác nhận ghi chi có chip "Đổi mục"', loggedReply?.suggestions?.includes('Đổi mục'), JSON.stringify(loggedReply?.suggestions));
+      check('Câu xác nhận ghi chi không kèm chip gợi ý, chỉ dặn nhắn để đổi mục', !loggedReply?.suggestions?.length && /đổi sang/.test(loggedReply?.text), JSON.stringify(loggedReply?.suggestions));
       // BUG-011: dữ liệu tháng có nhóm của từng khoản (để lọc theo dòng ngân sách).
       check('Ghi chép theo tháng có mã nhóm từng khoản', (await get('bugs', '/api/expenses')).json.expenses.every((e) => 'category_id' in e && 'spent_on' in e));
 
