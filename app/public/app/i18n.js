@@ -218,6 +218,9 @@ const EN = {
   'Đã chi {month}': 'Spent in {month}',
   '{n} khoản · mới nhất ở trên': '{n} expenses · newest first',
   'Mở Ghi chép chi tiêu': 'Open expense log',
+  'thu nhập {amount}': 'income {amount}',
+  'Thu nhập tháng {amount}, theo các khoản thu nhập đã ghi': 'Monthly income {amount}, from the income you logged',
+  'Thu nhập tháng {amount}': 'Monthly income {amount}',
   // Heo Dream Team + tabbar
   '{xp} XP từ Dream Team': '{xp} XP from Dream Team',
   'XP từ Dream Team': 'Dream Team XP',

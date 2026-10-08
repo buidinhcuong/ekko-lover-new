@@ -3154,3 +3154,5 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .spentrow + .spentrow { border-top: 1px solid var(--border-secondary); }
 .spentrow__amount { flex: none; font-variant-numeric: tabular-nums; }
 
+/* Thu nhập tháng dưới dòng "Còn lại" (lấy theo các khoản thu nhập đã ghi). */
+.expcentral__income { display: block; margin-top: 2px; color: var(--text-secondary); font-weight: var(--font-weight-regular); }

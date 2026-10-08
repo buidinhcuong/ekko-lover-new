@@ -198,9 +198,12 @@ function centralPanel(ctx, monthData, weekData, income) {
         el('div.expcentral__amount', {}, vnd(monthData.totals.total)),
         income.amount > 0 ? (() => {
           const remaining = income.amount - monthData.totals.total;
-          return el(`div.expcentral__remaining${remaining < 0 ? '.is-over' : ''}`, {}, remaining >= 0
-            ? t('Còn lại {amount}', { amount: vnd(remaining) })
-            : t('Vượt thu nhập {amount}', { amount: vnd(-remaining) }));
+          return el(`div.expcentral__remaining${remaining < 0 ? '.is-over' : ''}`, {}, [
+            remaining >= 0
+              ? t('Còn lại {amount}', { amount: vnd(remaining) })
+              : t('Vượt thu nhập {amount}', { amount: vnd(-remaining) }),
+            el('small.expcentral__income', {}, t('Thu nhập tháng {amount}', { amount: vnd(income.amount) })),
+          ]);
         })() : null,
       ]),
       lineChart(days, maxTotal, busiest),

@@ -33,6 +33,7 @@ import { alertLine, expenseAlerts } from '../services/spendingAlerts.js';
 import { langOf } from '../i18n/index.js';
 import { receiptFile, removeReceipt, saveReceipt, checkReceipt } from '../services/receipts.js';
 import { keyState, readReceipt } from '../services/receiptAI.js';
+import { monthIncome } from '../services/monthIncome.js';
 
 export const featureRouter = new Router();
 
@@ -522,9 +523,9 @@ featureRouter.get('/api/expenses', ({ user, url }) => {
 featureRouter.get('/api/expenses/income', ({ user, url }) => {
   const month = url.searchParams.get('month') || monthKey();
   if (!MONTH_RE.test(month)) throw bad('Tháng phải có dạng YYYY-MM');
-  const row = get('SELECT amount FROM monthly_income WHERE user_id = ? AND month = ?', user.id, month);
-  return { month, amount: row?.amount ?? 0 };
+  return monthIncome(user.id, month);
 });
+
 
 featureRouter.put('/api/expenses/income', ({ user, body }) => {
   const month = String(body.month || monthKey());

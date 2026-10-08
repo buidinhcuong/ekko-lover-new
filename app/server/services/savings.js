@@ -17,6 +17,7 @@
 import { all, get, run } from '../db.js';
 import { bad, notFound } from '../lib/http.js';
 import { dayKey, monthKey, nowIso, shiftMonth } from '../lib/time.js';
+import { monthIncome } from './monthIncome.js';
 
 const MONTH_RE = /^\d{4}-\d{2}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -239,7 +240,8 @@ export function createEkkoDeposit(userId, body) {
  */
 export function savingsRecap(userId) {
   const month = shiftMonth(monthKey(), -1);
-  const income = get('SELECT amount FROM monthly_income WHERE user_id = ? AND month = ?', userId, month);
+  // Thu nhập đã ghi (nút "Thu nhập") hoặc con số tự gõ — xem services/monthIncome.js.
+  const income = monthIncome(userId, month);
   const dismissed = Boolean(get(
     'SELECT 1 AS x FROM savings_recap_dismissed WHERE user_id = ? AND month = ?', userId, month,
   ));

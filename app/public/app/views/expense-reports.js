@@ -77,12 +77,18 @@ function incomeBlock(month, income, spentMonth, rerender) {
     }
     const percent = Math.round((spentMonth / income.amount) * 100);
     const tone = percent > 100 ? 'over' : percent > 80 ? 'warn' : '';
+    // Thu nhập lấy từ các khoản đã ghi (nút "Thu nhập"): không cho sửa ở đây —
+    // ghi thêm / xoá khoản thu nhập mới đổi được con số này.
+    const fromEntries = income.source === 'entries';
     mount(node, [el('div.gauge', {}, [
       el('div.gauge__row', {}, [
         el('span.gauge__label', {}, t('Đã dùng {percent}% so với thu nhập tháng', { percent })),
-        el('button.linkbtn', { onclick: () => { editing = true; draw(); } }, t('Sửa')),
+        fromEntries ? null : el('button.linkbtn', { onclick: () => { editing = true; draw(); } }, t('Sửa')),
       ]),
       bar(percent, tone),
+      el('small.muted', {}, fromEntries
+        ? t('Thu nhập tháng {amount}, theo các khoản thu nhập đã ghi', { amount: vnd(income.amount) })
+        : t('Thu nhập tháng {amount}', { amount: vnd(income.amount) })),
     ])]);
   };
   draw();

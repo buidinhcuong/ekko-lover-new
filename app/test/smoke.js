@@ -1646,6 +1646,17 @@ async function main() {
       // BUG-011: dữ liệu tháng có nhóm của từng khoản (để lọc theo dòng ngân sách).
       check('Ghi chép theo tháng có mã nhóm từng khoản', (await get('bugs', '/api/expenses')).json.expenses.every((e) => 'category_id' in e && 'spent_on' in e));
 
+      // Thu nhập: ghi khoản thu nhập (nút "Thu nhập") thì thu nhập tháng lấy theo đó.
+      const thisMonth = (await get('bugs', '/api/me/world')).json.today.slice(0, 7);
+      const before = (await get('bugs', `/api/expenses/income?month=${thisMonth}`)).json;
+      await post('bugs', '/api/income', { amount: 40000000, category: 'regular', note: 'Lương' });
+      const after = (await get('bugs', `/api/expenses/income?month=${thisMonth}`)).json;
+      check('Ghi khoản thu nhập 40 triệu thì thu nhập tháng hiện 40 triệu (không hỏi lại)',
+        after.amount === before.recorded + 40000000 && after.source === 'entries', JSON.stringify(after));
+      await put('bugs', '/api/expenses/income', { month: thisMonth, amount: 15000000 });
+      const mixed = (await get('bugs', `/api/expenses/income?month=${thisMonth}`)).json;
+      check('Đã có khoản thu nhập đã ghi thì ưu tiên số đã ghi hơn số tự gõ', mixed.amount === after.amount && mixed.typed === 15000000, JSON.stringify(mixed));
+
       // EK-002: video tải từng đoạn (Safari / iPhone).
       const v = '/assets/video/ekko-hoc-tap.mp4';
       const full = await fetch(BASE + v, { method: 'HEAD' });
