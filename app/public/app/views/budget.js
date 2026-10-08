@@ -4,7 +4,7 @@
  * tiêu. Không còn khái niệm "thu nhập" hay "phân bổ" như bản cũ — mỗi dòng
  * ngân sách độc lập, gắn với một nhóm chi tiêu con hoặc cả một nhóm level 1.
  */
-import { api, dataIcon, el, guard, mount, spriteIcon, toast, uiIcon, vnd, vndShort } from '/shared/client.js';
+import { api, dataIcon, el, formatDay, guard, mount, spriteIcon, toast, uiIcon, vnd, vndShort } from '/shared/client.js';
 import { bar, celebrateRewards, closeSheet, confirmSheet, moneyInput, readMoney, sheet, swipeRow } from '../ui.js';
 import { getLang, t } from '../i18n.js';
 
@@ -150,7 +150,61 @@ function budgetRow(item, ctx, month, rerender) {
   return swipeRow(content, [
     { label: t('Sửa'), tone: 'edit', onclick: () => openEditSheet(ctx, item, month, rerender) },
     { label: t('Xoá'), tone: 'danger', onclick: () => deleteLine(ctx, item, month, rerender) },
-  ]);
+  ], {
+    // Chạm vào dòng: xem nhanh các khoản đã chi của nhóm trong tháng (BUG-011).
+    // Vuốt trái vẫn là Sửa / Xoá như cũ.
+    onTap: () => openSpentSheet(ctx, item, month),
+    tapLabel: t('Xem các khoản đã chi: {name}', { name: item.name }),
+  });
+}
+
+/**
+ * Xem nhanh các khoản đã chi thuộc một dòng ngân sách trong tháng đang xem:
+ * dòng theo nhóm chi tiêu, hoặc theo cả nhóm lớn (Nhu cầu / Mong muốn…).
+ */
+async function openSpentSheet(ctx, item, month) {
+  const data = await guard(() => Promise.all([api.get(`/api/expenses?month=${month}`), api.get('/api/categories')]), t('Không tải được các khoản chi'));
+  if (!data) return;
+  const [monthData, categories] = data;
+  const groupOf = new Map(categories.map((c) => [c.id, c.group_code]));
+  const list = (monthData.list || monthData.expenses || []).filter((e) => (item.categoryId
+    ? e.category_id === item.categoryId
+    : groupOf.get(e.category_id) === item.groupCode));
+  const total = list.reduce((sum, e) => sum + e.amount, 0);
+
+  const rows = list.length
+    ? list.map((e) => el('div.row.spentrow', {}, [
+      el('span.row__icon', {
+        style: {
+          background: `color-mix(in srgb, ${e.category_color || 'var(--bg-brand-500)'} 10%, transparent)`,
+          color: e.category_color || 'var(--text-brand-500)',
+        },
+      }, dataIcon(e.category_icon, 'package', 20)),
+      el('div.row__main', {}, [
+        el('div.row__title', {}, e.note || e.category_name || t('Khoản chi')),
+        el('div.row__sub', {}, `${formatDay(e.spent_on)}${item.categoryId ? '' : ` · ${e.category_name || t('Khác')}`}`),
+      ]),
+      el('b.spentrow__amount', {}, `-${vnd(e.amount)}`),
+    ]))
+    : [el('p.muted', { style: { textAlign: 'center', padding: '16px 0' } }, t('Chưa có khoản chi nào trong {month}.', { month: monthLabel(month) }))];
+
+  sheet({
+    title: item.categoryId ? item.name : `${item.name} · ${t('cả nhóm')}`,
+    body: [
+      el('div.spentsum', {}, [
+        el('div.stat-row', {}, [
+          el('span', {}, t('Đã chi {month}', { month: monthLabel(month) })),
+          el('b', {}, `${vnd(total)} / ${vnd(item.amount)}`),
+        ]),
+        el('div', { style: { marginTop: '8px' } }, [bar(item.percent, toneFor(item))]),
+        el('small.muted', {}, t('{n} khoản · mới nhất ở trên', { n: list.length })),
+      ]),
+      el('div.spentlist', {}, rows),
+    ],
+    footer: el('div.sheet__body', { style: { borderTop: '1px solid var(--border-secondary)' } }, [
+      el('button.btn.btn--ghost.btn--block', { type: 'button', onclick: () => { closeSheet(); ctx.navigate('/expenses'); } }, t('Mở Ghi chép chi tiêu')),
+    ]),
+  });
 }
 
 async function deleteLine(ctx, item, month, rerender) {

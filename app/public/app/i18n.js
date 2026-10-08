@@ -212,6 +212,12 @@ const EN = {
   'Mật khẩu mới': 'New password',
   'Tài khoản': 'Account',
   '{name} — làm ngay': '{name} — do it now',
+  'Xem các khoản đã chi: {name}': 'See spending: {name}',
+  'Không tải được các khoản chi': "Couldn't load the expenses",
+  'Chưa có khoản chi nào trong {month}.': 'No expenses in {month} yet.',
+  'Đã chi {month}': 'Spent in {month}',
+  '{n} khoản · mới nhất ở trên': '{n} expenses · newest first',
+  'Mở Ghi chép chi tiêu': 'Open expense log',
   // Heo Dream Team + tabbar
   '{xp} XP từ Dream Team': '{xp} XP from Dream Team',
   'XP từ Dream Team': 'Dream Team XP',

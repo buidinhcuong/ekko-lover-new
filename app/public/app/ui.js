@@ -265,13 +265,21 @@ document.addEventListener('pointerdown', (event) => {
  * Pointer Events (chứ không riêng touch) để cả chuột trên desktop cũng kéo
  * được, không chỉ cảm ứng trên điện thoại. `actions`: [{label, tone, onclick}].
  */
-export function swipeRow(content, actions) {
+/**
+ * `onTap`: chạm nhẹ vào hàng (không kéo) — vd. mở chi tiết. Hàng đang mở nút
+ * thì chạm chỉ đóng lại, không mở chi tiết.
+ */
+export function swipeRow(content, actions, { onTap, tapLabel } = {}) {
   const actionsNode = el('div.swiperow__actions', {}, actions.map((a) => el(
     `button.swiperow__action.swiperow__action--${a.tone}`,
     { onclick: () => { close(); a.onclick(); } },
     a.label,
   )));
-  const inner = el('div.swiperow__inner', {}, [content]);
+  const inner = el('div.swiperow__inner', onTap ? { role: 'button', tabindex: '0', 'aria-label': tapLabel || null } : {}, [content]);
+  if (onTap) {
+    inner.classList.add('swiperow__inner--tap');
+    inner.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onTap(); } });
+  }
   const wrap = el('div.swiperow', {}, [actionsNode, inner]);
   const width = actions.length * SWIPE_ACTION_WIDTH + (actions.length - 1) * SWIPE_ACTION_GAP + SWIPE_ACTION_PAD;
 
@@ -310,6 +318,13 @@ export function swipeRow(content, actions) {
     dragging = false;
     inner.style.transition = '';
     const dx = (event.clientX - startX) / scale;
+    // Chạm nhẹ khi hàng đang đóng: mở chi tiết thay vì coi là kéo.
+    if (onTap && baseX === 0 && Math.abs(dx) < 6 && event.type === 'pointerup') {
+      apply(0);
+      inner.style.willChange = '';
+      onTap();
+      return;
+    }
     const x = Math.min(0, Math.max(-width, baseX + dx));
     open = x < -width / 2;
     apply(open ? -width : 0);

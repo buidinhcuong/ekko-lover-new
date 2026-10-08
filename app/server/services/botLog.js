@@ -46,8 +46,8 @@ export function renderExpenseLogged(logged, lang = 'vi') {
   // Không in biểu tượng nhóm vào câu: khung chat chỉ hiện chữ, còn biểu tượng
   // giờ là tên icon ("package") chứ không còn là emoji — in ra thành chữ lạ.
   return lang === 'en'
-    ? `Logged **${money}** under **${name}**${tail}. If the category is off, change it in your expense log.`
-    : `Đã ghi **${money}** vào nhóm **${name}**${tail}. Nếu nhóm chưa đúng, bạn đổi trong sổ chi tiêu nhé.`;
+    ? `Logged **${money}** under **${name}**${tail}. Wrong category? Tap **Change category** or say "move to Shopping".`
+    : `Đã ghi **${money}** vào nhóm **${name}**${tail}. Sai nhóm thì bấm **Đổi mục** hoặc nhắn "đổi sang Mua sắm" nhé.`;
 }
 
 /**
@@ -66,6 +66,7 @@ export function expenseLoggedReply({ amount, category, note }, lang = 'vi') {
     logged,
     text: renderExpenseLogged(logged, lang),
     action: { type: 'navigate', route: '/app/#/expenses', label: 'Mở sổ chi tiêu' },
-    suggestions: ['Tháng này tôi tiêu bao nhiêu?', 'Ngân sách còn bao nhiêu?'],
+    // "Đổi mục": nhờ bot chuyển khoản vừa ghi sang mục khác (BUG-010).
+    suggestions: ['Đổi mục', 'Tháng này tôi tiêu bao nhiêu?', 'Ngân sách còn bao nhiêu?'],
   };
 }

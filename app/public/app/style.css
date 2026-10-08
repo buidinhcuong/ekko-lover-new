@@ -3146,3 +3146,11 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .challenge--go:active { transform: scale(.99); }
 .challenge__go { flex: none; font-size: 22px; line-height: 1; color: var(--text-secondary); margin-left: 2px; }
 
+/* Ngân sách: chạm vào dòng xem nhanh các khoản đã chi (BUG-011). */
+.swiperow__inner--tap { cursor: pointer; }
+.swiperow__inner--tap:focus-visible { outline: 2px solid var(--bg-brand-500); outline-offset: -2px; border-radius: var(--radius-8); }
+.spentsum { display: grid; gap: 6px; padding-bottom: var(--spacing-12); border-bottom: 1px solid var(--border-secondary); }
+.spentlist { display: grid; }
+.spentrow + .spentrow { border-top: 1px solid var(--border-secondary); }
+.spentrow__amount { flex: none; font-variant-numeric: tabular-nums; }
+

@@ -1647,6 +1647,8 @@ export const EN = {
   'Vàng DOJI': 'DOJI gold',
   'Vàng thế giới': 'World gold',
 
+  // ------------------------------------------- Ekko bot: đổi mục khoản chi (BUG-010)
+  'Đổi mục': 'Change category',
   // ------------------------------------------- đăng nhập nội bộ (services/localAuth.js)
   'Vui lòng đăng nhập để tiếp tục': 'Please sign in to continue',
   'Đăng ký bằng email đang tắt': 'Email sign-up is turned off',

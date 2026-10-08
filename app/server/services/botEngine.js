@@ -16,7 +16,7 @@
 import { readExpenses } from './expenseReader.js';
 import { keyState } from './receiptAI.js';
 import { logOutOfScope, takeAiCall } from './aiQuota.js';
-import { all, get } from '../db.js';
+import { all, get, run } from '../db.js';
 import { config } from '../config.js';
 import { dayKey, formatMonth, formatVnd, monthKey } from '../lib/time.js';
 import { extractNote, guessCategory, normalize, parseAmount, similarity, tokenize } from './nlp.js';
@@ -134,6 +134,10 @@ export const SAY = {
     badgesNext: ' Sắp tới có thể là **{name:badge}**: {name:description}',
     badgesAll: ' Bạn đã sưu tầm đủ bộ.',
     empty: 'Bạn muốn hỏi mình điều gì?',
+    fixDone: 'Đã chuyển **{note}** ({money:amount}) từ **{name:from}** sang **{name:to}**.',
+    fixSame: 'Khoản **{note}** ({money:amount}) đang ở mục **{name:to}** rồi.',
+    fixWhich: 'Bạn muốn chuyển **{note}** ({money:amount}, đang ở mục **{name:from}**) sang mục nào?',
+    fixNone: 'Bạn chưa có khoản chi nào để đổi mục. Thử nhắn "cà phê 35k" để ghi khoản đầu tiên nhé.',
     tooShort: 'Bạn nhắn thêm chút nữa nhé, ví dụ "cà phê 35k" để ghi chi tiêu, hoặc hỏi "quỹ khẩn cấp là gì?".',
     opening: 'Mình mở **{name:label}** cho bạn.',
     lessonHit: 'Nội dung này nằm trong bài **{name:lesson}** (mô đun {name:module}):\n\n{parts:excerpt}',
@@ -163,6 +167,10 @@ export const SAY = {
     badgesNext: ' Next up could be **{name:badge}**: {name:description}',
     badgesAll: ' You have collected the full set.',
     empty: 'What would you like to ask me?',
+    fixDone: 'Moved **{note}** ({money:amount}) from **{name:from}** to **{name:to}**.',
+    fixSame: '**{note}** ({money:amount}) is already in **{name:to}**.',
+    fixWhich: 'Which category should **{note}** ({money:amount}, now in **{name:from}**) go to?',
+    fixNone: 'You have no expense to recategorize yet. Try "coffee 35k" to log your first one.',
     tooShort: 'Tell me a little more, for example "coffee 35k" to log an expense, or ask "what is an emergency fund?".',
     opening: 'Opening **{name:label}** for you.',
     lessonHit: 'This is covered in **{name:lesson}** (module {name:module}):\n\n{parts:excerpt}',
@@ -480,6 +488,71 @@ async function askClaude(question, contextText, lang) {
 /**
  * @returns {Promise<{text:string, kind:string, action?:object, suggestions?:string[], expense?:object, rewards?:object}>}
  */
+// --- Đổi mục khoản chi vừa ghi (BUG-010) ------------------------------------
+// Rõ ràng là đang sửa mục → luôn xử lý. Câu chung chung ("đổi sang…", "mục … chứ")
+// chỉ xử lý khi trong câu có tên / từ khoá một mục chi tiêu — tránh cướp câu hỏi
+// thường như "nên chuyển sang gửi tiết kiệm không?".
+const RECAT_STRONG = /\b(sai roi|sai muc|sai nhom|nham muc|nham nhom|nham roi|ghi nham|xep nham|doi muc|doi nhom|chuyen muc|chuyen nhom|sua muc|sua nhom|change category|wrong category)\b/;
+const RECAT_WEAK = /\b(doi|chuyen) (sang|qua|thanh)\b|\bmove (it )?to\b|\b(muc|nhom)\b.*\bchu\b/;
+const recatCategories = () => all('SELECT id, code, name, keywords FROM categories ORDER BY order_index, id');
+const isQuestion = (source) => /\?|\b(khong|chua|nao|gi|sao|bao nhieu)\s*$/.test(source);
+const wantsRecategorize = (source) => RECAT_STRONG.test(source)
+  || (RECAT_WEAK.test(source) && !isQuestion(source) && Boolean(mentionedCategory(source, recatCategories())));
+
+/** Nhóm chi tiêu được nhắc tới trong câu: theo tên nhóm trước (dài nhất), rồi tới từ khoá Admin. */
+function mentionedCategory(source, categories) {
+  const has = (needle) => needle && new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(source);
+  let best = null; let bestLen = 0;
+  for (const c of categories) {
+    // Tên tiếng Việt và tên tiếng Anh ("Move to Shopping" ở bản tiếng Anh).
+    for (const name of [normalize(c.name), normalize(tr(c.name, 'en'))]) {
+      if (name.length > bestLen && has(name)) { best = c; bestLen = name.length; }
+    }
+  }
+  if (best) return best;
+  let byKeyword = null; let len = 0;
+  for (const c of categories) {
+    for (const k of String(c.keywords || '').split(',')) {
+      const needle = normalize(k);
+      if (needle.length > len && has(needle)) { byKeyword = c; len = needle.length; }
+    }
+  }
+  return byKeyword;
+}
+
+function recategorizeLast(userId, source, lang) {
+  const last = get(
+    `SELECT e.id, e.amount, e.note, e.category_id, c.name AS category_name
+       FROM expenses e LEFT JOIN categories c ON c.id = e.category_id
+      WHERE e.user_id = ? ORDER BY e.id DESC LIMIT 1`,
+    userId,
+  );
+  if (!last) return { kind: 'recategorize_none', ...speak(lang, 'fixNone') };
+  const categories = recatCategories();
+  const target = mentionedCategory(source, categories);
+  const vars = { note: last.note || last.category_name || 'Khoản chi', amount: last.amount, from: last.category_name || 'Khác', to: target?.name };
+  if (!target) {
+    // Không rõ mục nào: hỏi lại, kèm vài mục hay dùng để bấm chọn.
+    const popular = ['wants_shopping', 'wants_dining', 'needs_food', 'needs_transport', 'wants_entertainment', 'needs_bills']
+      .map((code) => categories.find((c) => c.code === code))
+      .filter((c) => c && c.id !== last.category_id)
+      .slice(0, 4);
+    return {
+      kind: 'recategorize_ask',
+      ...speak(lang, 'fixWhich', vars),
+      suggestions: popular.map((c) => (lang === 'en' ? `Move to ${tr(c.name, lang)}` : `Đổi sang ${c.name}`)),
+    };
+  }
+  if (target.id === last.category_id) return { kind: 'recategorize_same', ...speak(lang, 'fixSame', vars) };
+  run('UPDATE expenses SET category_id = ? WHERE id = ? AND user_id = ?', target.id, last.id, userId);
+  return {
+    kind: 'recategorized',
+    ...speak(lang, 'fixDone', vars),
+    expenseId: last.id,
+    suggestions: ['Tháng này tôi tiêu bao nhiêu?', 'Ngân sách còn bao nhiêu?'],
+  };
+}
+
 export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }) {
   const message = String(rawMessage || '').trim();
   const source = normalize(message);
@@ -490,6 +563,10 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
 
   // 1. Quick expense: only when there is a real money marker.
   const amount = parseAmount(message);
+
+  // 0b. Đổi mục của khoản chi vừa ghi: "sai rồi, mục mua sắm chứ", "đổi sang
+  //     Nhà hàng", hoặc chip "Đổi mục" dưới câu xác nhận ghi chi (BUG-010).
+  if (!amount && wantsRecategorize(source)) return recategorizeLast(userId, source, lang);
   const looksLikeQuestion = /\?|^(la|tai sao|vi sao|the nao|lam sao|nhu the nao|cai gi|khi nao|bao gio)\b/.test(source)
     || /\b(la gi|nghia la|giai thich|huong dan|tai sao|vi sao)\b/.test(source);
 
