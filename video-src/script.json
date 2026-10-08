@@ -1,42 +1,197 @@
 [
- {"id":"hook","lines":[
-  ["Ứng lương giúp bạn vượt qua những ngày khó khăn.", null],
-  ["Nhưng để đi xa, bạn cần hiểu và làm chủ đồng tiền của mình.", null]]},
- {"id":"title","lines":[
-  ["Đó là lý do Ekko ra mắt tính năng Học tập:", "Đó là lý do Éc-cô ra mắt tính năng Học tập:"],
-  ["những bài học tài chính ngắn gọn, ngay trong app Ekko, vui như chơi game.", "những bài học tài chính ngắn gọn, ngay trong áp Éc-cô, vui như chơi game."]]},
- {"id":"pigs","lines":[
-  ["Mỗi người có một chú heo của riêng mình.", null],
-  ["Học xong một bài được 30 XP, làm bài kiểm tra được 50 XP,", "Học xong một bài được ba mươi điểm kinh nghiệm, làm bài kiểm tra được năm mươi điểm,"],
-  ["ghé app mỗi ngày còn được thêm 10 XP.", "ghé áp mỗi ngày còn được thêm mười điểm."],
-  ["Chú heo lớn dần qua mười cấp độ, từ Heo Mầm Non đến Heo Thịnh Vượng.", null]]},
- {"id":"path","lines":[
-  ["Lộ trình gồm 8 mô đun, 34 bài học,", "Lộ trình gồm tám mô đun, ba mươi tư bài học,"],
-  ["từ đặt mục tiêu, quản lý tiền bạc, bảo hiểm,", null],
-  ["đến phòng chống lừa đảo và quyền lợi lao động.", null],
-  ["Mỗi bài chỉ mất vài phút.", null]]},
- {"id":"learn","lines":[
-  ["Bài học là những trang ngắn, hình ảnh rõ ràng, vuốt nhẹ là sang trang.", null],
-  ["Cuối mỗi mô đun có bài trắc nghiệm để bạn ôn lại kiến thức.", null]]},
- {"id":"apply","lines":[
-  ["Học xong, làm ngay:", null],
-  ["đặt mục tiêu và nhờ AI tư vấn xem có khả thi không,", "đặt mục tiêu và nhờ trí tuệ nhân tạo tư vấn xem có khả thi không,"],
-  ["lập ngân sách, ghi chép chi tiêu,", null],
-  ["theo dõi tiết kiệm và tiền lãi khi đáo hạn.", null],
-  ["Tất cả ở cùng một nơi.", null]]},
- {"id":"quick","lines":[
-  ["Ấn giữ chú bạch tuộc Ekko, gõ “phở 45k, cà phê 25k”,", "Ấn giữ chú bạch tuộc Éc-cô, gõ phở bốn mươi lăm nghìn, cà phê hai mươi lăm nghìn,"],
-  ["AI tự tách thành hai khoản và ghi giúp bạn.", "trí tuệ nhân tạo tự tách thành hai khoản và ghi giúp bạn."],
-  ["Có thắc mắc về tiền bạc, cứ hỏi Ekko bot.", "Có thắc mắc về tiền bạc, cứ hỏi Éc-cô bót."]]},
- {"id":"daily","lines":[
-  ["Mỗi ngày một bước:", null],
-  ["giữ chuỗi ngày học, hoàn thành thử thách hằng ngày, và sưu tầm huy hiệu.", null]]},
- {"id":"team","lines":[
-  ["Học cùng bạn bè còn vui hơn.", null],
-  ["Lập Heo Dream Team bằng mã ID của nhau, nhắc nhau giữ streak mỗi ngày,", "Lập đội Heo Đờ-rim Tim bằng mã riêng của nhau, nhắc nhau giữ chuỗi ngày học,"],
-  ["và khi bạn cùng đội học, bạn cũng được thưởng thêm XP.", "và khi bạn cùng đội học, bạn cũng được thưởng thêm điểm kinh nghiệm."]]},
- {"id":"outro","lines":[
-  ["Học tập trong app Ekko.", "Học tập trong áp Éc-cô."],
-  ["Hiểu tiền hơn mỗi ngày, sống vững vàng hơn mỗi tháng.", null],
-  ["Mở app Ekko và bắt đầu bài học đầu tiên ngay hôm nay.", "Mở áp Éc-cô và bắt đầu bài học đầu tiên ngay hôm nay."]]}
+ {
+  "id": "hook",
+  "lines": [
+   [
+    "Ứng lương giúp bạn vượt qua những ngày khó khăn.",
+    null
+   ],
+   [
+    "Nhưng để đi xa, bạn cần hiểu và làm chủ đồng tiền của mình.",
+    null
+   ]
+  ]
+ },
+ {
+  "id": "title",
+  "lines": [
+   [
+    "Đó là lý do Ekko ra mắt tính năng Học tập:",
+    "Đó là lý do Éc-cô ra mắt tính năng Học tập:"
+   ],
+   [
+    "những bài học tài chính ngắn gọn, ngay trong app Ekko, vui như chơi game.",
+    "những bài học tài chính ngắn gọn, ngay trong áp Éc-cô, vui như chơi game."
+   ]
+  ]
+ },
+ {
+  "id": "pigs",
+  "lines": [
+   [
+    "Mỗi người có một chú heo của riêng mình.",
+    null
+   ],
+   [
+    "Học xong một bài được 30 XP, làm bài kiểm tra được 50 XP,",
+    "Học xong một bài được ba mươi điểm kinh nghiệm, làm bài kiểm tra được năm mươi điểm,"
+   ],
+   [
+    "ghé app mỗi ngày còn được thêm 10 XP.",
+    "ghé áp mỗi ngày còn được thêm mười điểm."
+   ],
+   [
+    "Chú heo lớn dần qua mười cấp độ, từ Heo Mầm Non đến Heo Thịnh Vượng.",
+    null
+   ]
+  ]
+ },
+ {
+  "id": "path",
+  "lines": [
+   [
+    "Lộ trình gồm 8 mô đun, 34 bài học,",
+    "Lộ trình gồm tám mô đun, ba mươi tư bài học,"
+   ],
+   [
+    "từ đặt mục tiêu, quản lý tiền bạc, bảo hiểm,",
+    null
+   ],
+   [
+    "đến phòng chống lừa đảo và quyền lợi lao động.",
+    null
+   ],
+   [
+    "Mỗi bài chỉ mất vài phút.",
+    null
+   ]
+  ]
+ },
+ {
+  "id": "learn",
+  "lines": [
+   [
+    "Bài học là những trang ngắn, hình ảnh rõ ràng, vuốt nhẹ là sang trang.",
+    null
+   ],
+   [
+    "Cuối mỗi mô đun có bài trắc nghiệm để bạn ôn lại kiến thức.",
+    null
+   ]
+  ]
+ },
+ {
+  "id": "apply",
+  "lines": [
+   [
+    "Học xong, làm ngay:",
+    null
+   ],
+   [
+    "đặt mục tiêu và nhờ AI tư vấn xem có khả thi không,",
+    "đặt mục tiêu và nhờ trí tuệ nhân tạo tư vấn xem có khả thi không,"
+   ],
+   [
+    "lập ngân sách, ghi chép chi tiêu,",
+    null
+   ],
+   [
+    "theo dõi tiết kiệm và tiền lãi khi đáo hạn.",
+    null
+   ],
+   [
+    "Tất cả ở cùng một nơi.",
+    null
+   ]
+  ]
+ },
+ {
+  "id": "quick",
+  "lines": [
+   [
+    "Ấn giữ chú bạch tuộc Ekko, gõ “phở 45k, cà phê 25k”,",
+    "Ấn giữ chú bạch tuộc Éc-cô, gõ phở bốn mươi lăm nghìn, cà phê hai mươi lăm nghìn,"
+   ],
+   [
+    "AI tự tách thành hai khoản và ghi giúp bạn.",
+    "trí tuệ nhân tạo tự tách thành hai khoản và ghi giúp bạn."
+   ],
+   [
+    "Có thắc mắc về tiền bạc, cứ hỏi Ekko bot.",
+    "Có thắc mắc về tiền bạc, cứ hỏi Éc-cô bót."
+   ]
+  ]
+ },
+ {
+  "id": "daily",
+  "lines": [
+   [
+    "Mỗi ngày một bước:",
+    null
+   ],
+   [
+    "giữ chuỗi ngày học, hoàn thành thử thách hằng ngày, và sưu tầm huy hiệu.",
+    null
+   ]
+  ]
+ },
+ {
+  "id": "team",
+  "lines": [
+   [
+    "Học cùng bạn bè còn vui hơn.",
+    null
+   ],
+   [
+    "Lập Heo Dream Team bằng mã ID của nhau, nhắc nhau giữ streak mỗi ngày,",
+    "Lập đội Heo Đờ-rim Tim bằng mã riêng của nhau, nhắc nhau giữ chuỗi ngày học,"
+   ],
+   [
+    "và khi bạn cùng đội học, bạn cũng được thưởng thêm XP.",
+    "và khi bạn cùng đội học, bạn cũng được thưởng thêm điểm kinh nghiệm."
+   ]
+  ]
+ },
+ {
+  "id": "race",
+  "lines": [
+   [
+    "Và tháng này có Cuộc đua Ekko Lover!",
+    "Và tháng này có Cuộc đua Éc-cô Lớp-vơ!"
+   ],
+   [
+    "Từ nay đến hết 31/10, học mỗi ngày để tích điểm và giành giải:",
+    "Từ nay đến hết ngày ba mươi mốt tháng mười, học mỗi ngày để tích điểm và giành giải:"
+   ],
+   [
+    "1 giải nhất 2 triệu đồng cho nhóm từ 4 đến 6 người có điểm cao nhất,",
+    "một giải nhất hai triệu đồng cho nhóm từ bốn đến sáu người có điểm cao nhất,"
+   ],
+   [
+    "1 giải nhất 1 triệu đồng cho cá nhân có điểm cao nhất,",
+    "một giải nhất một triệu đồng cho cá nhân có điểm cao nhất,"
+   ],
+   [
+    "và 1 giải nhì 500 nghìn đồng cho cá nhân có điểm cao thứ hai.",
+    "và một giải nhì năm trăm nghìn đồng cho cá nhân có điểm cao thứ hai."
+   ]
+  ]
+ },
+ {
+  "id": "outro",
+  "lines": [
+   [
+    "Học tập trong app Ekko.",
+    "Học tập trong áp Éc-cô."
+   ],
+   [
+    "Hiểu tiền hơn mỗi ngày, sống vững vàng hơn mỗi tháng.",
+    null
+   ],
+   [
+    "Đăng ký ngay với đường dẫn và mã đăng ký trên màn hình, rồi bắt đầu bài học đầu tiên hôm nay.",
+    "Đăng ký ngay với đường dẫn và mã đăng ký trên màn hình, rồi bắt đầu bài học đầu tiên hôm nay."
+   ]
+  ]
+ }
 ]

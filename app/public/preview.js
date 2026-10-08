@@ -29,12 +29,12 @@ const CONCEPTS = [
 const TABS = [
   { key: 'app', icon: 'smart-phone-01', label: 'App người dùng', src: '/app/' },
   { key: 'admin', icon: 'folder-01', label: 'Admin portal', src: '/admin/' },
-  // Video giới thiệu tính năng Học tập: bản mới (2:01, dựng lại 10/2026 theo app mới, nguồn ở
+  // Video giới thiệu tính năng Học tập: bản mới (2:26, dựng lại 10/2026 theo app mới, nguồn ở
   // video-src/) cạnh bản cũ (1:33) để so sánh. `?v=` để trình duyệt không phát bản đã lưu đệm.
   {
     key: 'intro', icon: 'play', label: 'Giới thiệu', video: true,
     videos: [
-      { src: '/assets/video/ekko-hoc-tap.mp4?v=2', label: 'Bản mới · 10/2026', note: '2:01 · theo app hiện tại' },
+      { src: '/assets/video/ekko-hoc-tap.mp4?v=5', label: 'Bản mới · 10/2026', note: '2:26 · Cuộc đua Ekko Lover + mã đăng ký' },
       { src: '/assets/video/ekko-hoc-tap-v1.mp4', label: 'Bản cũ', note: '1:33 · giao diện trước đây' },
     ],
   },

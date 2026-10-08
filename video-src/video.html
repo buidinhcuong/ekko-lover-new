@@ -44,6 +44,33 @@ em { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 60
 .cap { font-size: 26px; font-weight: 600; text-align: center; }
 .cap small { display: block; font-size: 19px; font-weight: 500; opacity: .65; margin-top: 2px; }
 
+
+/* cuộc đua */
+.prize { position: relative; display: grid; justify-items: center; gap: 8px; padding: 58px 24px 30px; border-radius: 32px;
+  background: #191B78; border: 2px solid rgba(255,255,255,.16); color: #fff; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+.prize .medal { position: absolute; top: -40px; width: 80px; height: 80px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 44px; font-weight: 800; color: var(--mid); box-shadow: 0 0 0 8px rgba(252,201,2,.18), 0 12px 30px rgba(0,0,0,.35); }
+.prize__kind { font-size: 22px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
+.prize__pigs { height: 160px; display: flex; align-items: flex-end; justify-content: center; }
+.prize__pigs img { height: 112px; object-fit: contain; margin: 0 -10px; }
+.prize__title { font-size: 40px; font-weight: 700; letter-spacing: -0.01em; }
+.prize__note { font-size: 24px; opacity: .8; }
+.prize__money { font-size: 54px; font-weight: 800; letter-spacing: -0.02em; color: #FCC902; line-height: 1; }
+.confetti { position: absolute; width: 14px; height: 26px; border-radius: 4px; }
+
+
+/* thẻ đăng ký ở cảnh cuối */
+.signup { display: flex; align-items: center; gap: 56px; padding: 44px 60px; border-radius: 40px; background: #fff;
+  box-shadow: 0 30px 70px rgba(0,3,79,.22); }
+.signup__qr { width: 300px; height: 300px; image-rendering: pixelated; }
+.signup__info { display: grid; gap: 6px; }
+.signup__eyebrow { font-size: 26px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); }
+.signup__url { font-size: 48px; font-weight: 700; letter-spacing: -0.01em; }
+.signup__label { margin-top: 18px; font-size: 26px; font-weight: 600; opacity: .7; }
+.signup__code { font-size: 104px; font-weight: 800; letter-spacing: .08em; line-height: 1; padding: 14px 26px; border-radius: 22px;
+  background: var(--lime); color: var(--mid); font-variant-numeric: tabular-nums; }
+.signup__hint { margin-top: 14px; font-size: 24px; opacity: .7; }
+
 /* subtitles */
 #sub { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); max-width: 1500px; z-index: 50;
   padding: 14px 30px; border-radius: 16px; background: rgba(0, 3, 79, .82); color: #fff; font-size: 32px; font-weight: 500;
@@ -184,14 +211,54 @@ em { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 60
   </div>
 </section>
 
+<!-- 9b · CUỘC ĐUA -->
+<section class="scene" data-scene="race" style="background:radial-gradient(120% 90% at 80% 0%, #2A1F8F 0%, var(--mid) 60%)">
+  <div id="confetti" class="abs" style="inset:0"></div>
+  <span class="abs chip" style="left:150px;top:110px;background:var(--lime);color:var(--mid);font-size:22px;padding:8px 18px" data-a="pop@0+0.4">SỰ KIỆN THÁNG 10</span>
+  <div class="abs h1" style="left:150px;top:170px;color:#fff" data-a="up@0.1+0.6">Cuộc đua <em style="color:var(--lime)">Ekko Lover</em></div>
+  <span class="abs chip" style="left:150px;top:300px;background:#22248A;color:#fff" data-a="pop@L1+0.3+0.4"><i style="color:#FCC902"></i>Từ nay đến hết 31/10/2026 · học mỗi ngày để tích điểm</span>
+  <img class="abs" src="assets/ekko-lover-mascot.png" style="right:170px;top:70px;width:250px" data-a="pop@0.3+0.6">
+  <div class="abs" style="left:150px;right:150px;top:420px;display:grid;grid-template-columns:repeat(3,1fr);gap:36px">
+    <div class="prize" data-a="up@L2+0.5">
+      <span class="medal" style="background:#FCC902">1</span>
+      <div class="prize__kind">Giải nhất · Nhóm</div>
+      <div class="prize__pigs">
+        <img src="assets/pig-2.png"><img src="assets/pig-office-2.png"><img src="assets/pig-family-2.png"><img src="assets/pig-grow-2.png"><img src="assets/pig-saver.png">
+      </div>
+      <div class="prize__money">2.000.000đ</div>
+      <div class="prize__note">Nhóm 4–6 người có điểm cao nhất</div>
+    </div>
+    <div class="prize" data-a="up@L3+0.5">
+      <span class="medal" style="background:#FCC902">1</span>
+      <div class="prize__kind">Giải nhất · Cá nhân</div>
+      <div class="prize__pigs"><img src="assets/pig-6.png" style="height:150px"></div>
+      <div class="prize__money">1.000.000đ</div>
+      <div class="prize__note">Cá nhân có điểm cao nhất</div>
+    </div>
+    <div class="prize" data-a="up@L4+0.5">
+      <span class="medal" style="background:#D9DEE8">2</span>
+      <div class="prize__kind">Giải nhì · Cá nhân</div>
+      <div class="prize__pigs"><img src="assets/pig-5.png" style="height:150px"></div>
+      <div class="prize__money" style="color:#E6EAF2">500.000đ</div>
+      <div class="prize__note">Cá nhân có điểm cao thứ hai</div>
+    </div>
+  </div>
+</section>
+
 <!-- 10 · OUTRO -->
 <section class="scene" data-scene="outro" style="background:var(--lime)">
   <svg class="swirl" viewBox="0 0 1920 1080"><path d="M300 1200 C 200 600, 700 200, 1100 420 S 1500 1100, 900 900 S 600 300, 1300 120 S 2000 200, 2100 500" fill="none" stroke="var(--lime-l)" stroke-width="170" stroke-linecap="round" data-a="draw@0+4"/></svg>
-  <div class="abs h2" style="left:0;right:0;top:420px;text-align:center" data-a="up@L1-0.2+0.7" data-out="L2+1.8">Hiểu tiền hơn <em>mỗi ngày</em>,<br>sống <em>vững vàng</em> hơn mỗi tháng.</div>
-  <div class="abs" style="left:0;right:0;top:300px;text-align:center;font-size:96px;font-weight:500;letter-spacing:-0.02em" data-a="up@L2+2.1+0.7">Ekko – Mỗi ngày đều <em>đáng giá.</em></div>
-  <div class="abs" style="left:0;right:0;top:560px;display:grid;justify-items:center;gap:14px" data-a="up@L2+2.6+0.7">
-    <img src="shots/qr.png" style="width:220px;height:220px;image-rendering:pixelated;border-radius:8px">
-    <b style="font-size:40px">Tải Ekko ngay!</b>
+  <div class="abs h2" style="left:0;right:0;top:420px;text-align:center" data-a="up@L1-0.2+0.7" data-out="L2-0.5">Hiểu tiền hơn <em>mỗi ngày</em>,<br>sống <em>vững vàng</em> hơn mỗi tháng.</div>
+  <div class="abs" style="left:0;right:0;top:150px;text-align:center;font-size:84px;font-weight:500;letter-spacing:-0.02em" data-a="up@L2-0.2+0.7">Ekko – Mỗi ngày đều <em>đáng giá.</em></div>
+  <div class="abs signup" style="left:50%;top:330px;transform:translateX(-50%)" data-a="up@L2+0.3+0.7">
+    <img class="signup__qr" src="shots/qr-dangky.png">
+    <div class="signup__info">
+      <div class="signup__eyebrow">Đăng ký dùng thử</div>
+      <div class="signup__url">gdtc.ekko.com.vn/app/</div>
+      <div class="signup__label">Mã đăng ký</div>
+      <div class="signup__code">95KEXN7E</div>
+      <div class="signup__hint">Quét QR hoặc mở đường dẫn → Đăng ký → nhập mã</div>
+    </div>
   </div>
   <img class="abs" src="assets/Ekko_Primary_Logo_Midnight.svg" style="left:0;right:0;margin:auto;top:150px;height:92px" data-a="up@0.1+0.6" data-out="L1-0.3">
 </section>
@@ -215,6 +282,21 @@ document.getElementById('applyrow').innerHTML = APPLY.map(([img, name, note, at]
   `<div style="display:grid;justify-items:center;gap:18px" data-a="phonein@${at}+0.8">
      <div class="phone" style="position:relative;width:300px;height:665px;border-radius:48px;padding:10px"><div class="island" style="top:18px;height:22px"></div><div class="scr" style="border-radius:39px"><img src="shots/${img}.png"></div></div>
      <div class="cap">${name}<small>${note}</small></div></div>`).join('');
+
+
+// Kim tuyến cảnh "Cuộc đua": chỉ ở viền khung (không đè chữ, thẻ giải); vị trí cố định
+// (không ngẫu nhiên) để mỗi lần dựng ra giống nhau.
+document.getElementById('confetti').innerHTML = Array.from({ length: 44 }, (_, i) => {
+  const side = i % 4;
+  const t = ((i * 97) % 100) / 100;
+  const [x, y] = side === 0 ? [40 + t * 1840, 18 + (i % 3) * 22]          // mép trên
+    : side === 1 ? [30 + (i % 3) * 30, 120 + t * 840]                     // mép trái
+      : side === 2 ? [1800 + (i % 3) * 30, 220 + t * 760]                 // mép phải
+        : [1080 + t * 260, 200 + (i % 3) * 30];                            // khoảng trống giữa tiêu đề và thẻ
+  const r = (i * 47) % 180;
+  const c = ['#B3F42C', '#FCC902', '#7B61FF', '#FFFFFF', '#3E58F1'][i % 5];
+  return `<span class="confetti" style="left:${Math.round(x)}px;top:${Math.round(y)}px;background:${c};opacity:.6;transform:rotate(${r}deg)" data-a="up@${(0.1 + (i % 8) * 0.12).toFixed(2)}+0.8"></span>`;
+}).join('');
 
 // --- timeline ------------------------------------------------------------
 const scenes = [...document.querySelectorAll('.scene')].map((node) => {

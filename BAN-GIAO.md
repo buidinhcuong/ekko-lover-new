@@ -18,7 +18,7 @@ Mở http://127.0.0.1:4321/: trang preview có ba tab App người dùng, Admin
 portal và Giới thiệu (video). Cơ sở dữ liệu `app/data/gdtc.sqlite` tự tạo kèm
 nội dung khoá học ở lần chạy đầu.
 
-Kiểm thử: `npm run smoke`, hiện có 390 kiểm tra, tất cả đều đạt.
+Kiểm thử: `npm run smoke`, hiện có 404 kiểm tra, tất cả đều đạt.
 
 ## Những gì có trong gói
 
@@ -107,8 +107,10 @@ Kiểm thử: `npm run smoke`, hiện có 390 kiểm tra, tất cả đều đ�
 4. **Video giới thiệu** tính năng Học tập nằm ở
    `public/assets/video/ekko-hoc-tap.mp4` (bản 1080p nhẹ cho web), phát ở tab
    Giới thiệu của trang preview.
-   - 10/2026: dựng lại theo app mới (2:01, giọng đọc máy "Linh", thêm cảnh XP,
-     thử thách, AI tư vấn / ghi nhanh, tiết kiệm, Heo Dream Team). Nguồn dựng
+   - 10/2026: dựng lại theo app mới (2:26, giọng đọc máy "Linh", thêm cảnh XP,
+     thử thách, AI tư vấn / ghi nhanh, tiết kiệm, Heo Dream Team, Cuộc đua
+     Ekko Lover tháng 10 với giải 2 triệu / 1 triệu / 500 nghìn, cảnh cuối có
+     QR + mã đăng ký 95KEXN7E — đổi mã trong Admin thì phải dựng lại video). Nguồn dựng
      ở `video-src/` (xem README trong đó). Bản cũ giữ ở `ekko-hoc-tap-v1.mp4`,
      tab Giới thiệu đặt hai bản cạnh nhau để so sánh.
 

@@ -133,6 +133,9 @@ const MIME = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.pdf': 'application/pdf',
 };
 
 /** Serves files under `root`, refusing any path that escapes it. */
@@ -165,12 +168,32 @@ export async function serveStatic(root, urlPath, req, res) {
 
   const ext = extname(full).toLowerCase();
   const immutable = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.woff2'].includes(ext);
-  res.writeHead(200, {
+  const headers = {
     'content-type': MIME[ext] || 'application/octet-stream',
-    'content-length': info.size,
     etag,
     'cache-control': immutable ? 'public, max-age=604800' : 'no-cache',
-  });
+    'accept-ranges': 'bytes',
+  };
+
+  // Tải từng đoạn (Range): Safari / iPhone chỉ phát video khi server trả được
+  // một khoảng byte (206), và tua video cũng cần.
+  const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ''));
+  if (range && (range[1] || range[2])) {
+    let start = range[1] ? Number(range[1]) : Math.max(0, info.size - Number(range[2]));
+    let end = range[1] && range[2] ? Number(range[2]) : info.size - 1;
+    end = Math.min(end, info.size - 1);
+    if (start > end || start >= info.size) {
+      res.writeHead(416, { 'content-range': `bytes */${info.size}` });
+      res.end();
+      return true;
+    }
+    res.writeHead(206, { ...headers, 'content-range': `bytes ${start}-${end}/${info.size}`, 'content-length': end - start + 1 });
+    if (req.method === 'HEAD') return res.end(), true;
+    createReadStream(full, { start, end }).pipe(res);
+    return true;
+  }
+
+  res.writeHead(200, { ...headers, 'content-length': info.size });
   if (req.method === 'HEAD') return res.end(), true;
   createReadStream(full).pipe(res);
   return true;

@@ -1,5 +1,5 @@
 {
- "duration": 120.815,
+ "duration": 145.777,
  "scenes": [
   {
    "id": "hook",
@@ -200,24 +200,56 @@
    ]
   },
   {
-   "id": "outro",
+   "id": "race",
    "start": 106.873,
-   "end": 120.815,
+   "end": 129.502,
+   "lines": [
+    {
+     "text": "Và tháng này có Cuộc đua Ekko Lover!",
+     "start": 107.573,
+     "end": 110.193
+    },
+    {
+     "text": "Từ nay đến hết 31/10, học mỗi ngày để tích điểm và giành giải:",
+     "start": 110.513,
+     "end": 115.65
+    },
+    {
+     "text": "1 giải nhất 2 triệu đồng cho nhóm từ 4 đến 6 người có điểm cao nhất,",
+     "start": 115.97,
+     "end": 120.412
+    },
+    {
+     "text": "1 giải nhất 1 triệu đồng cho cá nhân có điểm cao nhất,",
+     "start": 120.732,
+     "end": 124.025
+    },
+    {
+     "text": "và 1 giải nhì 500 nghìn đồng cho cá nhân có điểm cao thứ hai.",
+     "start": 124.345,
+     "end": 128.602
+    }
+   ]
+  },
+  {
+   "id": "outro",
+   "start": 129.502,
+   "end": 145.777,
    "lines": [
     {
      "text": "Học tập trong app Ekko.",
-     "start": 107.573,
-     "end": 109.171
+     "start": 130.202,
+     "end": 131.8
     },
     {
      "text": "Hiểu tiền hơn mỗi ngày, sống vững vàng hơn mỗi tháng.",
-     "start": 109.491,
-     "end": 112.889
+     "start": 132.12,
+     "end": 135.518
     },
     {
-     "text": "Mở app Ekko và bắt đầu bài học đầu tiên ngay hôm nay.",
-     "start": 113.209,
-     "end": 116.815
+     "text": "Đăng ký ngay với đường dẫn và mã đăng ký trên màn hình, rồi bắt đầu bài học đầu tiên hôm nay.",
+     "start": 135.838,
+     "end": 141.777
     }
    ]
   }
