@@ -192,6 +192,7 @@ async function testStreakRules() {
     const { aiCallsToday } = await import('../server/services/aiQuota.js');
     // Claude giả: câu có "thơ" thì báo ngoài phạm vi, còn lại trả lời trong phạm vi.
     let calls = 0;
+    let lastAsked = '';
     const fake = createServer((req, res) => {
       let raw = '';
       req.on('data', (c) => { raw += c; });
@@ -199,6 +200,7 @@ async function testStreakRules() {
         calls += 1;
         const body = JSON.parse(raw);
         const asked = body.messages.at(-1).content;
+        lastAsked = asked;
         const inScope = !/thơ/.test(asked);
         const out = { in_scope: inScope, answer: inScope ? 'Quỹ khẩn cấp nên bằng 3–6 tháng chi tiêu thiết yếu.' : 'Đây là bài thơ…' };
         res.writeHead(200, { 'content-type': 'application/json' });
@@ -210,7 +212,7 @@ async function testStreakRules() {
     config.anthropicApiKey = 'sk-ant-test-key-for-smoke-only-000000';
     config.anthropicBaseUrl = `http://127.0.0.1:${fake.address().port}`;
     const { setSetting } = await import('../server/db.js');
-    setSetting('ai_daily_limit', '2');
+    setSetting('ai_daily_limit', '3');
     const noop = async () => ({ expense: { spent_on: '2026-01-01' }, alerts: [] });
     try {
       const poem = await respond(userId, 'làm thơ đi', { createExpense: noop });
@@ -219,8 +221,11 @@ async function testStreakRules() {
         dbGet("SELECT COUNT(*) n FROM ai_out_of_scope WHERE text LIKE '%thơ%'").n === 1);
       const fin = await respond(userId, 'xin chào', { createExpense: noop });
       check('Câu trong phạm vi thì dùng câu trả lời của AI', fin.kind === 'ai' && /3–6 tháng/.test(fin.text), fin.kind);
+      const money = await respond(userId, 'Lương 10 triệu thì nên chia tiền tiết kiệm thế nào?', { createExpense: noop });
+      check('Câu hỏi tài chính: AI trả lời thẳng (không chỉ trích bài học), có kèm số liệu tháng của người dùng',
+        money.kind === 'ai' && /Số liệu của người dùng:[\s\S]*Đã chi trong tháng/.test(lastAsked), money.kind);
       const over = await respond(userId, 'cảm ơn', { createExpense: noop });
-      check('Hết lượt AI hôm nay thì không gọi AI nữa', over.kind === 'ai_limit' && calls === 2 && aiCallsToday(userId) === 2,
+      check('Hết lượt AI hôm nay thì không gọi AI nữa', over.kind === 'ai_limit' && calls === 3 && aiCallsToday(userId) === 3,
         JSON.stringify({ kind: over.kind, calls }));
     } finally {
       config.anthropicApiKey = saved.key;
