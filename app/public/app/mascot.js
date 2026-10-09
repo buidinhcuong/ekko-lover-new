@@ -7,7 +7,7 @@
  *   đủ 2 giây thì ô "Ghi nhanh" trượt ra từ mascot. Bàn phím: phím ← khi đang
  *   đứng ở mascot.
  * - Bong bóng gợi ý ("Ấn giữ để ghi nhanh", "Hỏi gì đáp nấy"…) KHÔNG hiện sẵn:
- *   chỉ bật ra khi người dùng chạm / rê vào mascot, mỗi lần một câu, khoảng 2,5
+ *   chỉ bật ra khi người dùng chạm / rê vào mascot, mỗi lần một câu, khoảng 1,5
  *   giây rồi tự ẩn. Không hiện khi đang mở bảng hay đang gõ ghi nhanh.
  * - Ô ghi nhanh thu lại khi rời ô mà chưa gõ gì, bấm Esc, hoặc chuyển màn.
  * - Kéo mascot đi đâu cũng được; thả ra thì nó trượt dính vào cạnh trái hoặc
@@ -23,7 +23,7 @@ import { t } from './i18n.js';
 
 const HOLD_MS = 2000;
 const TIPS = ['Ấn giữ để ghi nhanh', 'Hỏi gì đáp nấy', 'Chạm để trò chuyện với Ekko', 'Ghi chi tiêu chỉ một dòng'];
-const TIP_SHOW_MS = 2500;  // bong bóng hiện chừng này rồi tự ẩn
+const TIP_SHOW_MS = 1500;  // bong bóng hiện chừng này rồi tự ẩn
 const RING_R = 44;
 const DRAG_START = 8;      // px: kéo quá chừng này mới tính là kéo, không phải chạm
 const EDGE_GAP = 12;       // cách mép màn khi dính vào cạnh
