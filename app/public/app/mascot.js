@@ -6,9 +6,9 @@
  * - Rê chuột lên hoặc ấn giữ khoảng 2 giây: một vòng tiến độ chạy quanh mascot,
  *   đủ 2 giây thì ô "Ghi nhanh" trượt ra từ mascot. Bàn phím: phím ← khi đang
  *   đứng ở mascot.
- * - Mascot luôn "nói" một bong bóng gợi ý, đổi câu sau mỗi 6 giây ("Ấn giữ để
- *   ghi nhanh", "Hỏi gì đáp nấy"…) — tạm ẩn khi đang mở bảng, đang chạy tour,
- *   đang giữ mascot hay đang gõ ghi nhanh.
+ * - Bong bóng gợi ý ("Ấn giữ để ghi nhanh", "Hỏi gì đáp nấy"…) KHÔNG hiện sẵn:
+ *   chỉ bật ra khi người dùng chạm / rê vào mascot, mỗi lần một câu, khoảng 2,5
+ *   giây rồi tự ẩn. Không hiện khi đang mở bảng hay đang gõ ghi nhanh.
  * - Ô ghi nhanh thu lại khi rời ô mà chưa gõ gì, bấm Esc, hoặc chuyển màn.
  * - Kéo mascot đi đâu cũng được; thả ra thì nó trượt dính vào cạnh trái hoặc
  *   phải gần nhất, giữ độ cao vừa thả (trong vùng an toàn: dưới thanh trên cùng,
@@ -23,7 +23,7 @@ import { t } from './i18n.js';
 
 const HOLD_MS = 2000;
 const TIPS = ['Ấn giữ để ghi nhanh', 'Hỏi gì đáp nấy', 'Chạm để trò chuyện với Ekko', 'Ghi chi tiêu chỉ một dòng'];
-const TIP_EVERY = 6000;    // đổi câu sau mỗi 6 giây
+const TIP_SHOW_MS = 2500;  // bong bóng hiện chừng này rồi tự ẩn
 const RING_R = 44;
 const DRAG_START = 8;      // px: kéo quá chừng này mới tính là kéo, không phải chạm
 const EDGE_GAP = 12;       // cách mép màn khi dính vào cạnh
@@ -216,31 +216,27 @@ export function loverMascot(bar, openBot) {
   });
   fab.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') { e.preventDefault(); openBar(); } });
 
-  // --- bong bóng gợi ý: luôn hiện, đổi câu sau mỗi 6 giây -----------------
+  // --- bong bóng gợi ý: chỉ hiện khi chạm / rê vào mascot, rồi tự ẩn ------
   let tipIndex = 0;
-  const busy = () => isOpen() || holdTimer || document.hidden
+  let tipTimer = null;
+  const busy = () => isOpen() || document.hidden
     || document.body.classList.contains('is-sheet') || document.body.classList.contains('is-modal')
     || getComputedStyle(fab).display === 'none';
-  function hideTip() { fab.classList.remove('is-tip'); }
-  const say = (next) => {
+  function hideTip() {
+    if (tipTimer) clearTimeout(tipTimer);
+    tipTimer = null;
+    fab.classList.remove('is-tip');
+  }
+  const flashTip = () => {
+    if (busy() || fab.classList.contains('is-tip')) return;
     bubble.textContent = t(TIPS[tipIndex % TIPS.length]);
-    if (next) tipIndex += 1;
+    tipIndex += 1;
+    fab.classList.add('is-tip');
+    tipTimer = setTimeout(hideTip, TIP_SHOW_MS);
   };
-  // Mỗi 0,5 giây xem có đang bận không để ẩn/hiện ngay; tới 6 giây thì đổi câu
-  // (thu nhỏ bong bóng một nhịp rồi bung ra với câu mới).
-  let elapsed = 0;
-  say(true);
-  const tick = setInterval(() => {
-    if (!fab.isConnected) { clearInterval(tick); return; }
-    if (busy()) { hideTip(); return; }
-    elapsed += 500;
-    if (!fab.classList.contains('is-tip')) { fab.classList.add('is-tip'); elapsed = 0; return; }
-    if (elapsed >= TIP_EVERY) {
-      elapsed = 0;
-      fab.classList.add('is-tip-swap');
-      setTimeout(() => { say(true); fab.classList.remove('is-tip-swap'); }, 180);
-    }
-  }, 500);
+  fab.addEventListener('pointerenter', flashTip);
+  fab.addEventListener('pointerdown', flashTip);
+  fab.addEventListener('focus', flashTip);
 
   return fab;
 }
