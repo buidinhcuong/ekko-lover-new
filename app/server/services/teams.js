@@ -194,6 +194,13 @@ export function teamAlerts(userId, day = dayKey()) {
   return {
     invites: get("SELECT COUNT(*) n FROM team_invites WHERE to_user_id = ? AND status = 'pending'", userId).n,
     nudges: unseenNudges(userId, day),
+    // Ai đã nhắc mình hôm nay (kể cả đã xem) — dòng nhắc màu vàng ở màn chủ hiện
+    // suốt ngày cho tới khi giữ được streak.
+    nudgedBy: all(
+      `SELECT DISTINCT u.name FROM team_nudges n JOIN users u ON u.id = n.from_user_id
+        WHERE n.to_user_id = ? AND n.day = ? ORDER BY n.id`,
+      userId, day,
+    ).map((r) => r.name),
   };
 }
 

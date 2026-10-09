@@ -3032,6 +3032,21 @@ html[data-concept="lover"] .loverhome-shell {
 .resumenudge__icon { flex: none; width: 28px; height: 28px; border-radius: var(--radius-full); display: grid; place-items: center; background: var(--bg-primary); }
 .resumenudge__text { flex: 1; min-width: 0; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-medium); }
 .resumenudge__go { flex: none; display: grid; place-items: center; }
+/* Bạn cùng đội nhắc giữ streak: một dòng màu vàng dưới thẻ heo. */
+.streaknudge {
+  display: flex; align-items: center; gap: var(--spacing-8); width: 100%;
+  margin: var(--spacing-12) 0; padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-full); background: var(--bg-warning-50); border: 1px solid var(--border-warning);
+  color: var(--text-warning); text-align: left; font: inherit; cursor: pointer;
+  animation: resumenudge-in .45s cubic-bezier(.16, 1, .3, 1) both;
+}
+.streaknudge__icon { flex: none; display: inline-flex; }
+.streaknudge__text {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold);
+}
+.streaknudge__go { flex: none; display: grid; place-items: center; }
+@media (prefers-reduced-motion: reduce) { .streaknudge { animation: none; } }
 @keyframes resumenudge-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .resumenudge { animation: none; } }
 

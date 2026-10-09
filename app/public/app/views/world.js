@@ -590,11 +590,26 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     return card;
   })() : navbar;
 
+  // Heo Dream Team: bạn cùng đội nhắc giữ streak hôm nay — một dòng màu vàng
+  // ngay dưới thẻ heo, hiện cả ngày tới khi giữ được streak. Bấm vào mở Học tập
+  // (học một bài là giữ được chuỗi).
+  const nudgedBy = ctx.world.team?.nudgedBy || [];
+  const shortName = (name) => String(name || '').trim().split(/\s+/).slice(-2).join(' ');
+  const streakNudge = ctx.world.concept === 'lover' && nudgedBy.length && !ctx.world.streak?.countedToday
+    ? el('button.streaknudge', { type: 'button', onclick: () => ctx.navigate('/explore') }, [
+      el('span.streaknudge__icon', { 'aria-hidden': 'true' }, uiIcon('fire', 18)),
+      el('span.streaknudge__text', {}, nudgedBy.length === 1
+        ? t('{name} nhắc bạn giữ streak hôm nay', { name: shortName(nudgedBy[0]) })
+        : t('{n} bạn trong đội nhắc bạn giữ streak hôm nay', { n: nudgedBy.length })),
+      el('span.streaknudge__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 18)),
+    ])
+    : null;
+
   // Ekko Lover: lời nhắc nhỏ một dòng ngay dưới thẻ heo, hiện ngẫu nhiên (xem
   // NUDGE_CHANCE). Bấm vào mở hành trình học tập, giống nút Học tập. Học hết
   // bài rồi thì không nhắc.
   const next = ctx.world.learning?.next;
-  const resume = ctx.world.concept === 'lover' && next && showNudge ? el('button.resumenudge', {
+  const resume = ctx.world.concept === 'lover' && next && showNudge && !streakNudge ? el('button.resumenudge', {
     type: 'button',
     onclick: () => ctx.navigate('/explore'),
   }, [
@@ -603,5 +618,5 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     el('span.resumenudge__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 20)),
   ]) : null;
 
-  return el('div.loverhome', {}, [head, resume, tabcard, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
+  return el('div.loverhome', {}, [head, streakNudge, resume, tabcard, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
 }

@@ -259,19 +259,14 @@ async function checkIn() {
 }
 
 /**
- * Heo Dream Team: bạn cùng đội nhắc giữ streak hôm nay — báo một lần ở màn chủ
- * rồi đánh dấu đã xem (màn Dream Team cũng đánh dấu khi mở).
+ * Heo Dream Team: bạn cùng đội nhắc giữ streak hôm nay — mở màn chủ là đánh dấu
+ * đã xem (màn Dream Team cũng đánh dấu khi mở).
  */
 async function showTeamNudges() {
   const nudges = store.world?.team?.nudges || [];
   if (store.world?.concept !== 'lover' || !nudges.length) return;
-  const names = [...new Set(nudges.map((n) => n.fromName))];
-  toast({
-    title: names.length === 1
-      ? t('{name} nhắc bạn giữ streak hôm nay', { name: names[0] })
-      : t('{n} bạn trong đội nhắc bạn giữ streak hôm nay', { n: names.length }),
-    body: t('Học một bài hoặc ghi một khoản chi để giữ chuỗi nhé!'),
-  }, 'info');
+  // Lời nhắc hiện thành dòng màu vàng ở màn chủ (views/world.js) — ở đây chỉ
+  // đánh dấu đã xem để tắt chấm đỏ trên tab Heo Dream Team.
   store.world.team.nudges = [];
   renderChrome();
   try { await api.post('/api/team/nudges/seen', {}); } catch { /* lần sau báo lại cũng không sao */ }
