@@ -4,6 +4,7 @@
  * Dùng chung cho server chạy ở máy (`server/index.js`) và hàm trên Vercel
  * (`api/index.js`).
  */
+import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,6 +22,19 @@ import { sessionRouter, whoami } from './routes/session.js';
 import { teamRouter } from './routes/team.js';
 
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+
+// Phiên bản code server đang chạy — hiện ở /healthz để biết deploy xong đã khởi
+// động lại server chưa (chỉ `git pull` mà không restart thì file giao diện mới
+// nhưng server vẫn chạy code cũ). Docker không có .git thì đặt EKKO_VERSION.
+const VERSION = (() => {
+  if (process.env.EKKO_VERSION) return process.env.EKKO_VERSION;
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: dirname(fileURLToPath(import.meta.url)), stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000,
+    }).toString().trim();
+  } catch { return 'unknown'; }
+})();
+const STARTED_AT = new Date().toISOString();
 
 seed();
 // Tài khoản quản trị mặc định (EKKO_ADMIN_EMAIL + EKKO_ADMIN_PASSWORD), nếu có đặt.
@@ -53,7 +67,7 @@ export async function handle(req, res) {
 
   try {
     if (pathname === '/healthz') {
-      return sendJson(res, 200, { ok: true, content: listSeedTables() });
+      return sendJson(res, 200, { ok: true, version: VERSION, startedAt: STARTED_AT, content: listSeedTables() });
     }
     if (pathname === '/api/session/whoami') {
       return whoami(req, res);

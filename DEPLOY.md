@@ -233,10 +233,26 @@ App Ekko ký token JWT (HS256) bằng `EKKO_SSO_SECRET` dùng chung rồi mở
 - đặt `EKKO_SSO_SECRET` (thống nhất với team app Ekko),
 - đặt `EKKO_LOCAL_AUTH=0` để tắt đăng ký / đăng nhập bằng email.
 
+### Cập nhật bản mới (mỗi lần có commit mới trên GitHub)
+
+**Phải khởi động lại server** — chỉ `git pull` thì file giao diện đổi ngay nhưng server Node vẫn chạy code cũ trong bộ nhớ (app hiện nửa mới nửa cũ: thiếu tên ở Home, bot trả lời kiểu cũ…).
+
+```bash
+# Cách B (systemd)
+cd /opt/ekko-gdtc && git pull && sudo systemctl restart ekko-gdtc
+# Cách A (Docker) — phải build lại image
+cd /opt/ekko-gdtc/deploy && git pull && docker compose up -d --build
+# Nếu chạy bằng pm2
+cd /opt/ekko-gdtc && git pull && pm2 restart all
+```
+
+Kiểm tra: mở `https://<tên-miền>/healthz` — `version` phải trùng mã commit mới nhất trên GitHub (VD `0e5db67`), `startedAt` là giờ vừa khởi động lại. Docker không có thư mục `.git` nên `version` là `unknown` — đặt `EKKO_VERSION=$(git rev-parse --short HEAD)` khi build nếu muốn thấy mã.
+
 ## 11. Xử lý sự cố
 
 | Hiện tượng | Kiểm tra |
 |---|---|
+| Deploy xong mà app nửa mới nửa cũ (giao diện mới, bot / dữ liệu kiểu cũ) | Server chưa khởi động lại sau `git pull`. Xem mục "Cập nhật bản mới"; `/healthz` → `version` phải là commit mới nhất. |
 | Không khởi động, lỗi `node:sqlite` | Node < 22.5 — nâng Node. |
 | Khởi động lại là mất hết người dùng | Thư mục dữ liệu không bền (container không gắn volume, `/tmp`, serverless). |
 | Đăng nhập xong form trống hiện lại / báo "trình duyệt không giữ được phiên" | Cookie `ekko_gdtc_session` không tới được trình duyệt hoặc không quay lại app. Nếu phía trước có **cổng đăng nhập / API gateway của công ty**: cho phép header `Set-Cookie` (phản hồi) và `Cookie` (yêu cầu) của cookie này đi qua nguyên vẹn, không đổi Path/Domain. Kiểm: đăng nhập rồi mở `/api/session/whoami` — phải là `"authenticated":true`. |
