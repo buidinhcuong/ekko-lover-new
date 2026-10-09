@@ -596,6 +596,57 @@ featureRouter.delete('/api/income/:id', ({ user, params }) => {
   return { ok: true };
 });
 
+// ---------------------------------------------------------- khoản lặp lại
+// Xem / sửa / dừng các mẫu "Lặp lại hàng tháng" (thu nhập và chi tiêu). Sửa chỉ
+// đổi các tháng SAU (khoản đã sinh ra giữ nguyên, sửa riêng ở sổ nếu cần); dừng
+// thì không sinh khoản mới nữa, các khoản đã ghi vẫn giữ.
+const RECURRING_KINDS = { expense: 'recurring_expenses', income: 'income_recurring' };
+
+function recurringRow(user, params) {
+  const table = RECURRING_KINDS[params.kind];
+  if (!table) throw notFound('Không có loại lặp lại này');
+  const row = get(`SELECT * FROM ${table} WHERE id = ? AND user_id = ? AND is_active = 1`, Number(params.id), user.id);
+  if (!row) throw notFound('Không tìm thấy khoản lặp lại này');
+  return { table, row };
+}
+
+featureRouter.get('/api/recurring', ({ user }) => ({
+  expenses: all(
+    `SELECT r.id, r.amount, r.note, r.day_of_month, r.category_id, r.last_month,
+            c.name AS category_name, c.icon AS category_icon, c.color AS category_color
+       FROM recurring_expenses r LEFT JOIN categories c ON c.id = r.category_id
+      WHERE r.user_id = ? AND r.is_active = 1 ORDER BY r.day_of_month, r.id`,
+    user.id,
+  ),
+  income: all(
+    'SELECT id, amount, note, day_of_month, category, last_month FROM income_recurring WHERE user_id = ? AND is_active = 1 ORDER BY day_of_month, id',
+    user.id,
+  ).map(publicIncome),
+}));
+
+featureRouter.patch('/api/recurring/:kind/:id', ({ user, params, body }) => {
+  const { table, row } = recurringRow(user, params);
+  const amount = body.amount === undefined ? row.amount : positiveAmount(body.amount);
+  const note = body.note === undefined ? row.note : (body.note ? String(body.note).slice(0, 200) : null);
+  const day = body.dayOfMonth === undefined ? row.day_of_month : Number(body.dayOfMonth);
+  if (!Number.isInteger(day) || day < 1 || day > 31) throw bad('Ngày trong tháng phải từ 1 đến 31');
+  if (table === 'income_recurring') {
+    const category = body.category === undefined ? row.category : (INCOME_CATEGORIES[body.category] ? body.category : null);
+    if (!category) throw bad('Chọn một loại thu nhập');
+    run('UPDATE income_recurring SET amount = ?, note = ?, day_of_month = ?, category = ? WHERE id = ?', amount, note, day, category, row.id);
+  } else {
+    const categoryId = body.categoryId === undefined ? row.category_id : resolveCategory(body)?.id ?? null;
+    run('UPDATE recurring_expenses SET amount = ?, note = ?, day_of_month = ?, category_id = ? WHERE id = ?', amount, note, day, categoryId, row.id);
+  }
+  return { ok: true };
+});
+
+featureRouter.delete('/api/recurring/:kind/:id', ({ user, params }) => {
+  const { table, row } = recurringRow(user, params);
+  run(`UPDATE ${table} SET is_active = 0 WHERE id = ?`, row.id);
+  return { ok: true };
+});
+
 /**
  * Shared by the manual form and by Ekko bot's quick-log flow.
  *

@@ -49,12 +49,13 @@ async function body(ctx, month, rerender) {
   // Xem tháng hiện tại thì cần dữ liệu tuần (biểu đồ 7 ngày + sổ chi tuần này);
   // xem một tháng khác thì thay vào đó cần dữ liệu THÁNG HIỆN TẠI để so sánh —
   // hai thứ này không dùng cùng lúc nên chỉ gọi đúng cái đang cần.
-  const [monthData, weekData, categories, income, currentMonthData] = await Promise.all([
+  const [monthData, weekData, categories, income, currentMonthData, recurring] = await Promise.all([
     api.get(`/api/expenses?month=${month}`),
     isCurrent ? api.get('/api/expenses?range=week') : Promise.resolve(null),
     api.get('/api/categories'),
     isCurrent ? api.get(`/api/expenses/income?month=${month}`) : Promise.resolve(null),
     isCurrent ? Promise.resolve(null) : api.get(`/api/expenses?month=${currentMonth}`),
+    api.get('/api/recurring').catch(() => null),
   ]);
 
   const monthNav = el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' } }, [
@@ -108,7 +109,109 @@ async function body(ctx, month, rerender) {
     ])
     : null;
 
-  return el('div.expview', {}, [voice, monthNav, actions, ...sections]);
+  return el('div.expview', {}, [voice, monthNav, actions, recurringLink(ctx, recurring, categories, rerender), ...sections]);
+}
+
+// --- Khoản lặp lại hàng tháng: xem / sửa / dừng -----------------------------
+/** Dòng "Khoản lặp lại hàng tháng · n khoản" dưới hai nút Thu nhập / Chi tiêu — chỉ hiện khi có. */
+function recurringLink(ctx, recurring, categories, rerender) {
+  const count = (recurring?.income.length || 0) + (recurring?.expenses.length || 0);
+  if (!count) return null;
+  return el('button.recurlink', { type: 'button', onclick: () => openRecurringList(ctx, recurring, categories, rerender) }, [
+    el('span.recurlink__icon', {}, uiIcon('repeat', 18)),
+    el('span.recurlink__text', {}, t('Khoản lặp lại hàng tháng')),
+    el('span.recurlink__count', {}, t('{n} khoản', { n: count })),
+    spriteIcon('chevron-right-01-stroke', 18),
+  ]);
+}
+
+function openRecurringList(ctx, recurring, categories, rerender) {
+  const row = (kind, item) => el('button.recurrow', {
+    type: 'button',
+    onclick: () => openEditRecurring(ctx, kind, item, categories, rerender),
+  }, [
+    el('span.row__icon', {
+      style: kind === 'expense' ? {
+        background: `color-mix(in srgb, ${item.category_color || 'var(--bg-brand-500)'} 10%, transparent)`,
+        color: item.category_color || 'var(--text-brand-500)',
+      } : { background: 'var(--bg-success-50, var(--bg-brand-50))', color: 'var(--text-success-500, var(--text-brand-500))' },
+    }, kind === 'expense' ? dataIcon(item.category_icon, 'package', 20) : uiIcon(item.category_icon || 'money-bag-02', 20)),
+    el('span.recurrow__main', {}, [
+      el('b', {}, item.note || (kind === 'expense' ? item.category_name : item.category_label) || t('Khoản lặp lại')),
+      el('small.muted', {}, [
+        kind === 'expense' ? (item.category_name || t('Khác')) : item.category_label,
+        ' · ', t('ngày {day} hàng tháng', { day: item.day_of_month }),
+      ].join('')),
+    ]),
+    el(`span.recurrow__amount${kind === 'income' ? '.is-income' : ''}`, {}, `${kind === 'income' ? '+' : '-'}${vnd(item.amount)}`),
+  ]);
+  const section = (title, kind, items) => (items.length ? [
+    el('div.recurlist__head', {}, title),
+    ...items.map((item) => row(kind, item)),
+  ] : []);
+  sheet({
+    title: t('Khoản lặp lại hàng tháng'),
+    body: [
+      el('p.muted', { style: { marginTop: '0' } }, t('Chạm vào một khoản để sửa số tiền, ngày, hoặc dừng lặp lại.')),
+      ...section(t('Thu nhập'), 'income', recurring.income),
+      ...section(t('Chi tiêu'), 'expense', recurring.expenses),
+    ],
+  });
+}
+
+function openEditRecurring(ctx, kind, item, categories, rerender) {
+  const amountInput = moneyInput(item.amount, t('VD: 35.000'));
+  const noteInput = el('input.input', { maxlength: '120', value: item.note || '' });
+  const dayInput = el('input.input', { type: 'number', inputmode: 'numeric', min: '1', max: '31', value: String(item.day_of_month) });
+
+  let picked = kind === 'income' ? item.category : item.category_id;
+  const option = (value, label) => el('option', { value: String(value), selected: value === picked }, label);
+  // Chi tiêu: chia theo nhóm lớn (Nhu cầu / Mong muốn / Sự cố) — mỗi nhóm có một mục "Khác".
+  const select = el('select.input', { onchange: (e) => { picked = kind === 'income' ? e.target.value : Number(e.target.value); } },
+    kind === 'income'
+      ? INCOME_CATEGORIES.map((c) => option(c.code, c.label))
+      : groupCategories(categories).map((g) => el('optgroup', { label: g.label }, g.items.map((c) => option(c.id, c.name)))));
+
+  const save = singleFlight(async () => {
+    const amount = readMoney(amountInput);
+    if (!amount || amount <= 0) return toast(t('Nhập số tiền lớn hơn 0'), 'error');
+    const day = Number(dayInput.value);
+    if (!Number.isInteger(day) || day < 1 || day > 31) return toast(t('Ngày trong tháng phải từ 1 đến 31'), 'error');
+    const result = await guard(() => api.patch(`/api/recurring/${kind}/${item.id}`, {
+      amount, note: noteInput.value.trim() || null, dayOfMonth: day,
+      ...(kind === 'income' ? { category: picked } : { categoryId: picked }),
+    }), t('Không lưu được thay đổi'));
+    if (!result) return;
+    closeSheet();
+    toast(t('Đã lưu — áp dụng từ tháng sau'), 'success');
+    rerender();
+  });
+
+  const stop = singleFlight(async () => {
+    const ok = await confirmSheet({
+      title: t('Dừng lặp lại?'),
+      message: t('Từ tháng sau sẽ không tự ghi khoản này nữa. Các khoản đã ghi vẫn giữ nguyên trong sổ.'),
+      confirmLabel: t('Dừng lặp lại'),
+    });
+    if (!ok) return;
+    const result = await guard(() => api.delete(`/api/recurring/${kind}/${item.id}`), t('Không dừng được'));
+    if (!result) return;
+    toast(t('Đã dừng lặp lại'), 'success');
+    rerender();
+  });
+
+  sheet({
+    title: kind === 'income' ? t('Sửa thu nhập lặp lại') : t('Sửa chi tiêu lặp lại'),
+    body: [
+      el('label.field', {}, [el('span', {}, t('Số tiền mỗi tháng')), amountInput]),
+      el('label.field', {}, [el('span', {}, t('Phân loại')), select]),
+      el('label.field', {}, [el('span', {}, t('Ghi chú')), noteInput]),
+      el('label.field', {}, [el('span', {}, t('Ngày ghi hàng tháng')), dayInput]),
+      el('p.muted', {}, t('Thay đổi áp dụng từ tháng sau. Khoản của tháng này (nếu đã ghi) sửa riêng trong sổ.')),
+      el('button.btn.btn--block', { style: { marginTop: '8px' }, onclick: save }, t('Lưu thay đổi')),
+      el('button.btn.btn--block.btn--ghost.recurstop', { style: { marginTop: '8px' }, onclick: stop }, t('Dừng lặp lại')),
+    ],
+  });
 }
 
 /** Tháng đang xem (không phải tháng hiện tại) chưa có khoản chi nào. */

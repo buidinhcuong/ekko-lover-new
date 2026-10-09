@@ -1654,6 +1654,22 @@ async function main() {
       check('Bot (tiếng Anh): "Move to Groceries" đổi được mục', en?.kind === 'recategorized' && /Moved/.test(en.text), `${en?.kind} ${en?.text}`);
       const loggedReply = (await post('bugs', '/api/bot/message', { text: 'trà sữa 35k' })).json?.reply;
       check('Câu xác nhận ghi chi không kèm chip gợi ý, chỉ dặn nhắn để đổi mục', !loggedReply?.suggestions?.length && /đổi sang/.test(loggedReply?.text), JSON.stringify(loggedReply?.suggestions));
+      // Khoản lặp lại hàng tháng: xem / sửa / dừng.
+      await post('bugs', '/api/income', { amount: 9000000, category: 'regular', note: 'lương lặp', recurring: true });
+      const rentExp = (await post('bugs', '/api/expenses', { amount: 3000000, note: 'tiền nhà lặp', recurring: true })).json.expense;
+      const rec = (await get('bugs', '/api/recurring')).json;
+      const recExp = rec.expenses.find((r) => r.note === 'tiền nhà lặp');
+      const recInc = rec.income.find((r) => r.note === 'lương lặp');
+      check('Xem được danh sách khoản lặp lại (thu nhập + chi tiêu)', Boolean(recExp && recInc && recInc.category_label), JSON.stringify(rec));
+      const edited = await call('bugs', 'PATCH', `/api/recurring/expense/${recExp.id}`, { amount: 3500000, dayOfMonth: 5, note: 'tiền nhà' });
+      const afterEdit = (await get('bugs', '/api/recurring')).json.expenses.find((r) => r.id === recExp.id);
+      check('Sửa khoản lặp lại: đổi số tiền, ngày, ghi chú', edited.status === 200 && afterEdit?.amount === 3500000 && afterEdit.day_of_month === 5 && afterEdit.note === 'tiền nhà');
+      check('Sửa khoản lặp lại: ngày ngoài 1–31 bị từ chối', (await call('bugs', 'PATCH', `/api/recurring/income/${recInc.id}`, { dayOfMonth: 40 })).status === 400);
+      check('Người khác không sửa được khoản lặp lại của mình', (await call('advisee', 'PATCH', `/api/recurring/expense/${recExp.id}`, { amount: 1 })).status === 404);
+      const stopped = await call('bugs', 'DELETE', `/api/recurring/expense/${recExp.id}`);
+      const afterStop = (await get('bugs', '/api/recurring')).json;
+      const keptEntry = (await get('bugs', '/api/expenses')).json.expenses.some((e) => e.id === rentExp.id);
+      check('Dừng lặp lại: hết trong danh sách, khoản đã ghi vẫn giữ', stopped.status === 200 && !afterStop.expenses.some((r) => r.id === recExp.id) && keptEntry);
       // BUG-011: dữ liệu tháng có nhóm của từng khoản (để lọc theo dòng ngân sách).
       check('Ghi chép theo tháng có mã nhóm từng khoản', (await get('bugs', '/api/expenses')).json.expenses.every((e) => 'category_id' in e && 'spent_on' in e));
 

@@ -1685,4 +1685,7 @@ export const EN = {
 
   // ------------------------------------------- tin tức đợt 2 (seed/news.js)
   ...NEWS_EN,
+  'Không có loại lặp lại này': 'No such recurring type',
+  'Không tìm thấy khoản lặp lại này': 'Recurring item not found',
+  'Ngày trong tháng phải từ 1 đến 31': 'Day of month must be between 1 and 31',
 };
