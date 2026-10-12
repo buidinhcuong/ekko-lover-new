@@ -184,6 +184,19 @@ async function testStreakRules() {
   check('Câu không phải khoản chi thì không ghi gì',
     sanitizeAiItems({ is_expense: false, items: [{ amount: 1, note: 'x', category_code: 'wants_other', spent_on: '', confidence: 'cao' }] }, cats, today).length === 0);
 
+  section('Huy hiệu Streak 20 ngày');
+  {
+    const order = (code) => dbGet('SELECT order_index o FROM badges WHERE code = ?', code)?.o;
+    check('Có huy hiệu Streak 20 ngày, xếp giữa Streak 7 và Streak 30',
+      order('streak_7') < order('streak_20') && order('streak_20') < order('streak_30'),
+      JSON.stringify([order('streak_7'), order('streak_20'), order('streak_30')]));
+    const { evaluateBadges } = await import('../server/services/progression.js');
+    run('UPDATE user_state SET streak_count = 20 WHERE user_id = ?', userId);
+    evaluateBadges(userId, { autoClaim: true });
+    check('Giữ streak đủ 20 ngày thì nhận huy hiệu Streak 20 ngày',
+      Boolean(dbGet("SELECT 1 FROM user_badges ub JOIN badges b ON b.id = ub.badge_id WHERE ub.user_id = ? AND b.code = 'streak_20'", userId)));
+  }
+
   section('Phạm vi và giới hạn lượt AI (Claude giả)');
   {
     const { createServer } = await import('node:http');

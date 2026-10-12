@@ -268,6 +268,9 @@ function seedBadges() {
     if (seeded.has(b.code)) continue;
     seeded.add(b.code);
     if (get('SELECT id FROM badges WHERE code = ?', b.code)) continue;
+    // Huy hiệu mới chen vào giữa danh mục (vd Streak 20 ngày): đẩy các huy hiệu
+    // đứng sau lùi một bậc để nó nằm đúng chỗ, không trùng thứ tự.
+    run('UPDATE badges SET order_index = order_index + 1 WHERE order_index >= ?', b.order_index);
     run(
       `INSERT INTO badges (code, group_code, name, description, icon, rule_type, rule_value, rule_target, xp_reward, order_index, is_active)
        VALUES (?,?,?,?,?,?,?,?,?,?,1)`,

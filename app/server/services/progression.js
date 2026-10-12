@@ -399,7 +399,7 @@ export function useFeature(userId, featureCode, day = dayKey()) {
  * đổi (tăng BADGE_RULES_VERSION). Người đã đủ điều kiện theo luật mới nhận ngay
  * huy hiệu (Ekko Lover: hiện nút "Nhận thưởng"), không phải chờ lần hoạt động sau.
  */
-const BADGE_RULES_VERSION = '2';   // 2: Nhà thám hiểm tính cả Học tập (BUG-006)
+const BADGE_RULES_VERSION = '3';   // 2: Nhà thám hiểm tính cả Học tập (BUG-006) · 3: thêm Streak 20 ngày
 export function reevaluateBadgesOnce() {
   if (getSetting('badge_rules_version') === BADGE_RULES_VERSION) return 0;
   const users = all('SELECT id FROM users');
