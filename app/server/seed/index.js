@@ -77,6 +77,13 @@ export function seed() {
       setSetting('levels_version', LEVELS_VERSION);
     }
     seedBadges();
+    // Bỏ 1 ngày là mất streak (không còn đóng băng): huy hiệu "Hồi sinh" — cứu
+    // chuỗi đang đóng băng — không đạt được nữa, nên tắt một lần. Ai đã nhận
+    // vẫn giữ trong lịch sử; Admin bật lại được nếu sau này có lại đóng băng.
+    if (getSetting('streak_rules_version') !== STREAK_RULES_VERSION) {
+      run("UPDATE badges SET is_active = 0 WHERE code = 'streak_recovered'");
+      setSetting('streak_rules_version', STREAK_RULES_VERSION);
+    }
     // Thang XP giãn ra và huy hiệu chia nhóm: chạy một lần, SAU seedLevels và
     // seedBadges để dữ liệu mới và cũ đều đã có mặt.
     if (getSetting('xp_balance_version') !== XP_BALANCE_VERSION) {
@@ -262,6 +269,8 @@ function seedLevels() {
  * lưu ở setting `seeded_badge_codes`): Admin xoá một huy hiệu thì nó không mọc lại
  * ở lần khởi động sau; huy hiệu mới thêm vào catalogue thì vẫn được gieo.
  */
+const STREAK_RULES_VERSION = '2';   // 2: bỏ đóng băng streak (10/2026)
+
 function seedBadges() {
   const seeded = new Set(JSON.parse(getSetting('seeded_badge_codes') || '[]'));
   for (const b of BADGES) {

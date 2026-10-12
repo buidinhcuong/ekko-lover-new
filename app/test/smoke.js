@@ -102,7 +102,7 @@ async function waitForServer(attempts = 60) {
 
 // --- streak rules, tested directly against the service -------------------
 async function testStreakRules() {
-  section('Quy tắc streak (đóng băng tối đa 3 ngày)');
+  section('Quy tắc streak (bỏ 1 ngày là mất chuỗi)');
 
   process.env.EKKO_DATA_DIR = DATA_DIR;
   const { touchStreak, streakStatus, readState } = await import('../server/services/streak.js');
@@ -127,24 +127,20 @@ async function testStreakRules() {
   const same = touchStreak(userId, '2026-03-02');
   check('Cùng ngày → không cộng thêm', same.count === 6 && same.outcome === 'already_counted');
 
-  // gap 2..4: inside the freeze window
-  for (const [gap, day] of [[2, '2026-03-03'], [3, '2026-03-04'], [4, '2026-03-05']]) {
+  // gap >= 2: bỏ lỡ dù chỉ 1 ngày là mất chuỗi — không còn đóng băng.
+  for (const [gap, day] of [[2, '2026-03-03'], [5, '2026-03-06']]) {
     reset(6, '2026-03-01');
     const result = touchStreak(userId, day);
-    check(`Cách ${gap} ngày (đóng băng ${gap - 1}/3) → chuỗi sống, +1`, result.count === 7 && result.outcome === 'recovered');
+    check(`Cách ${gap} ngày (bỏ lỡ ${gap - 1} ngày) → mất chuỗi, bắt đầu lại từ 1`, result.count === 1 && result.outcome === 'reset', JSON.stringify(result));
   }
-
-  // gap 5: past the freeze window
-  reset(6, '2026-03-01');
-  const lost = touchStreak(userId, '2026-03-06');
-  check('Cách 5 ngày (quá 3 ngày đóng băng) → mất chuỗi, về 1', lost.count === 1 && lost.outcome === 'reset');
 
   // read-only status reporting
   reset(9, '2026-03-01');
-  const frozen = streakStatus(userId, '2026-03-04');
-  check('Trạng thái đóng băng báo đúng số ngày còn lại',
-    frozen.status === 'frozen' && frozen.frozenDays === 2 && frozen.freezeDaysLeft === 1,
-    JSON.stringify(frozen));
+  const yesterday = streakStatus(userId, '2026-03-02');
+  check('Hôm qua có hoạt động, hôm nay chưa → chuỗi vẫn còn, chờ giữ hôm nay',
+    yesterday.status === 'active' && yesterday.count === 9 && !yesterday.countedToday, JSON.stringify(yesterday));
+  const missed = streakStatus(userId, '2026-03-03');
+  check('Bỏ lỡ 1 ngày → hiển thị 0, không đóng băng', missed.status === 'lost' && missed.count === 0, JSON.stringify(missed));
 
   const dead = streakStatus(userId, '2026-03-20');
   check('Trạng thái mất chuỗi hiển thị 0', dead.status === 'lost' && dead.count === 0);
@@ -155,8 +151,11 @@ async function testStreakRules() {
   const { recordActivity, longestDayRun } = await import('../server/services/progression.js');
   reset(4, '2026-03-01');
   recordActivity(userId, { kind: 'lesson_completed', ref: 'r', xp: 0, day: '2026-03-04' });
-  check('Cứu chuỗi đang đóng băng được ghi lại cho huy hiệu "Hồi sinh"',
-    dbGet("SELECT COUNT(*) n FROM activity_log WHERE user_id = ? AND kind = 'streak_recovered'", userId).n === 1);
+  check('Không còn đóng băng: quay lại sau khi bỏ lỡ không tính là "cứu chuỗi"',
+    dbGet("SELECT COUNT(*) n FROM activity_log WHERE user_id = ? AND kind = 'streak_recovered'", userId).n === 0
+    && readState(userId).streak_count === 1);
+  check('Huy hiệu "Hồi sinh" (cứu chuỗi đóng băng) đã tắt',
+    !dbGet("SELECT is_active a FROM badges WHERE code = 'streak_recovered'")?.a);
 
   section('Ghi nhanh bằng AI: kiểm lại kết quả');
   const { sanitizeAiItems, loadCategories } = await import('../server/services/expenseReader.js');

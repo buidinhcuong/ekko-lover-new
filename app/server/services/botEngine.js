@@ -47,7 +47,7 @@ const FAQ = [
   {
     id: 'streak-rule',
     q: ['streak', 'chuoi ngay', 'dong bang', 'mat streak', 'giu chuoi'],
-    a: `Mỗi ngày, hành động đầu tiên của bạn (hoàn thành một bài học, hoặc làm một việc trong ba chức năng: ghi một khoản chi, lưu ngân sách, hoặc đặt/nạp một mục tiêu) sẽ cộng +1 streak. Nếu hôm sau bạn không vào, streak sẽ bị **đóng băng** thay vì mất ngay. Streak giữ được tối đa ${MAX_FREEZE_DAYS} ngày đóng băng. Quay lại trong khoảng đó là chuỗi tiếp tục; qua ${MAX_FREEZE_DAYS} ngày mà vẫn không hoạt động thì chuỗi sẽ mất và bắt đầu lại từ 1.`,
+    a: `Mỗi ngày, hành động đầu tiên của bạn (hoàn thành một bài học, hoặc làm một việc trong ba chức năng: ghi một khoản chi, lưu ngân sách, hoặc đặt/nạp một mục tiêu) sẽ cộng +1 streak. Chỉ cần **bỏ lỡ 1 ngày** là chuỗi về 0, và lần hoạt động tiếp theo bắt đầu lại từ 1 — nên ngày nào cũng ghé làm một việc nhỏ nhé.`,
   },
   {
     id: 'levels',

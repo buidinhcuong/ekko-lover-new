@@ -4,21 +4,23 @@
  *  - The first qualifying action of a calendar day (+1): finishing a lesson, or
  *    doing something in one of the three tools: saving a budget, setting or
  *    topping up a goal, logging an expense. Merely opening a screen does not count.
- *  - Miss the next day and the streak FREEZES rather than breaking.
- *  - The freeze holds for at most 3 missed days.
- *  - Come back on any of those days and the streak continues (+1).
- *  - Miss a 4th day and the streak is lost; the next action starts again at 1.
+ *  - Miss a single day and the streak is lost: it shows 0, and the next
+ *    qualifying action starts again at 1. There is no freeze / grace period
+ *    (10/2026 — trước đây được "đóng băng" tối đa 3 ngày).
  *
  * So with `gap` = days since the last active day:
  *    gap 0        already counted today, nothing changes
  *    gap 1        normal consecutive day            -> +1
- *    gap 2..4     1..3 frozen days were used        -> +1 (streak survived)
- *    gap >= 5     more than 3 days missed           -> reset to 1
+ *    gap >= 2     a day was missed                  -> reset to 1
+ *
+ * The freeze machinery (status 'frozen', outcome 'recovered') is kept but
+ * switched off by MAX_FREEZE_DAYS = 0, so turning a grace period back on is a
+ * one-number change.
  */
 import { get, run } from '../db.js';
 import { dayKey, daysBetween, nowIso } from '../lib/time.js';
 
-export const MAX_FREEZE_DAYS = 3;
+export const MAX_FREEZE_DAYS = 0;
 /** Largest gap that a streak can still survive. */
 export const SURVIVABLE_GAP = MAX_FREEZE_DAYS + 1;
 

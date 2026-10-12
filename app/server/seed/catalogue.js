@@ -111,7 +111,6 @@ export const BADGES = [
   { code: 'streak_20', group_code: 'habit', name: 'Streak 20 ngày', description: 'Giữ chuỗi 20 ngày liên tiếp.', icon: '🚀', rule_type: 'streak_days', rule_value: 20, xp_reward: 150 },
   { code: 'streak_30', group_code: 'habit', name: 'Streak 30 ngày', description: 'Giữ chuỗi 30 ngày liên tiếp. Rất ít người làm được.', icon: '⚡', rule_type: 'streak_days', rule_value: 30, xp_reward: 300 },
   { code: 'streak_80', group_code: 'habit', name: 'Không thể cản', description: 'Giữ chuỗi 80 ngày liên tiếp.', icon: '🌋', rule_type: 'streak_days', rule_value: 80, xp_reward: 500 },
-  { code: 'streak_recovered', group_code: 'habit', name: 'Hồi sinh', description: 'Quay lại kịp lúc để cứu chuỗi đang bị đóng băng.', icon: '❄️', rule_type: 'streak_recovered', rule_value: 1, xp_reward: 30 },
 
   // Ghi chép chi tiêu
   { code: 'first_expense', group_code: 'expenses', name: 'Khoản chi đầu tiên', description: 'Ghi khoản chi tiêu đầu tiên.', icon: '🪙', rule_type: 'expenses_logged', rule_value: 1, xp_reward: 10 },
