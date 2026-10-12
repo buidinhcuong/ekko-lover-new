@@ -76,14 +76,21 @@ export default async function aiUsage(ctx) {
     el('option', { value: '' }, 'Mọi mức dùng'),
     ...Object.entries(LEVEL).map(([code, [label]]) => el('option', { value: code }, label)),
   ]);
+  // Mặc định 10 người tốn nhất; chọn thêm 100 / 200.
+  const pageSize = el('select', {}, [10, 100, 200].map((n) => el('option', { value: String(n) }, `Hiện ${n} người`)));
+  const shownNote = el('p.hint', { style: { margin: '8px 0 0' } });
   const listHost = el('div');
   const draw = () => {
     const q = search.value.trim().toLowerCase();
     const rows = r.users.filter((u) => (!levelFilter.value || u.level === levelFilter.value)
       && (!q || [u.name, u.email, u.employer].filter(Boolean).some((v) => v.toLowerCase().includes(q))));
+    const shown = rows.slice(0, Number(pageSize.value));
+    shownNote.textContent = rows.length > shown.length
+      ? `Đang hiện ${shown.length} / ${rows.length} người — chọn "Hiện ${pageSize.value === '10' ? 100 : 200} người" để xem thêm.`
+      : rows.length ? `Đang hiện cả ${rows.length} người.` : '';
     listHost.replaceChildren(rows.length ? table(
       [{ label: 'Người dùng' }, { label: 'Mức dùng' }, { label: 'Lượt', align: 'right' }, { label: 'Token vào', align: 'right' }, { label: 'Token ra', align: 'right' }, { label: 'TB / lượt', align: 'right' }, { label: 'Chi phí', align: 'right' }, { label: 'Tính năng' }, { label: 'Chạm giới hạn', align: 'right' }],
-      rows,
+      shown,
       (u) => el('tr', {}, [
         el('td', {}, [el('strong', {}, u.name), el('span.cellmeta', {}, [u.email, u.employer].filter(Boolean).join(' · ') || '—')]),
         el('td', {}, badge(...LEVEL[u.level])),
@@ -99,6 +106,7 @@ export default async function aiUsage(ctx) {
   };
   search.addEventListener('input', draw);
   levelFilter.addEventListener('change', draw);
+  pageSize.addEventListener('change', draw);
   draw();
 
   // --- tỷ giá ----------------------------------------------------------------
@@ -133,7 +141,7 @@ export default async function aiUsage(ctx) {
     el('div.panel', { style: { marginTop: '16px' } }, [
       el('div.panel__head', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' } }, [
         el('h2', { style: { flex: '1' } }, `Theo người dùng (${r.users.length})`),
-        levelFilter, search,
+        levelFilter, pageSize, search,
       ]),
       el('p.hint', { style: { margin: '0 0 12px' } }, [
         'Mức dùng so với những người cùng dùng AI trong kỳ, theo chi phí: ',
@@ -143,6 +151,7 @@ export default async function aiUsage(ctx) {
         r.limit ? `"Chạm giới hạn" = số ngày dùng hết ${r.limit} lượt/ngày.` : 'Hiện không giới hạn lượt/ngày.',
       ]),
       listHost,
+      shownNote,
     ]),
 
     el('div.panel', { style: { marginTop: '16px' } }, [
