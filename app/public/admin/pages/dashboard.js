@@ -1,5 +1,6 @@
 /** Programme health at a glance. */
 import { el, formatDay } from '/shared/client.js';
+import { badge, table } from '../ui.js';
 
 const stat = (label, value, hint) => el('div.stat', {}, [
   el('div.stat__label', {}, label),
@@ -77,6 +78,8 @@ export default async function dashboard(ctx) {
       ]),
     ]),
 
+    teamSection(s.teams),
+
     el('div.panel', {}, [
       el('div.panel__head', {}, [el('h2', {}, 'Nội dung đang xuất bản')]),
       el('div.stat-grid', { style: { marginBottom: '0' } }, [
@@ -86,5 +89,66 @@ export default async function dashboard(ctx) {
         stat('Frame nội dung', s.content.frames),
       ]),
     ]),
+  ]);
+}
+
+// --- Heo Dream Team ------------------------------------------------------------
+const pctOf = (n, d) => (d ? `${Math.round((n / d) * 100)}%` : '—');
+const num = (n) => Math.round(n || 0).toLocaleString('vi-VN');
+
+function teamSection(t) {
+  const team = t.streakToday.team;
+  const solo = t.streakToday.solo;
+  const maxSize = Math.max(1, t.sizes.two, t.sizes.three, t.sizes.race, t.sizes.big);
+  const sizeRow = (label, n) => el('div.barrow', {}, [
+    el('span', {}, label),
+    el('span.barrow__track', {}, [el('span.barrow__fill', { style: { width: `${Math.round((n / maxSize) * 100)}%`, display: 'block' } })]),
+    el('span.barrow__value', {}, String(n)),
+  ]);
+  const race = `${t.raceSize.min}–${t.raceSize.max}`;
+  const [year, mon] = t.month.split('-');
+
+  return el('div.panel', { style: { marginBottom: '16px' } }, [
+    el('div.panel__head', {}, [el('h2', {}, 'Heo Dream Team')]),
+    el('div.stat-grid', {}, [
+      stat('Số đội', num(t.teams), `${num(t.newTeamsWeek)} đội mới trong 7 ngày · TB ${t.avgSize.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} người/đội`),
+      stat('Người học trong đội', num(t.membersInTeams), `${pctOf(t.membersInTeams, t.totalUsers)} tổng người học`),
+      stat('Giữ streak hôm nay', pctOf(team.kept, team.total), `trong đội ${team.kept}/${team.total} · chơi một mình ${pctOf(solo.kept, solo.total)} (${solo.kept}/${solo.total})`),
+      stat('Lời nhắc giữ streak', num(t.nudges.today), `hôm nay · 7 ngày: ${num(t.nudges.week)}, ${num(t.nudges.worked)} lần người được nhắc vào giữ streak`),
+    ]),
+    el('div.split', {}, [
+      el('div', {}, [
+        el('h3', { style: { margin: '0 0 8px' } }, 'Quy mô đội'),
+        el('div.bars', {}, [
+          sizeRow('2 người', t.sizes.two),
+          sizeRow('3 người', t.sizes.three),
+          sizeRow(`${race} người (đủ điều kiện đua nhóm)`, t.sizes.race),
+          sizeRow(`${t.raceSize.max + 1}–${t.maxTeam} người`, t.sizes.big),
+        ]),
+      ]),
+      el('div', {}, [
+        el('h3', { style: { margin: '0 0 8px' } }, 'Lời mời & XP chia sẻ'),
+        el('div.stat-grid', { style: { marginBottom: '0' } }, [
+          stat('Lời mời đang chờ', num(t.invites.pending)),
+          stat('Tỷ lệ nhận lời mời', pctOf(t.invites.accepted, t.invites.accepted + t.invites.declined), `${num(t.invites.accepted)} nhận · ${num(t.invites.declined)} từ chối`),
+          stat('XP chia cho bạn cùng đội', num(t.sharedXp), `mức chia hiện tại ${t.xpSharePercent}%`),
+        ]),
+      ]),
+    ]),
+    el('h3', { style: { margin: '16px 0 4px' } }, `Bảng xếp hạng đội — tháng ${mon}/${year}`),
+    el('p.hint', { style: { margin: '0 0 8px' } }, `Theo tổng XP các thành viên tự kiếm trong tháng (không tính XP được chia từ bạn cùng đội). Giải nhóm Cuộc đua Ekko Lover dành cho đội ${race} người.`),
+    t.leaderboard.length ? table(
+      [{ label: '#' }, { label: 'Đội (trưởng đội)' }, { label: 'Số người', align: 'right' }, { label: 'XP tháng này', align: 'right' }, { label: 'XP tổng', align: 'right' }, { label: 'Giữ streak hôm nay', align: 'right' }, { label: 'Đua nhóm' }],
+      t.leaderboard,
+      (row) => el('tr', {}, [
+        el('td', {}, String(t.leaderboard.indexOf(row) + 1)),
+        el('td', {}, [el('strong', {}, `Đội của ${row.ownerName}`), el('span.cellmeta', {}, `lập ${formatDay(row.createdAt.slice(0, 10))}`)]),
+        el('td.num', {}, String(row.size)),
+        el('td.num', {}, el('strong', {}, num(row.xpMonth))),
+        el('td.num', {}, num(row.xpTotal)),
+        el('td.num', {}, `${row.keptToday}/${row.size}`),
+        el('td', {}, row.raceEligible ? badge('Đủ điều kiện', 'success') : badge(row.size < t.raceSize.min ? `Cần thêm ${t.raceSize.min - row.size}` : `Quá ${t.raceSize.max} người`, 'neutral')),
+      ]),
+    ) : el('p.hint', {}, 'Chưa có đội nào (đội cần từ 2 người).'),
   ]);
 }

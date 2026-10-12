@@ -1564,6 +1564,13 @@ async function main() {
     check('Người được nhắc thấy lời nhắc ở màn chủ', worldB.team.nudges.length === 1 && worldB.team.nudges[0].fromName === 'Heo C');
     await post('teamB', '/api/team/nudges/seen');
     check('Xem rồi thì lời nhắc không hiện lại', (await get('teamB', '/api/me/world')).json.team.nudges.length === 0);
+    // Bảng điều khiển Admin: số liệu Heo Dream Team.
+    const dash = (await get('admin', '/api/admin/stats/overview')).json.teams;
+    const row1 = dash?.leaderboard[0];
+    check('Bảng điều khiển có số liệu Heo Dream Team (số đội, người trong đội, lời nhắc, xếp hạng)',
+      dash && dash.teams >= 1 && dash.membersInTeams === dash.leaderboard.reduce((n, r) => n + r.size, 0) && dash.nudges.today >= 1
+      && dash.invites.accepted >= 1 && row1?.size >= 2 && row1.raceEligible === false && typeof row1.xpMonth === 'number'
+      && dash.streakToday.team.total === dash.membersInTeams, JSON.stringify(dash).slice(0, 300));
     const enTeam = await getEn('teamB', '/api/team');
     check('API đội trả được khi app ở tiếng Anh', enTeam.status === 200);
 

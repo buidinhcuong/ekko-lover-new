@@ -19,6 +19,7 @@ import { BADGE_RULES, LEARNING_XP_KEYS, learningXp } from '../services/progressi
 import { CHALLENGE_PERIODS, CHALLENGE_RULES } from '../services/challenges.js';
 import { aiDailyLimit, aiUsageToday, recentOutOfScope } from '../services/aiQuota.js';
 import { aiUsageReport } from '../services/aiUsage.js';
+import { teamOverview } from '../services/teamStats.js';
 import { keyState } from '../services/receiptAI.js';
 import { BADGE_GROUPS } from '../seed/catalogue.js';
 import { adminUserSummary } from './session.js';
@@ -313,6 +314,8 @@ adminRouter.get('/api/admin/stats/overview', () => {
          LEFT JOIN lesson_progress p ON p.lesson_id = l.id AND p.status = 'completed'
         GROUP BY l.id ORDER BY completions DESC, l.order_index LIMIT 8`,
     ),
+    // Heo Dream Team: số đội, streak trong đội, lời mời / lời nhắc, xếp hạng tháng.
+    teams: teamOverview(today),
     dailyActive: all(
       `SELECT day, COUNT(DISTINCT user_id) AS users
          FROM activity_log WHERE day >= date('now', '-13 days')
