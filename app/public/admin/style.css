@@ -139,6 +139,9 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .spark div { flex: 1; max-width: 32px; background: var(--bg-brand-500); border-radius: var(--radius-4) var(--radius-4) 0 0; min-height: 2px; }
 .spark-labels { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
 .spark-labels span { flex: 1; max-width: 32px; text-align: center; font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+/* Sử dụng AI: tới 90 cột một hàng nên khít hơn, nhãn ngày thưa. */
+.aispark { gap: 2px; }
+.aispark div, .aispark span { max-width: 24px; }
 
 /* -------------------------------------------------------------- modal */
 .modal-backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--grey-900) 55%, transparent); z-index: 60; }

@@ -548,6 +548,13 @@ addColumn('categories', 'daily_limit', 'INTEGER');
 addColumn('categories', 'group_code', 'TEXT');
 addColumn('categories', 'group_label', 'TEXT');
 addColumn('expenses', 'receipt_path', 'TEXT');
+// Token & chi phí của từng lượt gọi AI (services/aiUsage.js · trang Admin "Sử dụng AI").
+addColumn('ai_calls', 'model', 'TEXT');
+addColumn('ai_calls', 'input_tokens', 'INTEGER');
+addColumn('ai_calls', 'output_tokens', 'INTEGER');
+addColumn('ai_calls', 'cache_read_tokens', 'INTEGER');
+addColumn('ai_calls', 'cache_write_tokens', 'INTEGER');
+addColumn('ai_calls', 'cost_usd', 'REAL');
 addColumn('expenses', 'recurring_id', 'INTEGER');
 addColumn('news', 'body', 'TEXT');
 addColumn('savings_sources', 'started_on', 'TEXT');

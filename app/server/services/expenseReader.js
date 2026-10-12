@@ -21,6 +21,7 @@ import { extractNote, guessCategory, parseAmount, spokenToDigits } from './nlp.j
 import { keyState } from './receiptAI.js';
 import { CATEGORY_GROUPS } from '../seed/catalogue.js';
 import { takeAiCall } from './aiQuota.js';
+import { recordAiUsage } from './aiUsage.js';
 
 const endpoint = () => `${config.anthropicBaseUrl}/v1/messages`;
 /** Ghi nhanh phải nhanh: quá lâu thì thôi chờ, dùng bộ đọc viết sẵn. */
@@ -112,7 +113,7 @@ function schema(codes) {
   };
 }
 
-async function callClaude(text, categories, today) {
+async function callClaude(text, categories, today, callId) {
   const codes = categories.map((c) => c.code);
   const weekday = WEEKDAYS[new Date(`${today}T00:00:00Z`).getUTCDay()];
   const body = {
@@ -144,6 +145,7 @@ async function callClaude(text, categories, today) {
       return null;
     }
     const payload = await response.json();
+    recordAiUsage(callId, payload);
     if (payload.stop_reason === 'refusal' || payload.stop_reason === 'max_tokens') return null;
     const raw = (payload.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
     return JSON.parse(raw);
@@ -207,8 +209,9 @@ export async function readExpenses(text, { today = dayKey(), categories = loadCa
   const clean = String(text || '').trim().slice(0, 300);
   if (!clean) return { items: [], source: 'rule' };
   // Hết lượt AI hôm nay thì vẫn ghi được, bằng bộ đọc viết sẵn.
-  if (keyState() === 'ok' && takeAiCall(userId, 'quick')) {
-    const out = await callClaude(clean, categories, today);
+  const callId = keyState() === 'ok' ? takeAiCall(userId, 'quick') : false;
+  if (callId) {
+    const out = await callClaude(clean, categories, today, callId);
     const items = sanitizeAiItems(out, categories, today);
     if (items.length) return { items, source: 'ai' };
     // AI đọc được câu và nói rõ đây KHÔNG phải khoản chi (vd. "lương về 8 triệu"):

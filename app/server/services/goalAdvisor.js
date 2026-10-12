@@ -20,6 +20,7 @@ import { get, run } from '../db.js';
 import { addDays, dayKey, nowIso } from '../lib/time.js';
 import { keyState } from './receiptAI.js';
 import { takeAiCall } from './aiQuota.js';
+import { recordAiUsage } from './aiUsage.js';
 
 const endpoint = () => `${config.anthropicBaseUrl}/v1/messages`;
 const TIMEOUT_MS = 30_000;
@@ -246,7 +247,7 @@ function aiContext(goal, f, finances) {
   ].filter(Boolean).join('\n');
 }
 
-async function aiAnalysis(goal, f, finances) {
+async function aiAnalysis(goal, f, finances, callId) {
   if (keyState() !== 'ok') return null;
   const body = {
     model: config.anthropicModel,
@@ -277,6 +278,7 @@ async function aiAnalysis(goal, f, finances) {
       return null;
     }
     const payload = await response.json();
+    recordAiUsage(callId, payload);
     if (payload.stop_reason === 'refusal' || payload.stop_reason === 'max_tokens') return null;
     const text = (payload.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
     const out = JSON.parse(text);
@@ -314,7 +316,8 @@ export async function adviseGoal(userId, input) {
   if (needsInfo.length) return { draft: goal, finances, needsInfo, facts: plan, analysis: null };
 
   // Hết lượt AI hôm nay thì nhận xét theo công thức.
-  const ai = keyState() === 'ok' && takeAiCall(userId, 'advice') ? await aiAnalysis(goal, plan, finances) : null;
+  const callId = keyState() === 'ok' ? takeAiCall(userId, 'advice') : false;
+  const ai = callId ? await aiAnalysis(goal, plan, finances, callId) : null;
   const analysis = ai ? { ...ai, source: 'ai' } : { ...ruleAnalysis(goal, plan), source: 'rule' };
   return { draft: goal, finances, needsInfo, facts: plan, analysis };
 }

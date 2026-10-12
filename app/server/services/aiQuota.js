@@ -24,14 +24,16 @@ export function aiCallsToday(userId, day = dayKey()) {
 
 /**
  * Giữ một lượt gọi AI cho người dùng. Trả về false nếu đã hết lượt hôm nay
- * (khi đó KHÔNG gọi AI). Không có userId (vd. kiểm thử nội bộ) thì không đếm.
+ * (khi đó KHÔNG gọi AI); còn lượt thì trả về id dòng `ai_calls` vừa ghi — đưa id
+ * này cho recordAiUsage (services/aiUsage.js) sau khi gọi xong để ghi token.
+ * Không có userId (vd. kiểm thử nội bộ) thì không đếm, trả về true.
  */
 export function takeAiCall(userId, kind) {
   if (!userId) return true;
   const limit = aiDailyLimit();
   if (limit && aiCallsToday(userId) >= limit) return false;
-  run('INSERT INTO ai_calls (user_id, day, kind, created_at) VALUES (?,?,?,?)', userId, dayKey(), kind, nowIso());
-  return true;
+  const info = run('INSERT INTO ai_calls (user_id, day, kind, created_at) VALUES (?,?,?,?)', userId, dayKey(), kind, nowIso());
+  return Number(info.lastInsertRowid);
 }
 
 // --- câu hỏi ngoài phạm vi của Ekko bot ------------------------------------

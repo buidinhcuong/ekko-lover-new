@@ -204,7 +204,11 @@ async function testStreakRules() {
         const inScope = !/thơ/.test(asked);
         const out = { in_scope: inScope, answer: inScope ? 'Quỹ khẩn cấp nên bằng 3–6 tháng chi tiêu thiết yếu.' : 'Đây là bài thơ…' };
         res.writeHead(200, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(out) }] }));
+        res.end(JSON.stringify({
+          stop_reason: 'end_turn', model: 'claude-sonnet-5-5',
+          usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 500, cache_creation_input_tokens: 0 },
+          content: [{ type: 'text', text: JSON.stringify(out) }],
+        }));
       });
     });
     await new Promise((r) => fake.listen(0, '127.0.0.1', r));
@@ -221,6 +225,18 @@ async function testStreakRules() {
         dbGet("SELECT COUNT(*) n FROM ai_out_of_scope WHERE text LIKE '%thơ%'").n === 1);
       const fin = await respond(userId, 'xin chào', { createExpense: noop });
       check('Câu trong phạm vi thì dùng câu trả lời của AI', fin.kind === 'ai' && /3–6 tháng/.test(fin.text), fin.kind);
+      // Token AI: lượt vừa gọi ghi model, token vào / ra / cache và chi phí theo bảng giá.
+      const lastCall = dbGet('SELECT * FROM ai_calls WHERE user_id = ? ORDER BY id DESC LIMIT 1', userId);
+      check('Ghi token của lượt gọi AI: model, token vào/ra/cache, chi phí',
+        lastCall.model === 'claude-sonnet-5-5' && lastCall.input_tokens === 1000 && lastCall.output_tokens === 200
+        && lastCall.cache_read_tokens === 500 && Math.abs(lastCall.cost_usd - 0.0041) < 1e-9, JSON.stringify(lastCall));
+      const { aiUsageReport } = await import('../server/services/aiUsage.js');
+      const report = aiUsageReport({ days: 7 });
+      const mine = report.users.find((u) => u.id === userId);
+      check('Báo cáo Admin "Sử dụng AI": tổng, theo tính năng, theo người dùng, theo ngày',
+        report.daily.length === 7 && report.totals.output >= 200 && report.byKind.some((k) => k.kind === 'bot')
+        && mine?.output === 400 && mine.measured === 2 && ['rat_nhieu', 'nhieu', 'trung_binh', 'it'].includes(mine.level),
+        JSON.stringify({ totals: report.totals, mine }));
       const money = await respond(userId, 'Lương 10 triệu thì nên chia tiền tiết kiệm thế nào?', { createExpense: noop });
       check('Câu hỏi tài chính: AI trả lời thẳng (không chỉ trích bài học), có kèm số liệu tháng của người dùng',
         money.kind === 'ai' && /Số liệu của người dùng:[\s\S]*Đã chi trong tháng/.test(lastAsked), money.kind);

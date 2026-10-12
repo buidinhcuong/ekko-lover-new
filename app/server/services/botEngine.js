@@ -19,6 +19,7 @@
 import { readExpenses } from './expenseReader.js';
 import { keyState } from './receiptAI.js';
 import { logOutOfScope, takeAiCall } from './aiQuota.js';
+import { recordAiUsage } from './aiUsage.js';
 import { all, get, run } from '../db.js';
 import { config } from '../config.js';
 import { dayKey, formatMonth, formatVnd, monthKey } from '../lib/time.js';
@@ -478,7 +479,7 @@ function userSnapshot(userId) {
 }
 
 /** @returns {Promise<{ inScope: boolean, text: string } | null>} null nếu lỗi / hết giờ / bị từ chối. */
-async function askClaude(question, contextText, lang, snapshot = '') {
+async function askClaude(question, contextText, lang, snapshot = '', callId = null) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), BOT_TIMEOUT_MS);
   try {
@@ -510,6 +511,7 @@ async function askClaude(question, contextText, lang, snapshot = '') {
       return null;
     }
     const data = await response.json();
+    recordAiUsage(callId, data);
     if (data.stop_reason === 'refusal' || data.stop_reason === 'max_tokens') return null;
     const out = JSON.parse((data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join(''));
     return { inScope: out.in_scope === true, text: String(out.answer || '').trim().slice(0, 1500) };
@@ -671,8 +673,9 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
     labelSay: { key: 'lessonOpen', vars: { lesson: hits[0].source.lessonTitle } },
   } : undefined;
   if (keyState() === 'ok') {
-    if (takeAiCall(userId, 'bot')) {
-      const answer = await askClaude(message, contextFor(message, lang), lang, userSnapshot(userId));
+    const callId = takeAiCall(userId, 'bot');
+    if (callId) {
+      const answer = await askClaude(message, contextFor(message, lang), lang, userSnapshot(userId), callId);
       if (answer && !answer.inScope) {
         logOutOfScope(userId, message);
         return { kind: 'out_of_scope', ...speak(lang, 'outOfScope') };

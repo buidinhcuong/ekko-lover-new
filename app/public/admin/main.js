@@ -21,6 +21,7 @@ import categories from './pages/categories.js';
 import members from './pages/members.js';
 import concepts from './pages/concepts.js';
 import news from './pages/news.js';
+import aiUsage from './pages/aiUsage.js';
 
 const root = document.getElementById('admin');
 
@@ -48,12 +49,14 @@ const PAGES = {
   '/members': members,
   '/concepts': concepts,
   '/news': news,
+  '/ai-usage': aiUsage,
 };
 
 const NAV = [
   { group: 'Tổng quan' },
   { route: '/', icon: 'analytics-01', label: 'Bảng điều khiển' },
   { route: '/members', icon: 'user-multiple', label: 'Người học' },
+  { route: '/ai-usage', icon: 'robot-01', label: 'Sử dụng AI' },
   { group: 'Trò chơi hoá' },
   { route: '/concepts', icon: 'paint-board', label: 'Concept' },
   { route: '/levels', icon: 'piggy-bank', label: 'Cấp độ heo' },

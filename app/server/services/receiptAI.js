@@ -14,6 +14,7 @@
  * nào hỏng vì thiếu khoá.
  */
 import { config } from '../config.js';
+import { recordAiUsage } from './aiUsage.js';
 
 const endpoint = () => `${config.anthropicBaseUrl}/v1/messages`;
 const TIMEOUT_MS = 30_000;
@@ -51,7 +52,7 @@ const SYSTEM = [
  * @param {string} dataUrl ảnh hoá đơn dạng data URL (đã được kiểm ở services/receipts.js)
  * @param {{code: string, name: string}[]} categories nhóm chi tiêu hiện có, để model chọn đúng một nhóm
  */
-export async function readReceipt(dataUrl, categories) {
+export async function readReceipt(dataUrl, categories, { callId } = {}) {
   const key = config.anthropicApiKey;
   if (!key) return null;
 
@@ -135,6 +136,7 @@ export async function readReceipt(dataUrl, categories) {
   }
 
   const payload = await response.json();
+  recordAiUsage(callId, payload);
   const call = (payload.content || []).find((block) => block.type === 'tool_use');
   if (!call) throw new Error('Không đọc được thông tin trên hoá đơn');
 

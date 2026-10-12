@@ -18,6 +18,7 @@ import { dayKey } from '../lib/time.js';
 import { BADGE_RULES, LEARNING_XP_KEYS, learningXp } from '../services/progression.js';
 import { CHALLENGE_PERIODS, CHALLENGE_RULES } from '../services/challenges.js';
 import { aiDailyLimit, aiUsageToday, recentOutOfScope } from '../services/aiQuota.js';
+import { aiUsageReport } from '../services/aiUsage.js';
 import { keyState } from '../services/receiptAI.js';
 import { BADGE_GROUPS } from '../seed/catalogue.js';
 import { adminUserSummary } from './session.js';
@@ -391,6 +392,17 @@ adminRouter.put('/api/admin/settings/ai', ({ body }) => {
   if (!Number.isInteger(n) || n < 0 || n > 1000) throw bad('Giới hạn lượt AI phải là số nguyên từ 0 đến 1000 (0 = không giới hạn)');
   setSetting('ai_daily_limit', String(n));
   return aiBoard();
+});
+
+// ------------------------------------------------------------- dùng AI (token)
+/** Token & chi phí AI theo người dùng, tính năng, ngày — trang "Sử dụng AI". */
+adminRouter.get('/api/admin/ai-usage', ({ url }) => aiUsageReport({ days: url.searchParams.get('days') || 30 }));
+
+adminRouter.put('/api/admin/settings/usd-vnd', ({ body }) => {
+  const n = Number(body.rate);
+  if (!Number.isFinite(n) || n < 1000 || n > 100000) throw bad('Tỷ giá USD/VND phải trong khoảng 1.000–100.000');
+  setSetting('usd_vnd_rate', String(Math.round(n)));
+  return { rate: Math.round(n) };
 });
 
 // ------------------------------------------------------------------ concept

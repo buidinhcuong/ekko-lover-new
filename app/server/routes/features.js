@@ -701,12 +701,13 @@ featureRouter.post('/api/expenses/scan', async ({ user, body }) => {
     throw new HttpError(503, 'Khoá API trong app/.env chưa hợp lệ — có vẻ vẫn là chỗ điền mẫu. Bạn nhập tay giúp nhé.');
   }
   checkReceipt(body.receipt);
-  if (!takeAiCall(user.id, 'receipt')) {
+  const callId = takeAiCall(user.id, 'receipt');
+  if (!callId) {
     throw new HttpError(429, 'Hôm nay bạn đã dùng hết lượt AI. Bạn nhập tay khoản chi này giúp nhé.');
   }
 
   const list = categories();
-  const read = await readReceipt(body.receipt, list.map((c) => ({ code: c.code, name: c.name })))
+  const read = await readReceipt(body.receipt, list.map((c) => ({ code: c.code, name: c.name })), { callId })
     .catch((err) => { throw bad(err.message); });
 
   const category = list.find((c) => c.code === read.categoryCode) || null;
