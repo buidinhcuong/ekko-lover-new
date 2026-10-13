@@ -1,6 +1,6 @@
 /** Programme health at a glance. */
 import { el, formatDay } from '/shared/client.js';
-import { badge, table } from '../ui.js';
+import { badge, barChart, table } from '../ui.js';
 
 const stat = (label, value, hint) => el('div.stat', {}, [
   el('div.stat__label', {}, label),
@@ -10,7 +10,10 @@ const stat = (label, value, hint) => el('div.stat', {}, [
 
 export default async function dashboard(ctx) {
   const s = await ctx.api.get('/api/admin/stats/overview');
-  const maxDaily = Math.max(1, ...s.dailyActive.map((d) => d.users));
+  const daily = s.dailyActive;
+  const todayActive = daily.at(-1)?.users || 0;
+  const peak = daily.reduce((a, b) => (b.users > a.users ? b : a), daily[0] || { users: 0, day: '' });
+  const avgActive = daily.length ? daily.reduce((n, d) => n + d.users, 0) / daily.length : 0;
   const maxLevel = Math.max(1, ...s.levelDistribution.map((d) => d.members));
 
   return el('div', {}, [
@@ -30,16 +33,17 @@ export default async function dashboard(ctx) {
 
     el('div.split', {}, [
       el('div.panel', {}, [
-        el('div.panel__head', {}, [el('h2', {}, 'Người hoạt động theo ngày')]),
-        s.dailyActive.length
-          ? el('div', {}, [
-            el('div.spark', {}, s.dailyActive.map((d) => el('div', {
-              style: { height: `${Math.round((d.users / maxDaily) * 100)}%` },
-              title: `${formatDay(d.day)}: ${d.users} người`,
-            }))),
-            el('div.spark-labels', {}, s.dailyActive.map((d) => el('span', {}, d.day.slice(8)))),
-          ])
-          : el('p.hint', {}, 'Chưa có hoạt động nào trong 14 ngày qua.'),
+        el('div.panel__head', {}, [el('h2', {}, 'Người hoạt động theo ngày'), el('span.cellmeta', {}, '14 ngày gần nhất')]),
+        el('div.chartsum', {}, [
+          el('div', {}, [el('small', {}, 'Hôm nay'), el('b', {}, `${todayActive} người`)]),
+          el('div', {}, [el('small', {}, 'Trung bình / ngày'), el('b', {}, avgActive.toLocaleString('vi-VN', { maximumFractionDigits: 1 }))]),
+          el('div', {}, [el('small', {}, 'Cao nhất'), el('b', {}, peak.users ? `${peak.users} · ${formatDay(peak.day)}` : '—')]),
+        ]),
+        barChart(daily.map((d) => ({
+          label: d.day.slice(8),
+          value: d.users,
+          detail: `${formatDay(d.day)}: ${d.users} người hoạt động`,
+        })), { height: 220 }),
       ]),
 
       el('div.panel', {}, [

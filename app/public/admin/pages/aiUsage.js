@@ -4,7 +4,7 @@
  * Kỳ xem (7 / 30 / 90 ngày) nằm trên hash: #/ai-usage?days=30.
  */
 import { el, formatDay } from '/shared/client.js';
-import { badge, table } from '../ui.js';
+import { badge, barChart, table } from '../ui.js';
 
 const KIND_LABEL = { bot: 'Ekko bot', quick: 'Ghi nhanh', receipt: 'Đọc hoá đơn', advice: 'Tư vấn mục tiêu' };
 const LEVEL = {
@@ -43,15 +43,23 @@ export default async function aiUsage(ctx) {
   // --- chi phí theo ngày ---------------------------------------------------
   const maxDay = Math.max(...r.daily.map((d) => d.cost), 0);
   const labelEvery = r.days > 31 ? 7 : r.days > 14 ? 3 : 1;
+  const peakDay = r.daily.reduce((a, b) => (b.cost > a.cost ? b : a), r.daily[0]);
+  const chart = barChart(r.daily.map((d) => ({
+    label: d.day.slice(8),
+    value: d.cost,
+    detail: `${formatDay(d.day)}: ${usd(d.cost)} · ${d.calls} lượt · ${d.users} người`,
+  })), { format: usd, height: 220, labelEvery });
+  if (r.days > 31) chart.classList.add('barchart--dense');
   const dailyPanel = el('div.panel', {}, [
     el('div.panel__head', {}, [el('h2', {}, 'Chi phí AI theo ngày')]),
     maxDay > 0
       ? el('div', {}, [
-        el('div.spark.aispark', {}, r.daily.map((d) => el('div', {
-          style: { height: `${Math.max(1, Math.round((d.cost / maxDay) * 100))}%`, opacity: d.cost ? 1 : 0.25 },
-          title: `${formatDay(d.day)}: ${usd(d.cost)} · ${d.calls} lượt · ${d.users} người`,
-        }))),
-        el('div.spark-labels.aispark', {}, r.daily.map((d, i) => el('span', {}, i % labelEvery === 0 ? d.day.slice(8) : ''))),
+        el('div.chartsum', {}, [
+          el('div', {}, [el('small', {}, 'Hôm nay'), el('b', {}, usd(r.daily.at(-1).cost))]),
+          el('div', {}, [el('small', {}, 'Trung bình / ngày'), el('b', {}, usd(t.cost / r.days))]),
+          el('div', {}, [el('small', {}, 'Cao nhất'), el('b', {}, `${usd(peakDay.cost)} · ${formatDay(peakDay.day)}`)]),
+        ]),
+        chart,
       ])
       : el('p.hint', {}, 'Chưa có lượt gọi AI nào được đo token trong kỳ này.'),
   ]);

@@ -79,6 +79,12 @@ a { color: var(--text-brand-500); }
 .stat__hint { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
 
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-16); }
+/* Ô lưới không giãn theo nội dung (biểu đồ nhiều cột, bảng dài) — tránh tràn ngang. */
+.split > * { min-width: 0; }
+/* Hai khung trong cùng một hàng: không dùng khoảng cách dọc của .panel + .panel (làm khung phải lệch xuống). */
+.split > .panel + .panel { margin-top: 0; }
+/* Số liệu phụ dưới con số trong ô số: không ngắt giữa chừng. */
+.ekko-table td.num .cellmeta { white-space: nowrap; }
 @media (max-width: 1080px) { .split { grid-template-columns: 1fr; } }
 /* Màn hẹp: cột điều hướng thành một dải tab cuộn ngang, ghim trên đỉnh.
    Trước đây nó vẫn xếp dọc và ăn hết màn hình đầu tiên — muốn xem nội dung phải
@@ -135,13 +141,42 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .barrow__fill { height: 100%; background: var(--bg-brand-500); }
 .barrow__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 
-.spark { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 90px; }
-.spark div { flex: 1; max-width: 32px; background: var(--bg-brand-500); border-radius: var(--radius-4) var(--radius-4) 0 0; min-height: 2px; }
-.spark-labels { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
-.spark-labels span { flex: 1; max-width: 32px; text-align: center; font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
-/* Sử dụng AI: tới 90 cột một hàng nên khít hơn, nhãn ngày thưa. */
-.aispark { gap: 2px; }
-.aispark div, .aispark span { max-width: 24px; }
+/* Biểu đồ cột theo ngày (ui.js · barChart): cột trải đủ rộng, số trên đầu cột,
+   vạch đáy mờ; ngày bằng 0 là vạch mảnh. Chữ dùng màu chữ, không dùng màu cột. */
+.barchart { position: relative; }
+.barchart__plot {
+  position: relative; display: flex; align-items: flex-end; gap: 6px;
+  border-bottom: 1px solid var(--border-secondary);
+}
+.barchart__col {
+  flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+  border-radius: var(--radius-4); outline: none; cursor: default;
+}
+.barchart__col:hover .barchart__bar, .barchart__col:focus-visible .barchart__bar { background: var(--bg-brand-600, var(--bg-brand-500)); }
+.barchart__col:focus-visible { box-shadow: 0 0 0 2px var(--border-brand); }
+.barchart__val {
+  margin-bottom: 4px; font-size: var(--font-size-text-xs); line-height: 16px; font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.barchart__bar { width: 100%; max-width: 48px; min-height: 2px; background: var(--bg-brand-500); border-radius: var(--radius-4) var(--radius-4) 0 0; }
+.barchart__bar.is-zero { background: var(--bg-grey-200); border-radius: 0; }
+.barchart__axis { display: flex; gap: 6px; margin-top: 6px; }
+.barchart__axis span {
+  flex: 1; min-width: 0; text-align: center; font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs);
+  color: var(--text-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: visible;
+}
+.barchart__tip {
+  position: absolute; top: 0; transform: translate(-50%, -100%); padding: 6px 10px; border-radius: var(--radius-8);
+  background: var(--bg-primary-solid, var(--grey-900)); color: var(--text-white, #fff); font-size: var(--font-size-text-xs);
+  line-height: 16px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 2;
+}
+.barchart__tip.is-on { opacity: 1; }
+.barchart--dense .barchart__plot, .barchart--dense .barchart__axis { gap: 2px; }
+/* Dòng tóm tắt trên biểu đồ: hôm nay · trung bình · cao nhất. */
+.chartsum { display: flex; flex-wrap: wrap; gap: var(--spacing-8) var(--spacing-24); margin: 0 0 var(--spacing-16); }
+.chartsum div { display: grid; gap: 2px; }
+.chartsum small { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+.chartsum b { font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); font-weight: var(--font-weight-semibold); font-variant-numeric: tabular-nums; }
 
 /* -------------------------------------------------------------- modal */
 .modal-backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--grey-900) 55%, transparent); z-index: 60; }

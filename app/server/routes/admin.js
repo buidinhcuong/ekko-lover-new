@@ -316,11 +316,19 @@ adminRouter.get('/api/admin/stats/overview', () => {
     ),
     // Heo Dream Team: số đội, streak trong đội, lời mời / lời nhắc, xếp hạng tháng.
     teams: teamOverview(today),
-    dailyActive: all(
-      `SELECT day, COUNT(DISTINCT user_id) AS users
-         FROM activity_log WHERE day >= date('now', '-13 days')
-        GROUP BY day ORDER BY day`,
-    ),
+    // 14 ngày gần nhất theo giờ Việt Nam, đủ từng ngày (ngày không ai hoạt động = 0).
+    dailyActive: (() => {
+      const days = Array.from({ length: 14 }, (_, i) => {
+        const d = new Date(`${today}T00:00:00Z`);
+        d.setUTCDate(d.getUTCDate() - (13 - i));
+        return d.toISOString().slice(0, 10);
+      });
+      const counts = new Map(all(
+        'SELECT day, COUNT(DISTINCT user_id) AS users FROM activity_log WHERE day BETWEEN ? AND ? GROUP BY day',
+        days[0], today,
+      ).map((r) => [r.day, r.users]));
+      return days.map((day) => ({ day, users: counts.get(day) || 0 }));
+    })(),
   };
 });
 

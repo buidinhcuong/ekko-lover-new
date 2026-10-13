@@ -441,4 +441,51 @@ export function table(columns, rows, renderRow) {
   ]);
 }
 
+// --- biểu đồ cột theo ngày -------------------------------------------------
+/**
+ * Biểu đồ cột một chuỗi số liệu (vd người hoạt động / chi phí AI theo ngày).
+ * Cột trải hết chiều rộng; số ghi trên đầu cột khi ≤ 14 cột, nhiều hơn thì chỉ
+ * ghi cột cao nhất và cột cuối; ngày bằng 0 vẫn có mặt (vạch mờ sát đáy). Rê
+ * chuột / chạm / Tab vào cột hiện chú thích `detail`.
+ * @param {{ label: string, value: number, detail?: string }[]} points
+ */
+export function barChart(points, { format = (n) => String(n), height = 200, labelEvery = 1 } = {}) {
+  if (!points.length) return el('div.empty-state', {}, 'Chưa có dữ liệu nào.');
+  const max = Math.max(...points.map((p) => p.value), 0);
+  const lastIdx = points.length - 1;
+  const maxIdx = points.findIndex((p) => p.value === max);
+  const showAll = points.length <= 14;
+  const tip = el('div.barchart__tip', { role: 'status' });
+  const hide = () => tip.classList.remove('is-on');
+
+  const cols = points.map((p, i) => {
+    const pct = max > 0 ? (p.value / max) * 100 : 0;
+    const showValue = p.value > 0 && (showAll || i === maxIdx || i === lastIdx);
+    const col = el('div.barchart__col', {
+      tabindex: '0',
+      'aria-label': p.detail || `${p.label}: ${format(p.value)}`,
+    }, [
+      el('span.barchart__val', { style: { visibility: showValue ? 'visible' : 'hidden' } }, format(p.value)),
+      el(`div.barchart__bar${p.value > 0 ? '' : '.is-zero'}`, { style: { height: p.value > 0 ? `calc(${pct}% - 20px)` : '2px' } }),
+    ]);
+    const show = () => {
+      tip.textContent = p.detail || `${p.label}: ${format(p.value)}`;
+      tip.classList.add('is-on');
+      const plot = col.parentElement.getBoundingClientRect();
+      const r = col.getBoundingClientRect();
+      tip.style.left = `${Math.min(Math.max(r.left - plot.left + r.width / 2, 60), plot.width - 60)}px`;
+    };
+    col.addEventListener('mouseenter', show);
+    col.addEventListener('focus', show);
+    col.addEventListener('mouseleave', hide);
+    col.addEventListener('blur', hide);
+    return col;
+  });
+
+  return el('div.barchart', {}, [
+    el('div.barchart__plot', { style: { height: `${height}px` } }, [...cols, tip]),
+    el('div.barchart__axis', {}, points.map((p, i) => el('span', {}, i % labelEvery === 0 || i === lastIdx ? p.label : ''))),
+  ]);
+}
+
 export const badge = (text, tone = 'neutral') => el(`span.ekko-badge.ekko-badge--${tone}.ekko-badge--sm`, {}, text);
