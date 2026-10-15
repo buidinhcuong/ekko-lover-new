@@ -233,6 +233,20 @@ App Ekko ký token JWT (HS256) bằng `EKKO_SSO_SECRET` dùng chung rồi mở
 - đặt `EKKO_SSO_SECRET` (thống nhất với team app Ekko),
 - đặt `EKKO_LOCAL_AUTH=0` để tắt đăng ký / đăng nhập bằng email.
 
+**Thông tin token SSO cần có** (để số liệu Admin lọc được theo công ty):
+
+| Trường | Bắt buộc | Ý nghĩa |
+|---|---|---|
+| `sub` | có | Mã người dùng trong Ekko (không đổi) |
+| `name` | có | Họ tên hiển thị |
+| `email` | nên có | Email |
+| `employer` | nên có | **Tên công ty** của người dùng — chỉ để hiển thị |
+| `employer_id` | **nên có** | **Mã công ty ổn định** trong hệ thống Ekko. Admin nhóm và lọc mọi số liệu theo mã này; đổi / viết khác tên công ty vẫn là một công ty. Thiếu mã thì nhóm theo tên (tên phải viết thống nhất). Nhận cả `employerId` / `company_id`. |
+| `role` | không | `admin` nếu là quản trị viên |
+| `exp` | có | Hết hạn ≤ 5 phút |
+
+Thử nhanh trên môi trường dev: `/dev/login?sub=nv01&name=Test&employer=Công ty A&employer_id=CT-A`.
+
 ### Cập nhật bản mới (mỗi lần có commit mới trên GitHub)
 
 **Phải khởi động lại server** — chỉ `git pull` thì file giao diện đổi ngay nhưng server Node vẫn chạy code cũ trong bộ nhớ (app hiện nửa mới nửa cũ: thiếu tên ở Home, bot trả lời kiểu cũ…).

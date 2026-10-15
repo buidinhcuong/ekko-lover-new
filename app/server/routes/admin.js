@@ -366,7 +366,7 @@ adminRouter.get('/api/admin/stats/overview', ({ url }) => {
   };
 });
 
-adminRouter.get('/api/admin/stats/users', () => adminUserSummary());
+adminRouter.get('/api/admin/stats/users', ({ url }) => adminUserSummary(companyScope(url.searchParams.get('employer'))));
 
 // --- đăng ký nội bộ (services/localAuth.js) --------------------------------
 adminRouter.get('/api/admin/settings/signup', () => signupSettings());
@@ -422,15 +422,16 @@ adminRouter.put('/api/admin/settings/team-xp', ({ body }) => {
 
 // -------------------------------------------------------------------- AI
 /** Giới hạn lượt AI mỗi người mỗi ngày, số liệu dùng AI hôm nay và câu hỏi bị từ chối. */
-const aiBoard = () => ({
+const aiBoard = (scope = companyScope(null)) => ({
   keyState: keyState(),
   model: config.anthropicModel,
   dailyLimit: aiDailyLimit(),
-  usage: aiUsageToday(),
-  outOfScope: recentOutOfScope(30),
+  employer: scope.employer,
+  usage: aiUsageToday(undefined, scope),
+  outOfScope: recentOutOfScope(30, scope),
 });
 
-adminRouter.get('/api/admin/settings/ai', () => aiBoard());
+adminRouter.get('/api/admin/settings/ai', ({ url }) => aiBoard(companyScope(url.searchParams.get('employer'))));
 
 adminRouter.put('/api/admin/settings/ai', ({ body }) => {
   const n = Number(body.dailyLimit);

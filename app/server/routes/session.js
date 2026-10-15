@@ -3,7 +3,8 @@
  *
  * Integration contract for the Ekko app:
  *   1. Mint a JWT (HS256) with the shared secret EKKO_SSO_SECRET:
- *        { sub, name, email?, avatar?, employer?, role?, exp }   exp <= 5 minutes
+ *        { sub, name, email?, avatar?, employer?, employer_id?, role?, exp }   exp <= 5 minutes
+ *      employer = tên công ty, employer_id = mã công ty ổn định (số liệu Admin nhóm theo mã).
  *   2. Open a webview at  https://<gdtc-host>/sso?token=<jwt>&redirect=/app/
  *   3. This service verifies it, upserts the member and sets its own session
  *      cookie, then 302s to `redirect`.
@@ -151,7 +152,9 @@ sessionRouter.get('/dev/login', ({ url, res }) => {
     sub: url.searchParams.get('sub') || (asAdmin ? 'admin@ekko.vn' : 'demo-nv-001'),
     name: url.searchParams.get('name') || (asAdmin ? 'Quản trị viên Ekko' : 'Trần Bảo Ngọc'),
     email: url.searchParams.get('email') || (asAdmin ? 'admin@ekko.vn' : 'ngoc.tran@congty.vn'),
-    employer: 'Công ty TNHH Minh Phát',
+    // Thử luồng SSO có công ty: ?employer=Tên&employer_id=MÃ (mặc định công ty mẫu, không mã).
+    employer: url.searchParams.get('employer') || 'Công ty TNHH Minh Phát',
+    employer_id: url.searchParams.get('employer_id') || undefined,
     role: asAdmin ? 'admin' : 'member',
   });
 
@@ -204,7 +207,7 @@ sessionRouter.get('/dev/sso-token', ({ url }) => {
   return {
     token: mintDevSsoToken({ sub, name: url.searchParams.get('name') || 'Nhân viên Ekko', email: url.searchParams.get('email') || null }),
     usage: `/sso?token=<token>&redirect=/app/`,
-    claims: { sub: 'ma-nhan-vien', name: 'Ho ten', email: 'tuy chon', avatar: 'tuy chon', employer: 'tuy chon', role: 'member | admin', exp: 'unix seconds' },
+    claims: { sub: 'ma-nhan-vien', name: 'Ho ten', email: 'tuy chon', avatar: 'tuy chon', employer: 'ten cong ty (tuy chon)', employer_id: 'ma cong ty on dinh (nen co)', role: 'member | admin', exp: 'unix seconds' },
   };
 });
 
@@ -221,15 +224,18 @@ export function whoami(req, res) {
     : { authenticated: false });
 }
 
-export function adminUserSummary() {
+/** @param {object} [scope] companyScope(...) — chỉ người học của một công ty. */
+export function adminUserSummary(scope = { where: () => '1 = 1', params: [] }) {
   return all(
-    `SELECT u.id, u.name, u.email, u.employer, u.role, u.created_at, u.last_seen_at,
+    `SELECT u.id, u.name, u.email, u.employer, u.employer_id, u.role, u.created_at, u.last_seen_at,
             s.xp, s.streak_count, s.streak_best, s.last_active_day,
             (SELECT name FROM levels WHERE id = s.level_id) AS level_name,
             (SELECT COUNT(*) FROM lesson_progress p WHERE p.user_id = u.id AND p.status = 'completed') AS lessons_done,
             (SELECT COUNT(*) FROM user_badges ub WHERE ub.user_id = u.id) AS badges,
             EXISTS (SELECT 1 FROM local_accounts la WHERE la.user_id = u.id) AS has_password
        FROM users u LEFT JOIN user_state s ON s.user_id = u.id
+      WHERE ${scope.where('u.id')}
       ORDER BY s.xp DESC, u.id`,
+    ...scope.params,
   );
 }

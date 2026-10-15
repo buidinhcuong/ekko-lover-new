@@ -1604,6 +1604,18 @@ async function main() {
       && sumUsers === allDash.users.total && sumQuestions === allDash.botTopics.totals.questions,
       JSON.stringify({ companies, sumUsers, total: allDash.users.total, sumQuestions, q: allDash.botTopics.totals.questions }));
     const minhPhat = (await get('admin', `/api/admin/ai-usage?days=7&employer=${encodeURIComponent('Công ty TNHH Minh Phát')}`)).json;
+    // SSO gửi mã công ty (employer_id): cùng mã thì là một công ty dù tên khác nhau.
+    for (const [jar, sub, employer] of [['ct1', 'sso-ct-1', 'Công ty CP Thử Nghiệm'], ['ct2', 'sso-ct-2', 'Cty Thử Nghiệm']]) {
+      const r = await get(jar, `/dev/login?sub=${sub}&name=NV&employer=${encodeURIComponent(employer)}&employer_id=CT-TEST`);
+      await get(jar, r.headers.get('location'));
+    }
+    const ct = (await get('admin', '/api/admin/stats/companies')).json.find((c) => c.value === 'CT-TEST');
+    const ctMembers = (await get('admin', '/api/admin/stats/users?employer=CT-TEST')).json;
+    check('SSO có mã công ty: nhóm theo mã (2 tên khác nhau vẫn là 1 công ty), lọc được trang Người học',
+      ct?.users === 2 && ct.code === 'CT-TEST' && ctMembers.length === 2 && ctMembers.every((m) => m.employer_id === 'CT-TEST'),
+      JSON.stringify({ ct, n: ctMembers.length }));
+    const aiCt = (await get('admin', '/api/admin/settings/ai?employer=CT-TEST')).json;
+    check('Khối AI ở trang Chức năng lọc được theo công ty', aiCt.employer === 'CT-TEST' && aiCt.usage.calls === 0);
     check('Trang Sử dụng AI lọc được theo công ty', minhPhat.employer === 'Công ty TNHH Minh Phát' && minhPhat.users.every((u) => u.employer === 'Công ty TNHH Minh Phát'));
     const enTeam = await getEn('teamB', '/api/team');
     check('API đội trả được khi app ở tiếng Anh', enTeam.status === 200);

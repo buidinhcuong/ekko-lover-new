@@ -145,6 +145,7 @@ chung `EKKO_SSO_SECRET` rồi mở webview tới dịch vụ này.
   "email": "ngoc.tran@congty.vn",
   "avatar": "https://...",
   "employer": "Công ty TNHH Minh Phát",
+  "employer_id": "CT-00123",
   "role": "member",
   "exp": 1767225600
 }
@@ -152,6 +153,11 @@ chung `EKKO_SSO_SECRET` rồi mở webview tới dịch vụ này.
 
 Chỉ `sub` là bắt buộc. `role: "admin"` cấp quyền vào Admin portal; ngoài ra có
 thể liệt kê email quản trị trong biến môi trường `EKKO_ADMIN_SUBJECTS`.
+
+`employer` (tên công ty) và `employer_id` (mã công ty ổn định trong hệ thống
+Ekko) dùng để Admin lọc mọi số liệu theo từng công ty onboard. Nên gửi cả hai:
+Admin nhóm theo `employer_id`, tên chỉ để hiển thị — đổi hay viết khác tên
+công ty vẫn là một công ty. Thiếu mã thì nhóm theo tên.
 
 **2. Mở webview:**
 

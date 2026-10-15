@@ -3,12 +3,14 @@
  * records are never exposed here.
  */
 import { el, formatDay } from '/shared/client.js';
-import { badge, confirmAction, table } from '../ui.js';
+import { badge, companyPicker, confirmAction, hashParams, table } from '../ui.js';
 
 export default async function members(ctx) {
-  const [rows, signup] = await Promise.all([
-    ctx.api.get('/api/admin/stats/users'),
+  const employer = hashParams().get('employer') || '';
+  const [rows, signup, picker] = await Promise.all([
+    ctx.api.get(`/api/admin/stats/users${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
     ctx.api.get('/api/admin/settings/signup'),
+    companyPicker(ctx, '/members'),
   ]);
 
   const resetPassword = async (row) => {
@@ -49,7 +51,7 @@ export default async function members(ctx) {
           el('strong', {}, row.name),
           el('span.cellmeta', {}, row.email || '—'),
         ]),
-        el('td', {}, row.employer || '—'),
+        el('td', {}, [row.employer || '—', row.employer_id ? el('span.cellmeta', {}, `mã ${row.employer_id}`) : null]),
         el('td', {}, [
           row.level_name || '—',
           row.role === 'admin' ? badge('Quản trị', 'brand') : null,
@@ -77,10 +79,11 @@ export default async function members(ctx) {
 
   return el('div', {}, [
     el('div.page-head', {}, [
-      el('div', {}, [
+      el('div', { style: { flex: '1' } }, [
         el('h1', {}, 'Người học'),
         el('p', {}, 'Tiến độ học tập và mức độ tham gia. Ngân sách, mục tiêu và chi tiêu của từng người là dữ liệu riêng tư và không hiển thị ở đây.'),
       ]),
+      picker,
     ]),
 
     signupPanel(ctx, signup),

@@ -1,15 +1,18 @@
 /** Bốn chức năng người học dùng hằng ngày, ngoài phần bài học. */
 import { el } from '/shared/client.js';
-import { modal, numberField, statusToggle, table, tabbed, textAreaField, textField } from '../ui.js';
+import { companyPicker, hashParams, modal, numberField, statusToggle, table, tabbed, textAreaField, textField } from '../ui.js';
 import { categoriesPanel } from './categories.js';
 
 export default async function features(ctx) {
-  const [rows, learning, ai, teamXp] = await Promise.all([
+  const employer = hashParams().get('employer') || '';
+  const [rows, learning, ai, teamXp, picker] = await Promise.all([
     ctx.api.get('/api/admin/features'),
     ctx.api.get('/api/admin/settings/learning-xp'),
-    ctx.api.get('/api/admin/settings/ai'),
+    ctx.api.get(`/api/admin/settings/ai${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
     ctx.api.get('/api/admin/settings/team-xp'),
+    companyPicker(ctx, '/features'),
   ]);
+  ai.picker = picker;
 
   return el('div', {}, [
     el('div.page-head', {}, [
@@ -69,14 +72,14 @@ function aiPanel(ctx, ai) {
   };
   const usage = ai.usage;
   return el('div.panel', { style: { marginBottom: '16px' } }, [
-    el('div.panel__head', {}, [el('h2', {}, 'AI')]),
+    el('div.panel__head', {}, [el('h2', {}, 'AI'), ai.picker]),
     el('p.hint', { style: { margin: '0 0 12px' } }, `${KEY_STATE[ai.keyState] || ai.keyState} · model ${ai.model}`),
     el('div', { style: { display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' } }, [
       el('div', { style: { width: '260px' } }, [limit.node]),
       el('button.ekko-btn.ekko-btn--secondary.ekko-btn--md', { type: 'button', onclick: save, style: { marginTop: '26px' } }, 'Lưu'),
     ]),
     el('p.hint', { style: { margin: '12px 0 0' } }, [
-      `Hôm nay: ${usage.calls} lượt gọi AI`,
+      `${ai.employer ? 'Công ty đang chọn — hôm nay' : 'Hôm nay'}: ${usage.calls} lượt gọi AI`,
       usage.byKind.length ? ` (${usage.byKind.map((k) => `${KIND_LABEL[k.kind] || k.kind} ${k.n}`).join(', ')})` : '',
       usage.limit ? ` · ${usage.usersAtLimit} người đã hết lượt` : '',
     ].join('')),

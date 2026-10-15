@@ -43,19 +43,22 @@ export function logOutOfScope(userId, text) {
   run('INSERT INTO ai_out_of_scope (user_id, text, created_at) VALUES (?,?,?)', userId, String(text).slice(0, 300), nowIso());
 }
 
-export function recentOutOfScope(limit = 50) {
-  return all('SELECT id, text, created_at FROM ai_out_of_scope ORDER BY id DESC LIMIT ?', limit);
+/** @param {object} [scope] companyScope(...) — chỉ câu của người thuộc một công ty. */
+export function recentOutOfScope(limit = 50, scope = { where: () => '1 = 1', params: [] }) {
+  return all(`SELECT id, text, created_at FROM ai_out_of_scope WHERE ${scope.where('user_id')} ORDER BY id DESC LIMIT ?`, ...scope.params, limit);
 }
 
 /** Số liệu cho Admin: lượt gọi hôm nay theo tính năng, số người đã chạm giới hạn. */
-export function aiUsageToday(day = dayKey()) {
+export function aiUsageToday(day = dayKey(), scope = { where: () => '1 = 1', params: [] }) {
   const limit = aiDailyLimit();
+  const sc = scope.where('user_id');
+  const sp = scope.params;
   return {
     limit,
-    calls: get('SELECT COUNT(*) n FROM ai_calls WHERE day = ?', day).n,
-    byKind: all('SELECT kind, COUNT(*) n FROM ai_calls WHERE day = ? GROUP BY kind ORDER BY n DESC', day),
+    calls: get(`SELECT COUNT(*) n FROM ai_calls WHERE day = ? AND ${sc}`, day, ...sp).n,
+    byKind: all(`SELECT kind, COUNT(*) n FROM ai_calls WHERE day = ? AND ${sc} GROUP BY kind ORDER BY n DESC`, day, ...sp),
     usersAtLimit: limit
-      ? get('SELECT COUNT(*) n FROM (SELECT user_id FROM ai_calls WHERE day = ? GROUP BY user_id HAVING COUNT(*) >= ?)', day, limit).n
+      ? get(`SELECT COUNT(*) n FROM (SELECT user_id FROM ai_calls WHERE day = ? AND ${sc} GROUP BY user_id HAVING COUNT(*) >= ?)`, day, ...sp, limit).n
       : 0,
   };
 }

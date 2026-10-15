@@ -8,8 +8,16 @@
  * so subsequent API calls need no round-trip back to the app.
  *
  * Expected SSO claims:
- *   { sub, name, email?, avatar?, employer?, role?, iat, exp }
+ *   { sub, name, email?, avatar?, employer?, employer_id?, role?, iat, exp }
+ *
+ * `employer` = tên công ty (hiển thị), `employer_id` = mã công ty ổn định trong
+ * hệ thống Ekko (nhận cả `employerId` / `company_id`). Có mã thì số liệu Admin
+ * nhóm theo mã, đổi tên công ty cũng không bị tách thành hai.
  */
+const employerIdOf = (claims) => {
+  const raw = claims.employer_id ?? claims.employerId ?? claims.company_id ?? null;
+  return raw === null || raw === undefined || String(raw).trim() === '' ? null : String(raw).trim();
+};
 import { config } from './config.js';
 import { get, run } from './db.js';
 import { issue, verify } from './lib/token.js';
@@ -43,7 +51,7 @@ export function upsertMember(claims) {
   if (existing) {
     run(
       `UPDATE users
-          SET name = ?, email = ?, avatar_url = ?, employer = ?,
+          SET name = ?, email = ?, avatar_url = ?, employer = ?, employer_id = ?,
               role = CASE WHEN ? = 1 THEN 'admin' ELSE role END,
               last_seen_at = ?
         WHERE id = ?`,
@@ -51,6 +59,7 @@ export function upsertMember(claims) {
       email ?? existing.email,
       claims.avatar ?? existing.avatar_url,
       claims.employer ?? existing.employer,
+      employerIdOf(claims) ?? existing.employer_id,
       isAdmin ? 1 : 0,
       nowIso(),
       existing.id,
@@ -60,13 +69,14 @@ export function upsertMember(claims) {
 
   const now = nowIso();
   const info = run(
-    `INSERT INTO users (ekko_user_id, name, email, avatar_url, employer, role, created_at, last_seen_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO users (ekko_user_id, name, email, avatar_url, employer, employer_id, role, created_at, last_seen_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     subject,
     claims.name || 'Thanh vien Ekko',
     email,
     claims.avatar || null,
     claims.employer || null,
+    employerIdOf(claims),
     isAdmin ? 'admin' : 'member',
     now,
     now,

@@ -548,6 +548,9 @@ addColumn('categories', 'daily_limit', 'INTEGER');
 addColumn('categories', 'group_code', 'TEXT');
 addColumn('categories', 'group_label', 'TEXT');
 addColumn('expenses', 'receipt_path', 'TEXT');
+// Mã công ty ổn định từ SSO của app Ekko (claim employer_id). Có mã thì số liệu
+// Admin nhóm theo mã; tên (users.employer) chỉ để hiển thị — xem companyScope.js.
+addColumn('users', 'employer_id', 'TEXT');
 // Token & chi phí của từng lượt gọi AI (services/aiUsage.js · trang Admin "Sử dụng AI").
 addColumn('ai_calls', 'model', 'TEXT');
 addColumn('ai_calls', 'input_tokens', 'INTEGER');
