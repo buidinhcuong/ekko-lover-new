@@ -83,6 +83,8 @@ export default async function dashboard(ctx) {
     ]),
 
     teamSection(s.teams),
+    botTopicSection(s.botTopics),
+    newsSection(s.news, s.users.total),
 
     el('div.panel', {}, [
       el('div.panel__head', {}, [el('h2', {}, 'Nội dung đang xuất bản')]),
@@ -154,5 +156,71 @@ function teamSection(t) {
         el('td', {}, row.raceEligible ? badge('Đủ điều kiện', 'success') : badge(row.size < t.raceSize.min ? `Cần thêm ${t.raceSize.min - row.size}` : `Quá ${t.raceSize.max} người`, 'neutral')),
       ]),
     ) : el('p.hint', {}, 'Chưa có đội nào (đội cần từ 2 người).'),
+  ]);
+}
+
+// --- Ekko bot: người dùng hỏi gì ------------------------------------------------
+function hbars(rows, { empty }) {
+  if (!rows.length) return el('p.hint', {}, empty);
+  const max = Math.max(1, ...rows.map((r) => r.messages));
+  return el('div.bars', {}, rows.map((r) => el('div.barrow.barrow--wide', { title: `${r.label}: ${r.messages} câu hỏi từ ${r.users} người` }, [
+    el('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, r.label),
+    el('span.barrow__track', {}, [el('span.barrow__fill', { style: { width: `${Math.round((r.messages / max) * 100)}%`, display: 'block' } })]),
+    el('span.barrow__value', {}, [`${r.messages}`, el('span.cellmeta', { style: { display: 'inline', marginLeft: '4px' } }, `· ${r.users} người`)]),
+  ])));
+}
+
+function botTopicSection(b) {
+  const t = b.totals;
+  return el('div.panel', { style: { marginBottom: '16px' } }, [
+    el('div.panel__head', {}, [
+      el('h2', {}, 'Người dùng hỏi Ekko bot về gì'),
+      el('span.cellmeta', {}, `${b.days} ngày gần nhất`),
+    ]),
+    el('div.chartsum', {}, [
+      el('div', {}, [el('small', {}, 'Câu hỏi'), el('b', {}, `${t.questions}`)]),
+      el('div', {}, [el('small', {}, 'Người hỏi'), el('b', {}, `${t.askers}`)]),
+      el('div', {}, [el('small', {}, 'Tin ghi chi tiêu (không tính)'), el('b', {}, `${t.expenseLogs}`)]),
+      el('div', {}, [el('small', {}, 'Câu ngoài phạm vi'), el('b', {}, `${t.outOfScope}`)]),
+    ]),
+    el('div.split', {}, [
+      el('div', {}, [
+        el('h3', { style: { margin: '0 0 8px' } }, 'Chủ đề tài chính'),
+        hbars(b.topics, { empty: 'Chưa có câu hỏi nào trong kỳ.' }),
+        t.untagged ? el('p.hint', { style: { margin: '8px 0 0' } }, `${t.untagged} câu hỏi chưa khớp chủ đề nào (chào hỏi, hỏi về app…).`) : null,
+      ]),
+      el('div', {}, [
+        el('h3', { style: { margin: '0 0 8px' } }, 'Từ khoá hay gặp'),
+        hbars(b.keywords.slice(0, 12).map((k) => ({ label: k.text, messages: k.messages, users: k.users })), {
+          empty: `Chưa có từ khoá nào được ít nhất ${b.minUsers} người cùng hỏi.`,
+        }),
+      ]),
+    ]),
+    el('p.hint', { style: { margin: '12px 0 0' } }, `Chỉ tính câu hỏi (bỏ tin ghi chi tiêu, đổi mục). Một câu có thể thuộc nhiều chủ đề. Từ khoá chỉ hiện khi có từ ${b.minUsers} người trở lên cùng gõ — không hiển thị câu gốc của ai.`),
+  ]);
+}
+
+// --- Tin tức được đọc nhiều nhất ------------------------------------------------
+function newsSection(n, totalUsers) {
+  const max = Math.max(1, ...n.top.map((x) => x.opens));
+  return el('div.panel', { style: { marginBottom: '16px' } }, [
+    el('div.panel__head', {}, [el('h2', {}, 'Tin tức được đọc nhiều nhất'), el('span.cellmeta', {}, `${n.days} ngày gần nhất`)]),
+    el('div.chartsum', {}, [
+      el('div', {}, [el('small', {}, 'Lượt mở tin'), el('b', {}, `${n.opens}`)]),
+      el('div', {}, [el('small', {}, 'Người đọc'), el('b', {}, `${n.readers}`)]),
+      el('div', {}, [el('small', {}, 'Tỷ lệ người học có đọc tin'), el('b', {}, totalUsers ? `${Math.round((n.readers / totalUsers) * 100)}%` : '—')]),
+      el('div', {}, [el('small', {}, 'Tin đang đăng'), el('b', {}, `${n.published}`)]),
+    ]),
+    n.top.length
+      ? el('div.bars', {}, n.top.map((x, i) => el('div.barrow.barrow--news', { title: `${x.title}: ${x.opens} lượt mở, ${x.readers} người đọc` }, [
+        el('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, [
+          el('b', { style: { marginRight: '6px', color: 'var(--text-tertiary)' } }, `${i + 1}.`), x.title,
+          x.category ? el('span.cellmeta', { style: { display: 'inline', marginLeft: '6px' } }, x.category) : null,
+        ]),
+        el('span.barrow__track', {}, [el('span.barrow__fill', { style: { width: `${Math.round((x.opens / max) * 100)}%`, display: 'block' } })]),
+        el('span.barrow__value', {}, [`${x.opens}`, el('span.cellmeta', { style: { display: 'inline', marginLeft: '4px' } }, `· ${x.readers} người`)]),
+      ])))
+      : el('p.hint', {}, 'Chưa có ai mở tin nào trong kỳ.'),
+    el('p.hint', { style: { margin: '12px 0 0' } }, 'Lượt mở: mỗi người mở một tin được tính tối đa 1 lần mỗi ngày.'),
   ]);
 }

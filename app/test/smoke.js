@@ -1571,6 +1571,24 @@ async function main() {
       dash && dash.teams >= 1 && dash.membersInTeams === dash.leaderboard.reduce((n, r) => n + r.size, 0) && dash.nudges.today >= 1
       && dash.invites.accepted >= 1 && row1?.size >= 2 && row1.raceEligible === false && typeof row1.xpMonth === 'number'
       && dash.streakToday.team.total === dash.membersInTeams, JSON.stringify(dash).slice(0, 300));
+    // Bảng điều khiển: người dùng hỏi Ekko bot về gì (chủ đề + từ khoá, không tính tin ghi chi tiêu).
+    await post('teamA', '/api/bot/message', { text: 'Làm sao để tiết kiệm tiền mỗi tháng?' });
+    await post('teamB', '/api/bot/message', { text: 'tiết kiệm bao nhiêu là đủ' });
+    await post('teamB', '/api/bot/message', { text: 'trà đá 5k' });
+    const topicsDash = (await get('admin', '/api/admin/stats/overview')).json.botTopics;
+    const saving = topicsDash?.topics.find((x) => x.code === 'saving');
+    check('Bảng điều khiển: chủ đề & từ khoá người dùng hỏi Ekko bot (bỏ tin ghi chi tiêu)',
+      saving?.users >= 2 && topicsDash.keywords.some((k) => k.text === 'tiết kiệm' && k.users >= 2)
+      && topicsDash.totals.expenseLogs >= 1 && !topicsDash.keywords.some((k) => /trà|đá/.test(k.text)),
+      JSON.stringify(topicsDash).slice(0, 400));
+    // Bảng điều khiển: tin tức được mở đọc nhiều nhất.
+    const firstNews = (await get('teamA', '/api/news')).json[0];
+    await get('teamA', `/api/news/${firstNews.id}`);
+    await get('teamB', `/api/news/${firstNews.id}`);
+    const newsDash = (await get('admin', '/api/admin/stats/overview')).json.news;
+    const topNews = newsDash?.top.find((x) => x.id === firstNews.id);
+    check('Bảng điều khiển: tin tức được đọc nhiều nhất (lượt mở, số người đọc)',
+      topNews?.readers >= 2 && topNews.opens >= 2 && newsDash.readers >= 2 && newsDash.published >= 1, JSON.stringify(newsDash).slice(0, 300));
     const enTeam = await getEn('teamB', '/api/team');
     check('API đội trả được khi app ở tiếng Anh', enTeam.status === 200);
 

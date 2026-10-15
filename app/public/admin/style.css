@@ -140,6 +140,9 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .barrow__track { height: 10px; border-radius: var(--radius-full); background: var(--bg-grey-200); overflow: hidden; }
 .barrow__fill { height: 100%; background: var(--bg-brand-500); }
 .barrow__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+/* Thanh ngang có cột số rộng hơn ("12 · 5 người"). */
+.barrow--wide { grid-template-columns: minmax(120px, 200px) 1fr 96px; }
+.barrow--news { grid-template-columns: minmax(200px, 2fr) 1fr 96px; }
 
 /* Biểu đồ cột theo ngày (ui.js · barChart): cột trải đủ rộng, số trên đầu cột,
    vạch đáy mờ; ngày bằng 0 là vạch mảnh. Chữ dùng màu chữ, không dùng màu cột. */

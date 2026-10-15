@@ -20,6 +20,7 @@ import { CHALLENGE_PERIODS, CHALLENGE_RULES } from '../services/challenges.js';
 import { aiDailyLimit, aiUsageToday, recentOutOfScope } from '../services/aiQuota.js';
 import { aiUsageReport } from '../services/aiUsage.js';
 import { teamOverview } from '../services/teamStats.js';
+import { botKeywordReport } from '../services/botTopics.js';
 import { keyState } from '../services/receiptAI.js';
 import { BADGE_GROUPS } from '../seed/catalogue.js';
 import { adminUserSummary } from './session.js';
@@ -316,6 +317,27 @@ adminRouter.get('/api/admin/stats/overview', () => {
     ),
     // Heo Dream Team: số đội, streak trong đội, lời mời / lời nhắc, xếp hạng tháng.
     teams: teamOverview(today),
+    // Ekko bot: người dùng hỏi về chủ đề / từ khoá tài chính nào (30 ngày, chỉ số đếm).
+    botTopics: botKeywordReport({ days: 30, today }),
+    // Tin tức được mở đọc nhiều nhất trong 30 ngày (mỗi người mỗi tin tính tối đa 1 lần/ngày).
+    news: (() => {
+      const from = new Date(`${today}T00:00:00Z`);
+      from.setUTCDate(from.getUTCDate() - 29);
+      const since = from.toISOString().slice(0, 10);
+      return {
+        days: 30,
+        published: counts('SELECT COUNT(*) n FROM news WHERE is_published = 1'),
+        readers: counts("SELECT COUNT(DISTINCT user_id) n FROM activity_log WHERE kind = 'news_read' AND day >= ?", since),
+        opens: counts("SELECT COUNT(*) n FROM activity_log WHERE kind = 'news_read' AND day >= ?", since),
+        top: all(
+          `SELECT n.id, n.title, n.category, COUNT(a.id) opens, COUNT(DISTINCT a.user_id) readers
+             FROM activity_log a JOIN news n ON CAST(a.ref AS INTEGER) = n.id
+            WHERE a.kind = 'news_read' AND a.day >= ?
+            GROUP BY n.id ORDER BY opens DESC, readers DESC LIMIT 10`,
+          since,
+        ),
+      };
+    })(),
     // 14 ngày gần nhất theo giờ Việt Nam, đủ từng ngày (ngày không ai hoạt động = 0).
     dailyActive: (() => {
       const days = Array.from({ length: 14 }, (_, i) => {
