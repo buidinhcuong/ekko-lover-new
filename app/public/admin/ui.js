@@ -441,6 +441,33 @@ export function table(columns, rows, renderRow) {
   ]);
 }
 
+// --- lọc theo công ty ------------------------------------------------------
+/** Tham số trên hash của trang hiện tại, vd #/ai-usage?days=30&employer=… */
+export const hashParams = () => new URLSearchParams(location.hash.split('?')[1] || '');
+
+/**
+ * Ô chọn công ty (users.employer, từ SSO của app Ekko) cho các trang số liệu.
+ * Đổi lựa chọn thì đi tới `route` với `employer` mới, giữ các tham số khác.
+ */
+export async function companyPicker(ctx, route) {
+  const params = hashParams();
+  const current = params.get('employer') || '';
+  const companies = await ctx.api.get('/api/admin/stats/companies');
+  const select = el('select.companypicker', {
+    'aria-label': 'Lọc theo công ty',
+    onchange: (e) => {
+      const next = hashParams();
+      if (e.target.value) next.set('employer', e.target.value); else next.delete('employer');
+      const q = next.toString();
+      ctx.navigate(q ? `${route}?${q}` : route);
+    },
+  }, [
+    el('option', { value: '' }, 'Tất cả công ty'),
+    ...companies.map((c) => el('option', { value: c.value, selected: c.value === current }, `${c.name} (${c.users} người)`)),
+  ]);
+  return select;
+}
+
 // --- biểu đồ cột theo ngày -------------------------------------------------
 /**
  * Biểu đồ cột một chuỗi số liệu (vd người hoạt động / chi phí AI theo ngày).

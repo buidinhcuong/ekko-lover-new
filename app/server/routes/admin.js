@@ -21,6 +21,7 @@ import { aiDailyLimit, aiUsageToday, recentOutOfScope } from '../services/aiQuot
 import { aiUsageReport } from '../services/aiUsage.js';
 import { teamOverview } from '../services/teamStats.js';
 import { botKeywordReport } from '../services/botTopics.js';
+import { companyList, companyScope } from '../services/companyScope.js';
 import { keyState } from '../services/receiptAI.js';
 import { BADGE_GROUPS } from '../seed/catalogue.js';
 import { adminUserSummary } from './session.js';
@@ -277,16 +278,25 @@ adminRouter.post('/api/admin/upload', async ({ body }) => {
 });
 
 // ------------------------------------------------------------ dashboard
-adminRouter.get('/api/admin/stats/overview', () => {
+/** Danh sách công ty (theo users.employer) cho ô lọc ở Bảng điều khiển / Sử dụng AI. */
+adminRouter.get('/api/admin/stats/companies', () => companyList());
+
+adminRouter.get('/api/admin/stats/overview', ({ url }) => {
   const today = dayKey();
   const counts = (sql, ...args) => get(sql, ...args).n;
+  // Lọc theo công ty (?employer=…): mọi số liệu về người học chỉ tính người của
+  // công ty đó; phần nội dung (bài học, tin đang đăng) thì giữ nguyên.
+  const scope = companyScope(url.searchParams.get('employer'));
+  const w = (col = 'user_id') => scope.where(col);
+  const p = scope.params;
 
   return {
+    employer: scope.employer,
     users: {
-      total: counts('SELECT COUNT(*) n FROM users'),
-      activeToday: counts('SELECT COUNT(DISTINCT user_id) n FROM activity_log WHERE day = ?', today),
-      withStreak: counts('SELECT COUNT(*) n FROM user_state WHERE streak_count > 0'),
-      streak7Plus: counts('SELECT COUNT(*) n FROM user_state WHERE streak_count >= 7'),
+      total: counts(`SELECT COUNT(*) n FROM users WHERE ${w('id')}`, ...p),
+      activeToday: counts(`SELECT COUNT(DISTINCT user_id) n FROM activity_log WHERE day = ? AND ${w()}`, today, ...p),
+      withStreak: counts(`SELECT COUNT(*) n FROM user_state WHERE streak_count > 0 AND ${w()}`, ...p),
+      streak7Plus: counts(`SELECT COUNT(*) n FROM user_state WHERE streak_count >= 7 AND ${w()}`, ...p),
     },
     content: {
       modules: counts('SELECT COUNT(*) n FROM modules WHERE is_published = 1'),
@@ -296,29 +306,31 @@ adminRouter.get('/api/admin/stats/overview', () => {
       levels: counts('SELECT COUNT(*) n FROM levels WHERE is_active = 1'),
     },
     engagement: {
-      lessonsCompleted: counts('SELECT COUNT(*) n FROM lesson_progress WHERE status = ?', 'completed'),
-      badgesAwarded: counts('SELECT COUNT(*) n FROM user_badges'),
-      budgets: counts('SELECT COUNT(DISTINCT user_id || month) n FROM budget_limits'),
-      goals: counts('SELECT COUNT(*) n FROM goals'),
-      expenses: counts('SELECT COUNT(*) n FROM expenses'),
-      botMessages: counts('SELECT COUNT(*) n FROM bot_messages WHERE role = ?', 'user'),
+      lessonsCompleted: counts(`SELECT COUNT(*) n FROM lesson_progress WHERE status = ? AND ${w()}`, 'completed', ...p),
+      badgesAwarded: counts(`SELECT COUNT(*) n FROM user_badges WHERE ${w()}`, ...p),
+      budgets: counts(`SELECT COUNT(DISTINCT user_id || month) n FROM budget_limits WHERE ${w()}`, ...p),
+      goals: counts(`SELECT COUNT(*) n FROM goals WHERE ${w()}`, ...p),
+      expenses: counts(`SELECT COUNT(*) n FROM expenses WHERE ${w()}`, ...p),
+      botMessages: counts(`SELECT COUNT(*) n FROM bot_messages WHERE role = ? AND ${w()}`, 'user', ...p),
     },
     levelDistribution: all(
       `SELECT l.name, l.order_index, COUNT(s.user_id) AS members
-         FROM levels l LEFT JOIN user_state s ON s.level_id = l.id
+         FROM levels l LEFT JOIN user_state s ON s.level_id = l.id AND ${w('s.user_id')}
         GROUP BY l.id ORDER BY l.order_index`,
+      ...p,
     ),
     popularLessons: all(
-      `SELECT l.title, m.title AS module_title, COUNT(p.user_id) AS completions
+      `SELECT l.title, m.title AS module_title, COUNT(lp.user_id) AS completions
          FROM lessons l
          JOIN modules m ON m.id = l.module_id
-         LEFT JOIN lesson_progress p ON p.lesson_id = l.id AND p.status = 'completed'
+         LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.status = 'completed' AND ${w('lp.user_id')}
         GROUP BY l.id ORDER BY completions DESC, l.order_index LIMIT 8`,
+      ...p,
     ),
     // Heo Dream Team: số đội, streak trong đội, lời mời / lời nhắc, xếp hạng tháng.
-    teams: teamOverview(today),
+    teams: teamOverview(today, scope),
     // Ekko bot: người dùng hỏi về chủ đề / từ khoá tài chính nào (30 ngày, chỉ số đếm).
-    botTopics: botKeywordReport({ days: 30, today }),
+    botTopics: botKeywordReport({ days: 30, today, scope }),
     // Tin tức được mở đọc nhiều nhất trong 30 ngày (mỗi người mỗi tin tính tối đa 1 lần/ngày).
     news: (() => {
       const from = new Date(`${today}T00:00:00Z`);
@@ -327,14 +339,14 @@ adminRouter.get('/api/admin/stats/overview', () => {
       return {
         days: 30,
         published: counts('SELECT COUNT(*) n FROM news WHERE is_published = 1'),
-        readers: counts("SELECT COUNT(DISTINCT user_id) n FROM activity_log WHERE kind = 'news_read' AND day >= ?", since),
-        opens: counts("SELECT COUNT(*) n FROM activity_log WHERE kind = 'news_read' AND day >= ?", since),
+        readers: counts(`SELECT COUNT(DISTINCT user_id) n FROM activity_log WHERE kind = 'news_read' AND day >= ? AND ${w()}`, since, ...p),
+        opens: counts(`SELECT COUNT(*) n FROM activity_log WHERE kind = 'news_read' AND day >= ? AND ${w()}`, since, ...p),
         top: all(
           `SELECT n.id, n.title, n.category, COUNT(a.id) opens, COUNT(DISTINCT a.user_id) readers
              FROM activity_log a JOIN news n ON CAST(a.ref AS INTEGER) = n.id
-            WHERE a.kind = 'news_read' AND a.day >= ?
+            WHERE a.kind = 'news_read' AND a.day >= ? AND ${w('a.user_id')}
             GROUP BY n.id ORDER BY opens DESC, readers DESC LIMIT 10`,
-          since,
+          since, ...p,
         ),
       };
     })(),
@@ -345,11 +357,11 @@ adminRouter.get('/api/admin/stats/overview', () => {
         d.setUTCDate(d.getUTCDate() - (13 - i));
         return d.toISOString().slice(0, 10);
       });
-      const counts = new Map(all(
-        'SELECT day, COUNT(DISTINCT user_id) AS users FROM activity_log WHERE day BETWEEN ? AND ? GROUP BY day',
-        days[0], today,
+      const byDay = new Map(all(
+        `SELECT day, COUNT(DISTINCT user_id) AS users FROM activity_log WHERE day BETWEEN ? AND ? AND ${w()} GROUP BY day`,
+        days[0], today, ...p,
       ).map((r) => [r.day, r.users]));
-      return days.map((day) => ({ day, users: counts.get(day) || 0 }));
+      return days.map((day) => ({ day, users: byDay.get(day) || 0 }));
     })(),
   };
 });
@@ -429,7 +441,10 @@ adminRouter.put('/api/admin/settings/ai', ({ body }) => {
 
 // ------------------------------------------------------------- dùng AI (token)
 /** Token & chi phí AI theo người dùng, tính năng, ngày — trang "Sử dụng AI". */
-adminRouter.get('/api/admin/ai-usage', ({ url }) => aiUsageReport({ days: url.searchParams.get('days') || 30 }));
+adminRouter.get('/api/admin/ai-usage', ({ url }) => aiUsageReport({
+  days: url.searchParams.get('days') || 30,
+  scope: companyScope(url.searchParams.get('employer')),
+}));
 
 adminRouter.put('/api/admin/settings/usd-vnd', ({ body }) => {
   const n = Number(body.rate);

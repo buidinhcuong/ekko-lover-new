@@ -1589,6 +1589,22 @@ async function main() {
     const topNews = newsDash?.top.find((x) => x.id === firstNews.id);
     check('Bảng điều khiển: tin tức được đọc nhiều nhất (lượt mở, số người đọc)',
       topNews?.readers >= 2 && topNews.opens >= 2 && newsDash.readers >= 2 && newsDash.published >= 1, JSON.stringify(newsDash).slice(0, 300));
+    // Lọc theo công ty (users.employer từ SSO).
+    const companies = (await get('admin', '/api/admin/stats/companies')).json;
+    const allDash = (await get('admin', '/api/admin/stats/overview')).json;
+    let sumUsers = 0;
+    let sumQuestions = 0;
+    for (const c of companies) {
+      const d = (await get('admin', `/api/admin/stats/overview?employer=${encodeURIComponent(c.value)}`)).json;
+      sumUsers += d.users.total;
+      sumQuestions += d.botTopics.totals.questions;
+    }
+    check('Lọc theo công ty: số người học & câu hỏi các công ty cộng lại bằng "Tất cả công ty"',
+      companies.length >= 1
+      && sumUsers === allDash.users.total && sumQuestions === allDash.botTopics.totals.questions,
+      JSON.stringify({ companies, sumUsers, total: allDash.users.total, sumQuestions, q: allDash.botTopics.totals.questions }));
+    const minhPhat = (await get('admin', `/api/admin/ai-usage?days=7&employer=${encodeURIComponent('Công ty TNHH Minh Phát')}`)).json;
+    check('Trang Sử dụng AI lọc được theo công ty', minhPhat.employer === 'Công ty TNHH Minh Phát' && minhPhat.users.every((u) => u.employer === 'Công ty TNHH Minh Phát'));
     const enTeam = await getEn('teamB', '/api/team');
     check('API đội trả được khi app ở tiếng Anh', enTeam.status === 200);
 

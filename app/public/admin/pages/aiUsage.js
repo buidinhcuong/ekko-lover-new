@@ -4,7 +4,7 @@
  * Kỳ xem (7 / 30 / 90 ngày) nằm trên hash: #/ai-usage?days=30.
  */
 import { el, formatDay } from '/shared/client.js';
-import { badge, barChart, table } from '../ui.js';
+import { badge, barChart, companyPicker, hashParams, table } from '../ui.js';
 
 const KIND_LABEL = { bot: 'Ekko bot', quick: 'Ghi nhanh', receipt: 'Đọc hoá đơn', advice: 'Tư vấn mục tiêu' };
 const LEVEL = {
@@ -28,15 +28,21 @@ const stat = (label, value, hint) => el('div.stat', {}, [
 ]);
 
 export default async function aiUsage(ctx) {
-  const days = Number(new URLSearchParams(location.hash.split('?')[1] || '').get('days')) || 30;
-  const r = await ctx.api.get(`/api/admin/ai-usage?days=${days}`);
+  const params = hashParams();
+  const days = Number(params.get('days')) || 30;
+  const employer = params.get('employer') || '';
+  const withCompany = (d) => `/ai-usage?days=${d}${employer ? `&employer=${encodeURIComponent(employer)}` : ''}`;
+  const [r, picker] = await Promise.all([
+    ctx.api.get(`/api/admin/ai-usage?days=${days}${employer ? `&employer=${encodeURIComponent(employer)}` : ''}`),
+    companyPicker(ctx, '/ai-usage'),
+  ]);
   const rate = r.usdVnd;
   const t = r.totals;
   const unmeasured = t.calls - t.measured;
 
   const periodChips = el('div', { style: { display: 'flex', gap: '6px' } }, PERIODS.map((d) => el(
     `button.ekko-btn.ekko-btn--sm.${d === r.days ? 'ekko-btn--primary' : 'ekko-btn--secondary'}`,
-    { type: 'button', onclick: () => ctx.navigate(`/ai-usage?days=${d}`) },
+    { type: 'button', onclick: () => ctx.navigate(withCompany(d)) },
     `${d} ngày`,
   )));
 
@@ -123,7 +129,7 @@ export default async function aiUsage(ctx) {
     try {
       await ctx.api.put('/api/admin/settings/usd-vnd', { rate: Number(rateInput.value) });
       ctx.notify('Đã lưu tỷ giá', 'success');
-      ctx.navigate(`/ai-usage?days=${r.days}`);
+      ctx.navigate(withCompany(r.days));
     } catch (err) { ctx.notify(err.message, 'error'); }
   };
 
@@ -134,7 +140,7 @@ export default async function aiUsage(ctx) {
         el('h1', {}, 'Sử dụng AI'),
         el('p', {}, `Token và chi phí Claude của từng người dùng, ${formatDay(r.from)} – ${formatDay(r.to)}. Chỉ số đếm, không lưu nội dung người dùng hỏi.`),
       ]),
-      periodChips,
+      el('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' } }, [picker, periodChips]),
     ]),
 
     el('div.stat-grid', {}, [

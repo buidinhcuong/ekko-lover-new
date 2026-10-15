@@ -1,6 +1,6 @@
 /** Programme health at a glance. */
 import { el, formatDay } from '/shared/client.js';
-import { badge, barChart, table } from '../ui.js';
+import { badge, barChart, companyPicker, hashParams, table } from '../ui.js';
 
 const stat = (label, value, hint) => el('div.stat', {}, [
   el('div.stat__label', {}, label),
@@ -9,7 +9,12 @@ const stat = (label, value, hint) => el('div.stat', {}, [
 ]);
 
 export default async function dashboard(ctx) {
-  const s = await ctx.api.get('/api/admin/stats/overview');
+  const employer = hashParams().get('employer') || '';
+  const [s, picker] = await Promise.all([
+    ctx.api.get(`/api/admin/stats/overview${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
+    companyPicker(ctx, '/'),
+  ]);
+  const companyName = employer ? picker.selectedOptions[0]?.textContent.replace(/ \(\d+ người\)$/, '') : null;
   const daily = s.dailyActive;
   const todayActive = daily.at(-1)?.users || 0;
   const peak = daily.reduce((a, b) => (b.users > a.users ? b : a), daily[0] || { users: 0, day: '' });
@@ -18,10 +23,13 @@ export default async function dashboard(ctx) {
 
   return el('div', {}, [
     el('div.page-head', {}, [
-      el('div', {}, [
-        el('h1', {}, 'Bảng điều khiển'),
-        el('p', {}, 'Tình hình tham gia chương trình Giáo dục tài chính. Số liệu ở đây là tổng hợp, không hiển thị chi tiêu của từng cá nhân.'),
+      el('div', { style: { flex: '1' } }, [
+        el('h1', {}, companyName ? `Bảng điều khiển · ${companyName}` : 'Bảng điều khiển'),
+        el('p', {}, companyName
+          ? `Chỉ tính người học của ${companyName}. Số liệu là tổng hợp, không hiển thị chi tiêu của từng cá nhân.`
+          : 'Tình hình tham gia chương trình Giáo dục tài chính. Số liệu ở đây là tổng hợp, không hiển thị chi tiêu của từng cá nhân.'),
       ]),
+      picker,
     ]),
 
     el('div.stat-grid', {}, [

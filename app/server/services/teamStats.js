@@ -22,19 +22,25 @@ function shiftDay(day, delta) {
   return d.toISOString().slice(0, 10);
 }
 
-export function teamOverview(today = dayKey()) {
+/**
+ * @param {object} [scope]  companyScope(...) — lọc theo công ty: chỉ tính đội có
+ *   thành viên thuộc công ty đó, và người học của công ty đó.
+ */
+export function teamOverview(today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] }) {
   const month = today.slice(0, 7);
   const weekAgo = shiftDay(today, -6);
 
+  const scopedIds = new Set(all(`SELECT id FROM users WHERE ${scope.where('id')}`, ...scope.params).map((u) => u.id));
+  // Đội tính vào công ty khi có ít nhất một thành viên thuộc công ty đó.
   const teams = all(
     `SELECT t.id, t.owner_id, o.name owner_name, t.created_at, COUNT(m.user_id) size
        FROM teams t JOIN team_members m ON m.team_id = t.id JOIN users o ON o.id = t.owner_id
       GROUP BY t.id HAVING COUNT(m.user_id) >= 2`,
-  );
+  ).filter((t) => all('SELECT user_id FROM team_members WHERE team_id = ?', t.id).some((m) => scopedIds.has(m.user_id)));
   const teamIds = new Set(teams.map((t) => t.id));
   const members = all('SELECT user_id, team_id FROM team_members').filter((m) => teamIds.has(m.team_id));
-  const inTeam = new Set(members.map((m) => m.user_id));
-  const totalUsers = get('SELECT COUNT(*) n FROM users').n;
+  const inTeam = new Set(members.map((m) => m.user_id).filter((id) => scopedIds.has(id)));
+  const totalUsers = scopedIds.size;
 
   // Giữ streak hôm nay: người trong đội so với người chơi một mình.
   let teamKept = 0;
@@ -42,9 +48,9 @@ export function teamOverview(today = dayKey()) {
   for (const { user_id: id } of members) {
     const kept = streakStatus(id, today).countedToday;
     keptByUser.set(id, kept);
-    if (kept) teamKept += 1;
+    if (kept && inTeam.has(id)) teamKept += 1;
   }
-  const soloIds = all('SELECT id FROM users').map((u) => u.id).filter((id) => !inTeam.has(id));
+  const soloIds = [...scopedIds].filter((id) => !inTeam.has(id));
   const soloKept = soloIds.filter((id) => streakStatus(id, today).countedToday).length;
 
   const sizes = { two: 0, three: 0, race: 0, big: 0 };
@@ -58,10 +64,11 @@ export function teamOverview(today = dayKey()) {
   // Lời mời và lời nhắc.
   const invites = get(
     `SELECT SUM(status = 'pending') pending, SUM(status = 'accepted') accepted,
-            SUM(status = 'declined') declined, COUNT(*) total FROM team_invites`,
+            SUM(status = 'declined') declined, COUNT(*) total FROM team_invites WHERE ${scope.where('to_user_id')}`,
+    ...scope.params,
   );
-  const nudgesToday = get('SELECT COUNT(*) n FROM team_nudges WHERE day = ?', today).n;
-  const nudgesWeek = all('SELECT to_user_id, day, created_at FROM team_nudges WHERE day BETWEEN ? AND ?', weekAgo, today);
+  const nudgesToday = get(`SELECT COUNT(*) n FROM team_nudges WHERE day = ? AND ${scope.where('to_user_id')}`, today, ...scope.params).n;
+  const nudgesWeek = all(`SELECT to_user_id, day, created_at FROM team_nudges WHERE day BETWEEN ? AND ? AND ${scope.where('to_user_id')}`, weekAgo, today, ...scope.params);
   // Lời nhắc "có tác dụng": người được nhắc có hoạt động (học / ghi chép…) sau lúc nhắc, cùng ngày.
   const nudgesWorked = nudgesWeek.filter((n) => get(
     "SELECT 1 FROM activity_log WHERE user_id = ? AND day = ? AND created_at >= ? AND kind NOT IN ('team_xp', 'daily_checkin') LIMIT 1",
@@ -107,7 +114,7 @@ export function teamOverview(today = dayKey()) {
     },
     invites: { pending: invites.pending || 0, accepted: invites.accepted || 0, declined: invites.declined || 0, total: invites.total || 0 },
     nudges: { today: nudgesToday, week: nudgesWeek.length, worked: nudgesWorked },
-    sharedXp: get('SELECT COALESCE(SUM(team_xp_total), 0) n FROM user_state').n,
+    sharedXp: get(`SELECT COALESCE(SUM(team_xp_total), 0) n FROM user_state WHERE ${scope.where('user_id')}`, ...scope.params).n,
     leaderboard,
   };
 }

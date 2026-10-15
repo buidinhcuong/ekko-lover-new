@@ -554,3 +554,6 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .iconpick__cell:hover { background: var(--bg-secondary); }
 .iconpick__cell[aria-pressed="true"] { border-color: var(--border-brand); color: var(--text-brand-500); background: var(--bg-brand-50); }
 .navlink .ekko-icon, .catrow__icon .ekko-icon { color: currentColor; }
+
+/* Ô chọn công ty ở đầu trang số liệu. */
+.companypicker { min-width: 220px; max-width: 320px; height: 36px; padding: 0 var(--spacing-10); border: 1px solid var(--border-primary); border-radius: var(--radius-8); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); }

@@ -82,15 +82,15 @@ function words(text) {
     .map((w) => ({ w, n: normalize(w) }));
 }
 
-export function botKeywordReport({ days = 30, today = dayKey() } = {}) {
+export function botKeywordReport({ days = 30, today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] } } = {}) {
   const from = shiftDay(today, -(days - 1));
   // Mỗi tin của người dùng ghép với câu bot trả lời ngay sau (cùng người, id kế tiếp).
   const rows = all(
     `SELECT u.user_id, u.text,
             (SELECT b.meta FROM bot_messages b WHERE b.user_id = u.user_id AND b.id > u.id AND b.role = 'bot' ORDER BY b.id LIMIT 1) reply
        FROM bot_messages u
-      WHERE u.role = 'user' AND substr(u.created_at, 1, 10) >= ?`,
-    from,
+      WHERE u.role = 'user' AND substr(u.created_at, 1, 10) >= ? AND ${scope.where('u.user_id')}`,
+    from, ...scope.params,
   );
 
   let expenseLogs = 0;

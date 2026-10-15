@@ -112,21 +112,25 @@ const SUMS = `COUNT(*) calls,
   COALESCE(SUM(cost_usd), 0) cost`;
 
 /** Báo cáo dùng AI trong `days` ngày gần nhất (tính cả hôm nay). */
-export function aiUsageReport({ days = 30, today = dayKey() } = {}) {
+export function aiUsageReport({ days = 30, today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] } } = {}) {
   const span = Math.max(1, Math.min(365, Math.round(Number(days)) || 30));
   const from = shiftDay(today, -(span - 1));
   const limit = aiDailyLimit();
+  // Lọc theo công ty (companyScope): mọi truy vấn chỉ lấy lượt gọi của người thuộc công ty đó.
+  const sc = scope.where('user_id');
+  const scA = scope.where('a.user_id');
+  const sp = scope.params;
 
-  const totals = get(`SELECT ${SUMS}, COUNT(DISTINCT user_id) users FROM ai_calls WHERE day BETWEEN ? AND ?`, from, today);
-  const byKind = all(`SELECT kind, ${SUMS} FROM ai_calls WHERE day BETWEEN ? AND ? GROUP BY kind ORDER BY cost DESC, calls DESC`, from, today);
+  const totals = get(`SELECT ${SUMS}, COUNT(DISTINCT user_id) users FROM ai_calls WHERE day BETWEEN ? AND ? AND ${sc}`, from, today, ...sp);
+  const byKind = all(`SELECT kind, ${SUMS} FROM ai_calls WHERE day BETWEEN ? AND ? AND ${sc} GROUP BY kind ORDER BY cost DESC, calls DESC`, from, today, ...sp);
   const byModel = all(
-    `SELECT model, ${SUMS} FROM ai_calls WHERE day BETWEEN ? AND ? AND model IS NOT NULL GROUP BY model ORDER BY cost DESC`,
-    from, today,
+    `SELECT model, ${SUMS} FROM ai_calls WHERE day BETWEEN ? AND ? AND ${sc} AND model IS NOT NULL GROUP BY model ORDER BY cost DESC`,
+    from, today, ...sp,
   ).map((m) => ({ ...m, priceKnown: priceOf(m.model).known }));
 
   const dailyRows = new Map(all(
-    `SELECT day, ${SUMS}, COUNT(DISTINCT user_id) users FROM ai_calls WHERE day BETWEEN ? AND ? GROUP BY day`,
-    from, today,
+    `SELECT day, ${SUMS}, COUNT(DISTINCT user_id) users FROM ai_calls WHERE day BETWEEN ? AND ? AND ${sc} GROUP BY day`,
+    from, today, ...sp,
   ).map((d) => [d.day, d]));
   const daily = [];
   for (let i = 0; i < span; i += 1) {
@@ -139,21 +143,21 @@ export function aiUsageReport({ days = 30, today = dayKey() } = {}) {
     `SELECT a.user_id id, u.name, u.email, u.employer, ${SUMS},
             COUNT(DISTINCT a.day) activeDays, MAX(a.created_at) lastAt
        FROM ai_calls a JOIN users u ON u.id = a.user_id
-      WHERE a.day BETWEEN ? AND ?
+      WHERE a.day BETWEEN ? AND ? AND ${scA}
       GROUP BY a.user_id`,
-    from, today,
+    from, today, ...sp,
   );
   const kindsByUser = new Map();
   for (const r of all(
-    `SELECT user_id, kind, COUNT(*) calls, COALESCE(SUM(cost_usd), 0) cost FROM ai_calls WHERE day BETWEEN ? AND ? GROUP BY user_id, kind`,
-    from, today,
+    `SELECT user_id, kind, COUNT(*) calls, COALESCE(SUM(cost_usd), 0) cost FROM ai_calls WHERE day BETWEEN ? AND ? AND ${sc} GROUP BY user_id, kind`,
+    from, today, ...sp,
   )) {
     if (!kindsByUser.has(r.user_id)) kindsByUser.set(r.user_id, []);
     kindsByUser.get(r.user_id).push({ kind: r.kind, calls: r.calls, cost: r.cost });
   }
   const limitDays = new Map(limit ? all(
-    `SELECT user_id, COUNT(*) n FROM (SELECT user_id, day FROM ai_calls WHERE day BETWEEN ? AND ? GROUP BY user_id, day HAVING COUNT(*) >= ?) GROUP BY user_id`,
-    from, today, limit,
+    `SELECT user_id, COUNT(*) n FROM (SELECT user_id, day FROM ai_calls WHERE day BETWEEN ? AND ? AND ${sc} GROUP BY user_id, day HAVING COUNT(*) >= ?) GROUP BY user_id`,
+    from, today, ...sp, limit,
   ).map((r) => [r.user_id, r.n]) : []);
 
   const sortedCost = userRows.map((u) => u.cost).sort((a, b) => a - b);
@@ -177,7 +181,7 @@ export function aiUsageReport({ days = 30, today = dayKey() } = {}) {
   }).sort((a, b) => b.cost - a.cost || b.calls - a.calls);
 
   return {
-    days: span, from, to: today, limit, usdVnd: usdVndRate(),
+    days: span, from, to: today, limit, usdVnd: usdVndRate(), employer: scope.employer,
     totals: { ...totals, tokens: totals.input + totals.output + totals.cacheRead + totals.cacheWrite },
     byKind, byModel, daily, thresholds, users,
   };
