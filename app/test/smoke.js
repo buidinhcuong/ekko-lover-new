@@ -1901,6 +1901,38 @@ async function main() {
       const hrAfter = (await get('hrjar', '/api/admin/feed/posts')).json;
       const ekkoReview = (await get('admin', '/api/admin/feed/posts?employer=CT-FEED&status=review')).json;
       check('Nội dung nhạy cảm chờ Ekko kiểm duyệt, HR chưa thấy', hrAfter.length === hrBefore && ekkoReview.length === 1);
+
+      // Bộ demo cho khách hàng: công ty mẫu + người lao động + HR + dữ liệu mẫu.
+      check('Chỉ quản trị Ekko tạo được bộ demo', (await post('hrjar', '/api/admin/feed/demo-kits', { company: 'Demo – Khách A' })).status === 403);
+      const kit = await post('admin', '/api/admin/feed/demo-kits', { company: 'Demo – Khách A' });
+      check('Tạo bộ demo: trả tài khoản người lao động + HR, mật khẩu một lần', kit.status === 200
+        && kit.json.worker.email === 'nld.demokhacha@demo.ekko.vn' && kit.json.hr.email === 'hr.demokhacha@demo.ekko.vn'
+        && kit.json.worker.password && kit.json.hr.password, JSON.stringify(kit.json).slice(0, 160));
+      await post('kitw', '/api/auth/login', { email: kit.json.worker.email, password: kit.json.worker.password });
+      const kitWho = (await get('kitw', '/api/session/whoami')).json;
+      const kitFeed = (await get('kitw', '/api/feed')).json;
+      check('Người lao động demo vào app được, thuộc công ty demo', kitWho.authenticated && kitWho.localAccount && kitFeed.company === 'Demo – Khách A', JSON.stringify({ u: kitWho.user, c: kitFeed.company }).slice(0, 300));
+      const kd1 = (await post('kitw', '/api/feed/preview', { text: 'Mong công ty có thêm chỗ để xe máy có mái che', type: 'issue' })).json.draft;
+      const ks1 = await post('kitw', `/api/feed/${kd1.id}/submit`, {});
+      const kd2 = (await post('kitw', '/api/feed/preview', { text: 'Cảm ơn công ty đã tổ chức du lịch hè rất vui', type: 'share' })).json.draft;
+      const ks2 = await post('kitw', `/api/feed/${kd2.id}/submit`, {});
+      check('Người lao động demo gửi được nhiều hơn 1 góp ý / ngày (thử đủ 2 loại)', ks1.status === 200 && ks2.status === 200);
+      await post('kith', '/api/auth/login', { email: kit.json.hr.email, password: kit.json.hr.password });
+      const kitReport = (await get('kith', '/api/admin/feed/report')).json;
+      const kitPosts = (await get('kith', '/api/admin/feed/posts')).json;
+      check('HR demo chỉ thấy công ty demo, có sẵn dữ liệu mẫu + góp ý vừa gửi',
+        kitReport.issues.length >= 3 && kitPosts.every((x) => x.company === 'Demo – Khách A') && kitPosts.some((x) => x.text.includes('xe máy')));
+      const kitAgain = await post('admin', '/api/admin/feed/demo-kits', { company: 'Demo – Khách A' });
+      const oldLogin = await post('kitold', '/api/auth/login', { email: kit.json.hr.email, password: kit.json.hr.password });
+      check('Tạo lại bộ demo: mật khẩu cũ hết hiệu lực', kitAgain.status === 200 && kitAgain.json.hr.password !== kit.json.hr.password && oldLogin.status === 401);
+      check('Không tạo bộ demo trùng tên / mã công ty thật', (await post('admin', '/api/admin/feed/demo-kits', { company: 'CT-FEED' })).status === 400
+        && (await post('admin', '/api/admin/feed/demo-kits', { company: 'Công ty Feed' })).status === 400);
+      const kitList = (await get('admin', '/api/admin/feed/demo-kits')).json;
+      const drop = await call('admin', 'DELETE', `/api/admin/feed/demo-kits/${kitList[0].slug}`);
+      const afterDrop = await post('kitold', '/api/auth/login', { email: kitAgain.json.worker.email, password: kitAgain.json.worker.password });
+      check('Xoá bộ demo: xoá tài khoản + dữ liệu mẫu', drop.status === 200 && afterDrop.status === 401
+        && !(await get('admin', '/api/admin/stats/companies')).json.some((c) => c.name === 'Demo – Khách A'),
+        JSON.stringify({ d: drop.status, a: afterDrop.status, c: (await get('admin', '/api/admin/stats/companies')).json.filter((c) => c.name.includes('Demo')) }));
     }
   } finally {
     server.kill();

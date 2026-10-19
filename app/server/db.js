@@ -693,6 +693,17 @@ CREATE TABLE IF NOT EXISTS feed_issue_events (
   detail     TEXT,
   created_at TEXT NOT NULL
 );
+-- Bộ tài khoản demo cho khách hàng (services/demoKit.js): một công ty mẫu,
+-- một người lao động + một HR, kèm dữ liệu EkkoFeed mẫu.
+CREATE TABLE IF NOT EXISTS demo_kits (
+  employer_key   TEXT PRIMARY KEY,
+  slug           TEXT NOT NULL UNIQUE,
+  worker_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  hr_user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_by     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL
+);
 -- Mỗi người quản trị đã xem vấn đề / góp ý nào tới lúc nào (chấm "chưa đọc" như email).
 -- item_key: '<khoá vấn đề>' hoặc 'post:<id>'.
 CREATE TABLE IF NOT EXISTS feed_seen (

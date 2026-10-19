@@ -17,7 +17,10 @@ const input = (props) => el('input.input', { autocomplete: 'off', ...props });
  * @param {HTMLElement} root
  */
 export function renderAuth(root, config) {
-  if (!config?.localAuth) {
+  // Đường dẫn trong trang truy cập demo gửi khách (…/app/?demo=1): luôn có ô đăng nhập,
+  // kể cả khi bản chạy thật đã tắt đăng nhập email (server vẫn cho tài khoản demo vào).
+  const demoLink = new URLSearchParams(location.search).has('demo');
+  if (!config?.localAuth && !demoLink) {
     // Bản chạy thật: chỉ vào được từ app Ekko.
     mount(root, el('div.empty', { style: { minHeight: '70vh', display: 'grid', alignContent: 'center' } }, [
       el('img', { src: '/assets/mascot/ekko-bot.png', alt: '' }),

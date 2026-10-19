@@ -8,6 +8,7 @@
  * Kỳ xem và công ty nằm trên hash: #/feed?days=30&employer=…
  */
 import { el, formatDay } from '/shared/client.js';
+import { downloadDemoAccess } from '../demoAccessPage.js';
 import { badge, companyPicker, confirmAction, hashParams, modal, table, textAreaField, textField, selectField } from '../ui.js';
 
 const PRIORITY = { urgent: ['Khẩn', 'error'], high: ['Cao', 'warning'], medium: ['Trung bình', 'brand'], low: ['Thấp', 'neutral'] };
@@ -591,10 +592,11 @@ export default async function feedPage(ctx) {
 
 /** Quản trị Ekko: tài khoản HR doanh nghiệp + ngưỡng ẩn danh. */
 async function managePanel(ctx, employer) {
-  const [accounts, companies, settings] = await Promise.all([
+  const [accounts, companies, settings, kits] = await Promise.all([
     ctx.api.get('/api/admin/feed/hr-accounts'),
     ctx.api.get('/api/admin/stats/companies'),
     ctx.api.get(`/api/admin/feed/settings${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
+    ctx.api.get('/api/admin/feed/demo-kits'),
   ]);
   const realCompanies = companies.filter((c) => c.value !== '__none__');
 
@@ -622,6 +624,51 @@ async function managePanel(ctx, employer) {
   const revoke = async (a) => {
     if (!await confirmAction(`Thu hồi quyền HR của ${a.email} (${a.employer_name})?`, { title: 'Thu hồi quyền HR', confirmLabel: 'Thu hồi' })) return;
     try { await ctx.api.delete(`/api/admin/feed/hr-accounts/${a.id}`); ctx.notify('Đã thu hồi', 'success'); ctx.navigate(location.hash.slice(1)); } catch (err) { ctx.notify(err.message, 'error'); }
+  };
+
+  // --- bộ tài khoản demo cho khách hàng -------------------------------------------
+  const showKit = (r) => {
+    const origin = location.origin;
+    const line = (label, email, password) => el('div.demokit__acc', {}, [
+      el('strong', {}, label), el('code', {}, email), el('code', {}, password),
+    ]);
+    modal({
+      title: `Bộ demo: ${r.company}`,
+      width: 640,
+      saveLabel: 'Tải trang truy cập (HTML)',
+      rows: [
+        [el('p.hint', { style: { margin: 0 } }, 'Mật khẩu chỉ hiện một lần. Tải trang truy cập để gửi khách: có đường dẫn + mã QR mở app trên điện thoại, đường dẫn Admin HR, tài khoản và gợi ý các luồng nên thử.')],
+        [el('div.demokit', {}, [
+          line('App người lao động', r.worker.email, r.worker.password),
+          el('span.cellmeta', {}, `${origin}/app/?demo=1`),
+          line('Admin HR', r.hr.email, r.hr.password),
+          el('span.cellmeta', {}, `${origin}/admin/`),
+        ])],
+      ],
+      onSave: () => { downloadDemoAccess({ origin, ...r }); return false; },
+    });
+  };
+  const makeKit = (preset = '') => {
+    const company = textField({ label: 'Tên công ty demo', value: preset, placeholder: 'VD: Demo – Công ty May Hưng Thịnh' });
+    modal({
+      title: preset ? 'Tạo lại bộ demo' : 'Tạo bộ demo cho khách hàng',
+      width: 560,
+      saveLabel: preset ? 'Đổi mật khẩu & nạp lại dữ liệu mẫu' : 'Tạo bộ demo',
+      rows: [[company], [el('p.hint', { style: { margin: 0 } }, preset
+        ? 'Mật khẩu cũ hết hiệu lực; dữ liệu mẫu được nạp lại (góp ý khách tự gửi vẫn giữ).'
+        : 'Tạo một công ty mẫu + tài khoản người lao động (app điện thoại) + tài khoản HR (Admin), kèm ~50 góp ý / chia sẻ mẫu. Người dùng mẫu được tính vào số liệu chung — xoá bộ demo khi khách dùng xong.')]],
+      onSave: async () => {
+        try {
+          const r = await ctx.api.post('/api/admin/feed/demo-kits', { company: company.get() });
+          setTimeout(() => showKit(r), 50);
+        } catch (err) { ctx.notify(err.message, 'error'); return false; }
+        return true;
+      },
+    });
+  };
+  const dropKit = async (k) => {
+    if (!await confirmAction(`Xoá bộ demo "${k.company}"? Tài khoản người lao động, HR và toàn bộ dữ liệu mẫu của công ty này bị xoá.`, { title: 'Xoá bộ demo', confirmLabel: 'Xoá' })) return;
+    try { await ctx.api.delete(`/api/admin/feed/demo-kits/${encodeURIComponent(k.slug)}`); ctx.notify('Đã xoá bộ demo', 'success'); ctx.navigate(location.hash.slice(1)); } catch (err) { ctx.notify(err.message, 'error'); }
   };
 
   const minGroup = el('input', { type: 'number', min: '1', max: '50', value: String(settings.minGroup), style: { width: '80px' } });
@@ -655,5 +702,26 @@ async function managePanel(ctx, employer) {
         el('td', {}, el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => revoke(a) }, 'Thu hồi')),
       ]),
     ),
+    el('div', { style: { display: 'flex', alignItems: 'center', margin: '20px 0 8px' } }, [
+      el('div', { style: { flex: '1' } }, [
+        el('h3', { style: { margin: 0 } }, `Bộ demo cho khách hàng (${kits.length})`),
+        el('span.hint', {}, 'Một nút: công ty mẫu + tài khoản app người lao động + tài khoản Admin HR + dữ liệu mẫu, kèm trang truy cập HTML để gửi khách.'),
+      ]),
+      el('button.ekko-btn.ekko-btn--primary.ekko-btn--sm', { type: 'button', onclick: () => makeKit() }, 'Tạo bộ demo'),
+    ]),
+    kits.length ? table(
+      [{ label: 'Công ty demo' }, { label: 'Tài khoản' }, { label: 'Cập nhật' }, { label: 'Dùng gần nhất' }, { label: '' }],
+      kits,
+      (k) => el('tr', {}, [
+        el('td', {}, el('strong', {}, k.company)),
+        el('td', {}, [el('span.cellmeta', {}, k.worker_email || '—'), el('span.cellmeta', {}, k.hr_email || '—')]),
+        el('td', {}, formatDay(k.updated_at.slice(0, 10))),
+        el('td', {}, k.last_seen ? formatDay(k.last_seen.slice(0, 10)) : 'Chưa dùng'),
+        el('td', {}, el('div', { style: { display: 'flex', gap: '6px' } }, [
+          el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => makeKit(k.company) }, 'Tạo lại'),
+          el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => dropKit(k) }, 'Xoá'),
+        ])),
+      ]),
+    ) : null,
   ]);
 }

@@ -10,6 +10,7 @@ import { upsertMember } from '../auth.js';
 import { forbidden, HttpError, Router } from '../lib/http.js';
 import { companyScope } from '../services/companyScope.js';
 import { programOverview } from '../services/overview.js';
+import { createDemoKit, demoKits, removeDemoKit } from '../services/demoKit.js';
 import {
   createDraft, createHrAccount, FEED_STATUS, ISSUE_STATUS, issueDetail, updateIssue, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
   markRepliesSeen, markFeedSeen, feedAssignees, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
@@ -86,6 +87,10 @@ feedAdminRouter.post('/api/admin/feed/hr-accounts', (ctx) => {
   return ok(createHrAccount(ctx.user.id, ctx.body || {}, upsertMember));
 });
 feedAdminRouter.delete('/api/admin/feed/hr-accounts/:id', (ctx) => { ekkoOnly(ctx); return ok(removeHrAccount(ctx.user.id, ctx.params.id)); });
+// Ekko: bộ tài khoản demo cho khách hàng (công ty mẫu + người lao động + HR + dữ liệu mẫu).
+feedAdminRouter.get('/api/admin/feed/demo-kits', (ctx) => { ekkoOnly(ctx); return demoKits(); });
+feedAdminRouter.post('/api/admin/feed/demo-kits', (ctx) => { ekkoOnly(ctx); return ok(createDemoKit(ctx.user.id, ctx.body || {}, upsertMember)); });
+feedAdminRouter.delete('/api/admin/feed/demo-kits/:slug', (ctx) => { ekkoOnly(ctx); return ok(removeDemoKit(ctx.params.slug)); });
 feedAdminRouter.get('/api/admin/feed/settings', (ctx) => {
   ekkoOnly(ctx);
   const employer = ctx.url.searchParams.get('employer') || null;

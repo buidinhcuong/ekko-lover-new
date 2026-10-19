@@ -709,3 +709,7 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .sharesearch, .sharetopic { height: 36px; padding: 0 12px; border: 1px solid var(--border-primary); border-radius: var(--radius-8); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); color: var(--text-primary); box-sizing: border-box; }
 .sharesearch:focus, .sharetopic:focus { outline: 2px solid var(--border-brand); outline-offset: 0; }
 .sharetopic { cursor: pointer; max-width: 260px; }
+/* Bộ demo cho khách hàng. */
+.demokit { display: grid; gap: 6px; }
+.demokit__acc { display: grid; grid-template-columns: 150px 1fr auto; gap: 8px; align-items: center; margin-top: 8px; }
+.demokit__acc code { font: 600 13px/1.4 ui-monospace, Menlo, monospace; padding: 6px 8px; border-radius: 6px; background: var(--bg-secondary); border: 1px solid var(--border-secondary); overflow-wrap: anywhere; }

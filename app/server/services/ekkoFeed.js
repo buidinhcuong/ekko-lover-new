@@ -30,6 +30,7 @@ import { COMPANY_KEY, NO_EMPLOYER } from './companyScope.js';
 import { hashPassword, tempPassword } from './localAuth.js';
 
 export const DAILY_LIMIT = 1;
+const DEMO_DAILY_LIMIT = 10;
 export const WEEKLY_XP = 10;
 export const DEFAULT_MIN_GROUP = 5;
 const MIN_TEXT = 10;
@@ -249,7 +250,9 @@ export function feedStatusFor(userId, day = dayKey()) {
   const weekXpTaken = Boolean(get(
     "SELECT 1 FROM activity_log WHERE user_id = ? AND kind = 'feed_post' AND xp > 0 AND day >= ? LIMIT 1", userId, weekStart(day),
   ));
-  return { canPostToday: used < DAILY_LIMIT, dailyLimit: DAILY_LIMIT, weeklyXp: weekXpTaken ? 0 : WEEKLY_XP };
+  // Tài khoản người lao động của bộ demo cho khách (demoKit.js): gửi được nhiều hơn để thử đủ 2 loại.
+  const limit = get('SELECT 1 ok FROM demo_kits WHERE worker_user_id = ?', userId) ? DEMO_DAILY_LIMIT : DAILY_LIMIT;
+  return { canPostToday: used < limit, dailyLimit: limit, weeklyXp: weekXpTaken ? 0 : WEEKLY_XP };
 }
 
 /**
@@ -902,17 +905,18 @@ const DEMO_POSTS = [
 ];
 
 /**
- * Nạp ~30 góp ý mẫu (người dùng `demo-feed-*`) cho một công ty, để báo cáo
- * EkkoFeed có số liệu khi bấm thử. Chạy lại thì thay bộ mẫu cũ. Chỉ gọi ở dev.
+ * Nạp ~50 góp ý mẫu (người dùng `<prefix><số>`) cho một công ty, để báo cáo
+ * EkkoFeed có số liệu khi bấm thử. Chạy lại thì thay bộ mẫu cũ cùng prefix.
+ * Dev: prefix 'demo-feed-'. Bộ demo cho khách (demoKit.js): 'demo-kit-<mã>-'.
  */
-export function seedFeedDemo(employerName, today = dayKey()) {
+export function seedFeedDemo(employerName, today = dayKey(), prefix = 'demo-feed-') {
   tx(() => {
-    run("DELETE FROM users WHERE ekko_user_id LIKE 'demo-feed-%'");
+    run("DELETE FROM users WHERE ekko_user_id LIKE ? || '%'", prefix);
     let i = 0;
     for (const [type, topic, keywords, sentiment, urgency, summary, text, count] of DEMO_POSTS) {
       for (let k = 0; k < count; k += 1, i += 1) {
         const user = run("INSERT INTO users (ekko_user_id, name, role, employer, created_at) VALUES (?,?,'member',?,?)",
-          `demo-feed-${i}`, `Nhân viên mẫu ${i + 1}`, employerName, nowIso());
+          `${prefix}${i}`, `Nhân viên mẫu ${i + 1}`, employerName, nowIso());
         const body = Array.isArray(text) ? text[k % text.length] : text;
         // Vài chia sẻ có ghi tên, cảm xúc dao động nhẹ cho giống thật.
         const named = type === 'share' && k % 4 === 1 ? 0 : 1;
