@@ -1950,6 +1950,34 @@ async function main() {
         && !(await get('admin', '/api/admin/stats/companies')).json.some((c) => c.name === 'Demo – Khách A'),
         JSON.stringify({ d: drop.status, a: afterDrop.status, c: (await get('admin', '/api/admin/stats/companies')).json.filter((c) => c.name.includes('Demo')) }));
 
+      // Tệp đính kèm phản hồi, đánh giá Like / Dislike, hạn phản hồi 3 ngày, khoảng ngày.
+      const pdf = `data:application/pdf;base64,${Buffer.from('%PDF-1.4\n%demo\n').toString('base64')}`;
+      const up = await post('hrjar', '/api/admin/feed/files', { name: 'Thong bao.pdf', dataUrl: pdf });
+      const fake = await post('hrjar', '/api/admin/feed/files', { name: 'x.pdf', dataUrl: `data:application/pdf;base64,${Buffer.from('not a pdf').toString('base64')}` });
+      check('HR tải tệp PDF lên được; tệp giả mạo bị từ chối', up.status === 200 && up.json.file.mime === 'application/pdf' && fake.status === 400);
+      const fa1Mine = (await get('fa1', '/api/feed')).json.posts.find((x) => x.type === 'issue');
+      const withFile = await post('hrjar', '/api/admin/feed/reply', { postIds: [fa1Mine.id], text: 'Gửi bạn thông báo chính thức', fileIds: [up.json.file.id] });
+      const mineAfter = (await get('fa1', '/api/feed')).json.posts.find((x) => x.id === fa1Mine.id);
+      const lastReply = mineAfter.replies.at(-1);
+      const open = await call('fa1', 'GET', lastReply.files[0].url);
+      check('Người lao động thấy tệp trong phản hồi và mở được', withFile.status === 200 && lastReply.files.length === 1 && open.status === 200);
+      check('Người khác không mở được tệp của góp ý không phải của mình', (await call('fb1', 'GET', lastReply.files[0].url)).status === 404);
+      const otherFile = await post('admin', '/api/admin/feed/files', { name: 'a.pdf', dataUrl: pdf });
+      check('HR không gắn được tệp do người khác tải lên', (await post('hrjar', '/api/admin/feed/reply', { postIds: [fa1Mine.id], text: 'thử', fileIds: [otherFile.json.file.id] })).status === 400);
+      const rate = await post('fa1', `/api/feed/${fa1Mine.id}/rate`, { rating: 'like' });
+      const rateBad = await post('fa1', `/api/feed/${fa1Mine.id}/rate`, { rating: 'love' });
+      const noReplyPost = (await get('fa3', '/api/feed')).json.posts.find((x) => !x.replies.length);
+      const rateEarly = noReplyPost ? await post('fa3', `/api/feed/${noReplyPost.id}/rate`, { rating: 'like' }) : { status: 400 };
+      check('Đánh giá Like/Dislike chỉ khi đã có phản hồi; giá trị lạ bị từ chối', rate.status === 200 && rate.json.post.rating === 'like' && rateBad.status === 400 && rateEarly.status === 400);
+      const rep30 = (await get('hrjar', '/api/admin/feed/report')).json;
+      check('Báo cáo có hạn phản hồi 3 ngày, tỷ lệ quá hạn và mức hài lòng', rep30.reply.dueDays === 3 && typeof rep30.reply.overdueRate === 'number' && rep30.reply.likes >= 1 && rep30.sections.issue.reply);
+      const td = new Date().toISOString().slice(0, 10);
+      const repRange = (await get('hrjar', `/api/admin/feed/report?from=${td}&to=${td}`)).json;
+      const postsRange = (await get('hrjar', `/api/admin/feed/posts?from=${td}&to=${td}`)).json;
+      check('Xem theo khoảng ngày tự chọn', repRange.custom === true && repRange.from === td && repRange.to === td && repRange.days === 1 && postsRange.every((x) => x.createdAt.slice(0, 10) === td));
+      const hrPost = (await get('hrjar', '/api/admin/feed/posts')).json.find((x) => x.id === fa1Mine.id);
+      check('HR thấy đánh giá + tình trạng hạn phản hồi của từng góp ý', hrPost.rating === 'like' && ['on_time', 'late'].includes(hrPost.replyState) && hrPost.replyDue);
+
       // Số lần gửi EkkoFeed mỗi ngày — Super admin đặt (mặc định / riêng công ty).
       const fa3Before = (await get('fa3', '/api/feed')).json;
       check('Mặc định 1 lần/ngày: đã gửi rồi thì hết lượt', fa3Before.dailyLimit === 1 && fa3Before.canPostToday === false);

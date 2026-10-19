@@ -741,3 +741,25 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 
 .modulecard--company { cursor: default; flex-wrap: wrap; }
 .modulecard__segment { flex: none; }
+
+/* EkkoFeed: tệp đính kèm phản hồi, hạn phản hồi, đánh giá của người gửi, kỳ xem. */
+.replyattach { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.replyfiles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.replyfiles:empty { display: none; }
+.replyfile { display: inline-flex; align-items: center; gap: 6px; max-width: 280px; padding: 4px 8px; border-radius: var(--radius-8); border: 1px solid var(--border-secondary); background: var(--bg-primary); font-size: var(--font-size-text-xs); color: var(--text-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a.replyfile:hover { border-color: var(--border-brand); color: var(--text-brand-500); }
+.replyfile__kind { flex: none; padding: 1px 5px; border-radius: 4px; background: #FEE4E2; color: #B42318; font-size: 10px; font-weight: 700; }
+.replyfile__x { all: unset; cursor: pointer; padding: 0 2px; color: var(--text-tertiary); font-size: 14px; }
+.replyfile__x:hover { color: var(--text-primary); }
+.replyitem__actions { display: flex; gap: 6px; align-items: flex-end; }
+.duetag, .ratetag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: var(--radius-full); font-size: 11px; font-weight: var(--font-weight-semibold); background: var(--bg-secondary); color: var(--text-secondary); }
+.duetag.is-late { background: #FEF3F2; color: #B42318; }
+.duetag.is-warn { background: #FFFAEB; color: #B54708; }
+.ratetag.is-like { background: #ECFDF3; color: #067647; }
+.ratetag.is-dislike { background: #FEF3F2; color: #B42318; }
+.stat--warn { border-color: #FECDCA; background: #FFFBFA; }
+.stat--warn .stat__value { color: #B42318; }
+.periodpicker { display: grid; gap: 6px; justify-items: end; }
+.periodrange { display: flex; align-items: center; gap: 6px; }
+.periodrange[hidden] { display: none; }
+.periodrange__date { height: 32px; padding: 0 8px; border: 1px solid var(--border-primary); border-radius: var(--radius-8); font: inherit; font-size: var(--font-size-text-sm); }

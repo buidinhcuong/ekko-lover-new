@@ -104,7 +104,8 @@ export async function handle(req, res) {
       else if (auth === 'mixed' && !PUBLIC_PATHS.has(pathname)) requireUser(ctx);
 
       if (req.method !== 'GET' && req.method !== 'HEAD') {
-        ctx.body = await readJson(req);
+        // Tệp đính kèm phản hồi EkkoFeed (≤ 5 MB, gửi dạng base64) cần trần lớn hơn.
+        ctx.body = await readJson(req, pathname === '/api/admin/feed/files' ? 8 * 1024 * 1024 : undefined);
       }
 
       const result = await match.handler(ctx);
