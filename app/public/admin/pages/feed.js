@@ -57,6 +57,50 @@ export default async function feedPage(ctx) {
     });
   };
 
+  // --- trả lời riêng từng người: mỗi góp ý một ô trả lời, gửi ngay -------------------
+  const replyItem = (p, issueKey = null) => {
+    const replies = el('div', {}, p.replies.map((r) => el('div.feedreply-admin', {}, [el('b', {}, r.by === 'hr' ? 'Doanh nghiệp: ' : 'Ekko: '), r.text])));
+    const box = el('textarea', { rows: 2, placeholder: 'Trả lời riêng người này…' });
+    const send = el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', {
+      type: 'button',
+      onclick: async () => {
+        const text = box.value.trim();
+        if (text.length < 2) { ctx.notify('Bạn chưa nhập nội dung trả lời', 'error'); return; }
+        send.disabled = true;
+        try {
+          await ctx.api.post('/api/admin/feed/reply', { postIds: [p.id], text, issueKey });
+          replies.append(el('div.feedreply-admin', {}, [el('b', {}, meta.ekko ? 'Ekko: ' : 'Doanh nghiệp: '), text]));
+          box.value = '';
+          ctx.notify('Đã gửi trả lời riêng', 'success');
+        } catch (err) { ctx.notify(err.message, 'error'); }
+        send.disabled = false;
+      },
+    }, 'Gửi riêng');
+    return el('div.replyitem', {}, [
+      el('div.cellmeta', {}, `${formatDay(p.createdAt.slice(0, 10))} · ${p.author ? p.author.name : 'Ẩn danh'} · ${statusLabel[p.status] || p.status}${meta.ekko && p.company ? ` · ${p.company}` : ''}`),
+      el('div', { style: { whiteSpace: 'pre-wrap' } }, p.text),
+      replies,
+      el('div.replyitem__form', {}, [box, send]),
+    ]);
+  };
+  /** Danh sách góp ý, mỗi cái một ô trả lời riêng (thay vì một câu cho cả nhóm). */
+  const openIndividual = (title, list, issueKey = null) => modal({
+    title,
+    width: 760,
+    saveLabel: 'Xong',
+    rows: [
+      [el('p.hint', { style: { margin: 0 } }, 'Mỗi người nhận câu trả lời riêng của mình trong "Góp ý của tôi". Tin ẩn danh thì bạn vẫn không biết là ai.')],
+      [el('div.replylist', {}, list.map((p) => replyItem(p, issueKey)))],
+    ],
+    onSave: () => { reload(); return true; },
+  });
+  const openIndividualIssue = async (key, title) => {
+    try {
+      const d = await ctx.api.get(`/api/admin/feed/issue?key=${encodeURIComponent(key)}`);
+      openIndividual(`Trả lời từng người: ${title}`, d.posts, key);
+    } catch (err) { ctx.notify(err.message, 'error'); }
+  };
+
   const head = el('div.page-head', {}, [
     el('div', { style: { flex: '1' } }, [
       el('h1', {}, meta.ekko ? 'EkkoFeed' : `EkkoFeed · ${meta.employerName || 'Công ty của bạn'}`),
@@ -100,6 +144,9 @@ export default async function feedPage(ctx) {
     ['all', 'Tất cả', () => true],
   ];
   let issueFilter = 'active';
+  // Góp ý "Cần giải quyết" không thuộc nhóm vấn đề nào (dưới ngưỡng người) — để HR không bỏ sót.
+  const inIssues = new Set(report.issues.flatMap((i) => i.postIds));
+  const loose = posts.filter((p) => p.type === 'issue' && !inIssues.has(p.id));
   const issueHost = el('div.issuelist');
   const filterRow = el('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' } });
   const drawIssues = () => {
@@ -128,9 +175,16 @@ export default async function feedPage(ctx) {
         el('div', { style: { display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' } }, [
           el('button.ekko-btn.ekko-btn--primary.ekko-btn--sm', { type: 'button', onclick: () => openIssue(i.key) }, 'Quản lý'),
           el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => openReply(i.postIds, `Trả lời nhóm: ${i.title}`, i.key) }, `Trả lời cả nhóm (${i.posts})`),
+          el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => openIndividualIssue(i.key, i.title) }, 'Trả lời từng người'),
         ]),
       ]);
-    }) : [el('p.hint', {}, report.issues.length ? 'Không có vấn đề nào ở mục này.' : `Chưa có nhóm vấn đề nào đủ ${report.minGroup} người.`)]));
+    }).concat(issueFilter === 'resolved' || !loose.length ? [] : [el('div.issue.issue--loose', {}, [
+      el('div.issue__head', {}, [badge('Góp ý lẻ', 'neutral'), el('strong', {}, `${loose.length} góp ý chưa đủ nhóm`)]),
+      el('div.cellmeta', {}, `Góp ý / Cần giải quyết chưa có đủ ${report.minGroup} người cùng nêu nên chưa thành nhóm vấn đề — vẫn cần trả lời từng người.`),
+      el('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } }, [
+        el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => openIndividual('Góp ý lẻ — trả lời từng người', loose) }, 'Trả lời từng người'),
+      ]),
+    ])]) : [el('p.hint', {}, report.issues.length ? 'Không có vấn đề nào ở mục này.' : `Chưa có nhóm vấn đề nào đủ ${report.minGroup} người.`)]));
   };
 
   /** Màn quản lý một vấn đề: trạng thái, phụ trách, hạn, ghi chú nội bộ, các góp ý, lịch sử. */
@@ -143,11 +197,8 @@ export default async function feedPage(ctx) {
     const owner = textField({ label: 'Người phụ trách', value: d.owner || '', placeholder: 'VD: Chị Hà — Phòng Nhân sự' });
     const due = textField({ label: 'Hạn xử lý', type: 'date', value: d.dueOn || '' });
     const note = textAreaField({ label: 'Ghi chú nội bộ (người lao động không thấy)', value: d.note || '', rows: 3, placeholder: 'VD: Đã báo bếp, chờ duyệt thêm 40 suất…' });
-    const postsNode = el('div.issue__posts', {}, d.posts.map((p) => el('div.issue__post', {}, [
-      el('div.cellmeta', {}, `${formatDay(p.createdAt.slice(0, 10))} · ${p.author ? p.author.name : 'Ẩn danh'} · ${statusLabel[p.status] || p.status}`),
-      el('div', { style: { whiteSpace: 'pre-wrap' } }, p.text),
-      ...p.replies.map((r) => el('div.feedreply-admin', {}, [el('b', {}, r.by === 'hr' ? 'Doanh nghiệp: ' : 'Ekko: '), r.text])),
-    ])));
+    // Mỗi góp ý có ô "Trả lời riêng"; nút "Trả lời cả nhóm" ở trên gửi một câu cho tất cả.
+    const postsNode = el('div.issue__posts', {}, d.posts.map((p) => replyItem(p, d.key)));
     const eventsNode = d.events.length
       ? el('ul.issue__events', {}, d.events.map((e) => el('li', {}, [
         el('span.cellmeta', { style: { display: 'inline' } }, `${formatDay(e.created_at.slice(0, 10))} ${e.created_at.slice(11, 16)} · ${e.name || '—'} · `),
@@ -193,58 +244,50 @@ export default async function feedPage(ctx) {
     issueHost,
   ]);
 
-  const bars = (rows) => {
-    if (!rows.length) return el('p.hint', {}, 'Chưa có dữ liệu.');
-    const max = Math.max(1, ...rows.map((r) => r.posts));
-    return el('div.bars', {}, rows.map((r) => el('div.barrow.barrow--wide', {}, [
-      el('span', {}, r.label),
-      el('span.barrow__track', {}, [el('span.barrow__fill', { style: { width: `${Math.round((r.posts / max) * 100)}%`, display: 'block' } })]),
-      el('span.barrow__value', {}, [`${r.posts}`, el('span.cellmeta', { style: { display: 'inline', marginLeft: '4px' } }, `· ${r.people} người`)]),
-    ])));
-  };
-  const breakdown = el('div.split', { style: { marginTop: '16px' } }, [
-    el('div.panel', {}, [el('div.panel__head', {}, [el('h2', {}, 'Theo chủ đề')]), bars(report.byTopic)]),
-    el('div.panel', {}, [el('div.panel__head', {}, [el('h2', {}, 'Theo loại')]), bars(report.byType)]),
+  // --- phân bố: theo loại (một thanh chia đôi) + theo chủ đề (hàng gọn) -------------
+  const typeTotal = Math.max(1, report.byType.reduce((n, r) => n + r.posts, 0));
+  const TYPE_COLOR = { issue: 'var(--bg-warning-500, #F79009)', share: 'var(--bg-success-500, #12B76A)' };
+  const maxTopic = Math.max(1, ...report.byTopic.map((r) => r.posts));
+  const breakdown = el('div.panel.distpanel', { style: { marginTop: '16px' } }, [
+    el('div.panel__head', {}, [el('h2', {}, 'Phân bố'), el('span.cellmeta', {}, 'theo loại và theo chủ đề')]),
+    report.byType.length ? el('div.distpanel__grid', {}, [
+      el('div', {}, [
+        el('div.distpanel__label', {}, 'Theo loại'),
+        el('div.typebar', {}, report.byType.map((r) => el('span', { style: { width: `${(r.posts / typeTotal) * 100}%`, background: TYPE_COLOR[r.code] || 'var(--bg-brand-500)' }, title: `${r.label}: ${r.posts}` }))),
+        el('div.typelegend', {}, report.byType.map((r) => el('span', {}, [
+          el('i', { style: { background: TYPE_COLOR[r.code] || 'var(--bg-brand-500)' } }),
+          `${r.label} · ${r.posts} (${Math.round((r.posts / typeTotal) * 100)}%)`,
+        ]))),
+      ]),
+      el('div', {}, [
+        el('div.distpanel__label', {}, 'Theo chủ đề'),
+        el('div.topicrows', {}, report.byTopic.map((r) => el('div.topicrow', { title: `${r.label}: ${r.posts} bài · ${r.people} người` }, [
+          el('span.topicrow__name', {}, r.label),
+          el('span.topicrow__track', {}, [el('span', { style: { width: `${Math.round((r.posts / maxTopic) * 100)}%` } })]),
+          el('span.topicrow__n', {}, String(r.posts)),
+        ]))),
+      ]),
+    ]) : el('p.hint', {}, 'Chưa có dữ liệu.'),
   ]);
 
-  // --- danh sách góp ý ------------------------------------------------------------
-  const statusFilter = el('select', {}, [el('option', { value: '' }, 'Mọi trạng thái'), ...meta.statuses.map((s) => el('option', { value: s.code }, s.label))]);
-  const topicFilter = el('select', {}, [el('option', { value: '' }, 'Mọi chủ đề'), ...meta.topics.map((s) => el('option', { value: s.code }, s.label))]);
-  const listHost = el('div');
-  const drawList = () => {
-    const rows = posts.filter((p) => (!statusFilter.value || p.status === statusFilter.value) && (!topicFilter.value || p.topic === topicFilter.value));
-    listHost.replaceChildren(table(
-      [{ label: 'Ngày' }, { label: 'Góp ý' }, { label: 'Người gửi' }, { label: 'Trạng thái' }, { label: '' }],
-      rows,
-      (p) => el('tr', {}, [
-        el('td', {}, [formatDay(p.createdAt.slice(0, 10)), meta.ekko && p.company ? el('span.cellmeta', {}, p.company) : null]),
-        el('td', { style: { maxWidth: '520px' } }, [
-          el('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' } }, [
-            badge(typeLabel[p.type] || p.type, p.type === 'issue' ? 'warning' : 'success'),
-            badge(topicLabel[p.topic] || p.topic, 'brand'),
-            p.urgency === 'urgent' || p.urgency === 'high' ? badge(PRIORITY[p.urgency][0], PRIORITY[p.urgency][1]) : null,
-            p.sensitive ? badge('Nhạy cảm', 'error') : null,
-          ]),
-          el('div', { style: { whiteSpace: 'pre-wrap' } }, p.text),
-          ...p.replies.map((r) => el('div.feedreply-admin', {}, [el('b', {}, r.by === 'hr' ? 'Doanh nghiệp: ' : 'Ekko: '), r.text, el('span.cellmeta', { style: { display: 'inline', marginLeft: '6px' } }, formatDay(r.createdAt.slice(0, 10)))])),
-        ]),
-        el('td', {}, p.author ? [el('strong', {}, p.author.name), el('span.cellmeta', {}, p.author.email || '')] : el('span.cellmeta', {}, 'Ẩn danh')),
-        el('td', {}, el('select', {
-          onchange: async (e) => {
-            try { await ctx.api.patch(`/api/admin/feed/posts/${p.id}`, { status: e.target.value }); ctx.notify('Đã đổi trạng thái', 'success'); } catch (err) { ctx.notify(err.message, 'error'); }
-          },
-        }, meta.statuses.map((s) => el('option', { value: s.code, selected: s.code === p.status }, s.label)))),
-        el('td', {}, el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => openReply([p.id], 'Trả lời góp ý') }, 'Trả lời')),
-      ]),
-    ));
-  };
-  statusFilter.addEventListener('change', drawList);
-  topicFilter.addEventListener('change', drawList);
-  drawList();
+  // --- Chia sẻ: gom theo chủ đề, trả lời riêng từng bài ------------------------------
+  const shares = posts.filter((p) => p.type === 'share');
+  const shareGroups = meta.topics
+    .map((tp) => ({ ...tp, list: shares.filter((p) => p.topic === tp.code) }))
+    .filter((g) => g.list.length)
+    .sort((a, b) => b.list.length - a.list.length);
   const list = el('div.panel', { style: { marginTop: '16px' } }, [
-    el('div.panel__head', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, [el('h2', { style: { flex: '1' } }, `Các góp ý (${posts.length})`), statusFilter, topicFilter]),
-    el('p.hint', { style: { margin: '0 0 12px' } }, 'Nội dung đã được che số điện thoại, CCCD, số tài khoản và tên người được nhắc tới. Tên người gửi chỉ hiện khi họ tự chọn ghi tên.'),
-    listHost,
+    el('div.panel__head', {}, [el('h2', {}, `Chia sẻ (${shares.length})`), el('span.cellmeta', {}, 'cảm nhận, lời khen, câu chuyện của người lao động · gom theo chủ đề')]),
+    shareGroups.length
+      ? el('div.sharegroups', {}, shareGroups.map((g, idx) => el('details.sharegroup', idx === 0 ? { open: true } : {}, [
+        el('summary', {}, [
+          el('strong', {}, g.label),
+          el('span.cellmeta', { style: { display: 'inline', marginLeft: '8px' } }, `${g.list.length} chia sẻ`),
+        ]),
+        el('div.replylist', {}, g.list.map((p) => replyItem(p))),
+      ])))
+      : el('p.hint', {}, 'Chưa có chia sẻ nào trong kỳ.'),
+    el('p.hint', { style: { margin: '12px 0 0' } }, 'Nội dung đã được che số điện thoại, CCCD, số tài khoản và tên người được nhắc tới. Tên người gửi chỉ hiện khi họ tự chọn ghi tên.'),
   ]);
 
   return el('div', {}, [

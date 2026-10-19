@@ -62,7 +62,9 @@ feedAdminRouter.get('/api/admin/feed/posts', ({ feed, url, user }) => feedPosts(
   employer: url.searchParams.get('employer'),
   status: url.searchParams.get('status') || '',
   topic: url.searchParams.get('topic') || '',
-  limit: url.searchParams.get('limit') || 100,
+  type: url.searchParams.get('type') || '',
+  days: url.searchParams.get('days') || null,
+  limit: url.searchParams.get('limit') || 200,
 }, user.id));
 
 feedAdminRouter.post('/api/admin/feed/reply', ({ feed, user, body }) => ok(replyPosts(feed, user, body?.postIds, body?.text, body?.issueKey || null)));

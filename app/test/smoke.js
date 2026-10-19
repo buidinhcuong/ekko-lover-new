@@ -1857,6 +1857,8 @@ async function main() {
         (await get('fa4', '/api/feed')).json.types.map((x) => x.code).join(',') === 'share,issue'
         && shareDraft.type === 'share' && typesReport.byType.some((x) => x.code === 'share')
         && typesReport.issues.every((i) => i.postIds.every((id) => id !== shareDraft.id)), JSON.stringify(typesReport.byType));
+      const onlyShares = (await get('admin', '/api/admin/feed/posts?employer=CT-FEED&type=share&days=30')).json;
+      check('Danh sách lọc được theo loại (mục Chia sẻ) và theo kỳ', onlyShares.length >= 1 && onlyShares.every((x) => x.type === 'share'));
 
       // Quản lý từng vấn đề cần giải quyết.
       const issue = (await get('hrjar', '/api/admin/feed/report')).json.issues.find((i) => i.topic === 'facilities');

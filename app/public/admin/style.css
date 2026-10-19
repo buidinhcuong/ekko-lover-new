@@ -574,3 +574,31 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .issue__posts { display: grid; gap: 8px; max-height: 320px; overflow: auto; padding-right: 4px; }
 .issue__post { padding: 10px 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); display: grid; gap: 4px; font-size: var(--font-size-text-sm); }
 .issue__events { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: var(--font-size-text-sm); max-height: 200px; overflow: auto; }
+
+/* Trả lời riêng từng người. */
+.replylist { display: grid; gap: 8px; }
+.replyitem { padding: 10px 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); display: grid; gap: 4px; font-size: var(--font-size-text-sm); }
+.replyitem__form { display: flex; gap: 8px; align-items: flex-end; margin-top: 4px; }
+.replyitem__form textarea { flex: 1; min-height: 36px; resize: vertical; font: inherit; font-size: var(--font-size-text-sm); padding: 6px 10px; border: 1px solid var(--border-primary); border-radius: var(--radius-8); }
+.issue--loose { border-style: dashed; }
+/* Phân bố gọn: thanh loại chia đôi + hàng chủ đề mảnh. */
+.distpanel__grid { display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: var(--spacing-24); align-items: start; }
+@media (max-width: 900px) { .distpanel__grid { grid-template-columns: 1fr; } }
+.distpanel__label { font-size: var(--font-size-text-xs); font-weight: var(--font-weight-semibold); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.typebar { display: flex; gap: 2px; height: 14px; border-radius: var(--radius-full); overflow: hidden; background: var(--bg-grey-200); }
+.typebar span { display: block; min-width: 4px; }
+.typelegend { display: grid; gap: 4px; margin-top: 8px; font-size: var(--font-size-text-sm); }
+.typelegend span { display: flex; align-items: center; gap: 6px; }
+.typelegend i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.topicrows { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
+@media (max-width: 900px) { .topicrows { grid-template-columns: 1fr; } }
+.topicrow { display: grid; grid-template-columns: minmax(0, 1.4fr) 1fr 28px; gap: 8px; align-items: center; font-size: var(--font-size-text-sm); }
+.topicrow__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topicrow__track { height: 6px; border-radius: var(--radius-full); background: var(--bg-grey-200); overflow: hidden; }
+.topicrow__track span { display: block; height: 100%; background: var(--bg-brand-500); }
+.topicrow__n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+/* Chia sẻ theo nhóm chủ đề. */
+.sharegroups { display: grid; gap: 8px; }
+.sharegroup { border: 1px solid var(--border-secondary); border-radius: var(--radius-12); padding: 10px 14px; }
+.sharegroup summary { cursor: pointer; list-style: revert; }
+.sharegroup[open] summary { margin-bottom: 10px; }

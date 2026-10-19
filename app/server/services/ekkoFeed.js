@@ -633,7 +633,7 @@ export function updateIssue(access, user, key, changes = {}) {
 }
 
 /** Danh sách góp ý cho quản trị — chỉ bản đã che; tên chỉ hiện khi người gửi chọn ghi tên. */
-export function feedPosts(access, { employer = null, status = '', topic = '', limit = 100 } = {}, viewerId = null) {
+export function feedPosts(access, { employer = null, status = '', topic = '', type = '', days = null, limit = 200 } = {}, viewerId = null) {
   const scope = postScope(access, employer);
   const statuses = access.ekko ? [...VISIBLE_TO_HR, 'review'] : VISIBLE_TO_HR;
   const want = status && statuses.includes(status) ? [status] : statuses;
@@ -641,8 +641,11 @@ export function feedPosts(access, { employer = null, status = '', topic = '', li
   let sql = `SELECT p.*, u.name author_name, u.email author_email FROM feed_posts p JOIN users u ON u.id = p.user_id
               WHERE ${scope.sql} AND p.status IN (${want.map(() => '?').join(',')})`;
   if (topic && FEED_TOPICS[topic]) { sql += ' AND p.topic = ?'; params.push(topic); }
+  if (type && FEED_TYPES[type]) { sql += ' AND p.type = ?'; params.push(type); }
+  // Cùng kỳ xem với báo cáo (7 / 30 / 90 ngày gần nhất).
+  if (Number(days) > 0) { sql += ' AND p.day >= ?'; params.push(shiftDay(dayKey(), -(Math.min(365, Math.round(Number(days))) - 1))); }
   sql += ' ORDER BY p.id DESC LIMIT ?';
-  params.push(Math.min(500, Number(limit) || 100));
+  params.push(Math.min(500, Number(limit) || 200));
   if (viewerId) audit(viewerId, 'view_posts', scope.key);
   return all(sql, ...params).map((p) => ({
     id: p.id,
@@ -762,6 +765,9 @@ const DEMO_POSTS = [
   ['issue', 'safety', ['nóng', 'thông gió', 'xưởng'], -0.7, 'high', 'Xưởng quá nóng, quạt thông gió hỏng', 'Xưởng B nóng quá, quạt hỏng cả tuần', 6],
   ['issue', 'benefits', ['bhxh', 'sổ bảo hiểm'], -0.1, 'low', 'Muốn được hướng dẫn tra cứu BHXH', 'Mong công ty hướng dẫn tra cứu quá trình đóng BHXH', 2],
   ['share', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', 'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm', 3],
+  ['share', 'facilities', ['nhà ăn', 'món mới'], 0.6, 'low', 'Nhà ăn có thêm món mới, ngon hơn', 'Nhà ăn tuần này có thêm món canh nóng, ngon hơn hẳn', 3],
+  ['share', 'benefits', ['khám sức khoẻ'], 0.7, 'low', 'Cảm ơn công ty tổ chức khám sức khoẻ', 'Đợt khám sức khoẻ vừa rồi rất chu đáo, cảm ơn công ty', 2],
+  ['issue', 'training', ['nâng bậc', 'học nghề'], -0.2, 'low', 'Mong có lớp học nâng bậc thợ', 'Mong công ty mở lớp nâng bậc thợ cho công nhân lâu năm', 2],
 ];
 
 /**
