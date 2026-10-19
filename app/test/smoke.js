@@ -1849,6 +1849,24 @@ async function main() {
       await post('fa1', '/api/feed/replies/seen', {});
       check('Mở EkkoFeed thì hết dòng nhắc', (await get('fa1', '/api/me/world')).json.feed.unreadReplies === 0);
 
+      // Quản lý từng vấn đề cần giải quyết.
+      const issue = (await get('hrjar', '/api/admin/feed/report')).json.issues.find((i) => i.topic === 'facilities');
+      check('Vấn đề có trạng thái mặc định "Mới", chưa giao ai', issue?.status === 'open' && issue.owner === null && issue.key.startsWith('CT-FEED|'));
+      const upd = await call('hrjar', 'PATCH', '/api/admin/feed/issue', { key: issue.key, status: 'in_progress', owner: 'Chị Hà — Nhân sự', dueOn: '2026-12-31', note: 'Đã báo bếp' });
+      const fa1Post = (await get('fa1', '/api/feed')).json.posts[0];
+      check('Đổi vấn đề sang Đang xử lý: lưu phụ trách / hạn / ghi chú; góp ý của người gửi thành "Đang xử lý" (nếu chưa phản hồi)',
+        upd.status === 200 && upd.json.issue.owner === 'Chị Hà — Nhân sự' && upd.json.issue.dueOn === '2026-12-31'
+        && ['in_progress', 'replied'].includes(fa1Post.status), JSON.stringify(upd.json).slice(0, 200));
+      check('Người lao động không thấy ghi chú nội bộ', !JSON.stringify((await get('fa1', '/api/feed')).json).includes('Đã báo bếp'));
+      const detail = (await get('hrjar', `/api/admin/feed/issue?key=${encodeURIComponent(issue.key)}`)).json;
+      check('Chi tiết vấn đề: các góp ý trong nhóm + lịch sử thao tác', detail.posts.length >= 1 && detail.events.some((e) => e.action === 'status') && detail.note === 'Đã báo bếp');
+      const otherKey = (await get('admin', '/api/admin/feed/report?employer=CT-OTHER')).json.issues[0]?.key || 'CT-OTHER|facilities|xe dua don';
+      check('HR không sửa / xem được vấn đề của công ty khác', (await call('hrjar', 'PATCH', '/api/admin/feed/issue', { key: otherKey, status: 'resolved' })).status === 404
+        && (await get('hrjar', `/api/admin/feed/issue?key=${encodeURIComponent(otherKey)}`)).status === 404);
+      await call('hrjar', 'PATCH', '/api/admin/feed/issue', { key: issue.key, status: 'resolved' });
+      const resolvedIssue = (await get('hrjar', '/api/admin/feed/report')).json.issues.find((i) => i.key === issue.key);
+      check('Đã giải quyết: góp ý của người gửi chuyển "Đã đóng"', resolvedIssue.status === 'resolved' && (await get('fa1', '/api/feed')).json.posts[0].status === 'closed');
+
       await join('fa3', 'feed-a3', 'Công ty Feed', 'CT-FEED');
       const sens = (await post('fa3', '/api/feed/preview', { text: 'Có người trong xưởng đe doạ đánh tôi nếu tôi báo cáo' })).json.draft;
       await post('fa3', `/api/feed/${sens.id}/submit`, {});

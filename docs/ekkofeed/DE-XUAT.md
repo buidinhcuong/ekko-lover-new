@@ -91,6 +91,13 @@ Mỗi người **tối đa 1 góp ý mỗi ngày** để tránh gửi rác. (Huy
 - **Phân bố** theo loại (phàn nàn / yêu cầu / góp ý / khen), theo chủ đề, và
   **chỉ số cảm xúc** theo tuần (tích cực ↔ tiêu cực).
 
+**4.1b Quản lý từng vấn đề (✅ đã làm 19/10):** mỗi nhóm vấn đề có màn "Quản lý":
+trạng thái (Mới · Đang xử lý · Đã giải quyết · Không xử lý), người phụ trách, hạn xử
+lý (quá hạn hiện đỏ), ghi chú nội bộ (người lao động không thấy), toàn bộ góp ý trong
+nhóm, trả lời cả nhóm, lịch sử thao tác. Đổi trạng thái thì góp ý của người gửi đổi
+theo (Đang xử lý → "Đang xử lý"; Đã giải quyết → "Đã đóng"). Vấn đề đã giải quyết mà
+có góp ý mới thì hiện nhãn cảnh báo. Danh sách lọc Cần xử lý / Đã giải quyết / Tất cả.
+
 **4.2 Trả lời người lao động:**
 
 - **Trả lời theo nhóm vấn đề** (cách chính): viết một lần, hệ thống gửi **riêng

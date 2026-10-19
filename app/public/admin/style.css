@@ -568,3 +568,9 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .issue__head { display: flex; gap: var(--spacing-8); align-items: center; margin-bottom: 4px; }
 .issue__quotes { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 2px; font-size: var(--font-size-text-sm); color: var(--text-secondary); }
 .feedreply-admin { margin-top: 6px; padding: 6px 10px; border-radius: var(--radius-8); background: var(--bg-brand-50); font-size: var(--font-size-text-sm); }
+
+.issue__mgmt { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: var(--font-size-text-sm); color: var(--text-secondary); }
+.issue__mgmt .is-overdue { color: var(--text-error, #d92d20); font-weight: var(--font-weight-semibold); }
+.issue__posts { display: grid; gap: 8px; max-height: 320px; overflow: auto; padding-right: 4px; }
+.issue__post { padding: 10px 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); display: grid; gap: 4px; font-size: var(--font-size-text-sm); }
+.issue__events { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: var(--font-size-text-sm); max-height: 200px; overflow: auto; }

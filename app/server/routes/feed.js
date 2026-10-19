@@ -11,7 +11,7 @@ import { forbidden, HttpError, Router } from '../lib/http.js';
 import { companyScope } from '../services/companyScope.js';
 import { programOverview } from '../services/overview.js';
 import {
-  createDraft, createHrAccount, FEED_STATUS, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
+  createDraft, createHrAccount, FEED_STATUS, ISSUE_STATUS, issueDetail, updateIssue, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
   markRepliesSeen, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
 } from '../services/ekkoFeed.js';
 
@@ -44,6 +44,7 @@ feedAdminRouter.get('/api/admin/feed/meta', ({ feed }) => ({
   types: labels(FEED_TYPES),
   topics: labels(FEED_TOPICS),
   statuses: Object.entries(FEED_STATUS).filter(([code]) => feed.ekko || code !== 'review').map(([code, label]) => ({ code, label })),
+  issueStatuses: Object.entries(ISSUE_STATUS).map(([code, label]) => ({ code, label })),
 }));
 
 // Bảng điều khiển Giáo dục tài chính: Ekko chọn công ty tuỳ ý; HR luôn bị khoá vào
@@ -64,7 +65,11 @@ feedAdminRouter.get('/api/admin/feed/posts', ({ feed, url, user }) => feedPosts(
   limit: url.searchParams.get('limit') || 100,
 }, user.id));
 
-feedAdminRouter.post('/api/admin/feed/reply', ({ feed, user, body }) => ok(replyPosts(feed, user, body?.postIds, body?.text)));
+feedAdminRouter.post('/api/admin/feed/reply', ({ feed, user, body }) => ok(replyPosts(feed, user, body?.postIds, body?.text, body?.issueKey || null)));
+
+// Quản lý từng vấn đề cần giải quyết (khoá = '<công ty>|<chủ đề>|<từ khoá>').
+feedAdminRouter.get('/api/admin/feed/issue', ({ feed, url }) => ok(issueDetail(feed, url.searchParams.get('key'))));
+feedAdminRouter.patch('/api/admin/feed/issue', ({ feed, user, body }) => ok(updateIssue(feed, user, body?.key, body || {})));
 feedAdminRouter.patch('/api/admin/feed/posts/:id', ({ feed, user, params, body }) => ok(setPostStatus(feed, user, params.id, body?.status)));
 
 // Ekko: tài khoản HR doanh nghiệp + ngưỡng ẩn danh.

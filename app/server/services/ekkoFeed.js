@@ -437,14 +437,14 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
     };
   });
 
-  // Nhóm vấn đề (bản MVP): cùng chủ đề + cùng từ khoá chính (từ khoá đầu tiên AI đưa ra).
+  // Nhóm vấn đề: cùng công ty + cùng chủ đề + cùng từ khoá chính (từ khoá đầu tiên AI đưa ra).
   const groups = new Map();
   for (const p of posts) {
-    const main = JSON.parse(p.keywords || '[]')[0];
-    const key = `${p.topic}|${main ? normalize(main) : ''}`;
-    if (!groups.has(key)) groups.set(key, { topic: p.topic, keyword: main || null, posts: [] });
+    const key = issueKeyOf(p);
+    if (!groups.has(key)) groups.set(key, { topic: p.topic, keyword: JSON.parse(p.keywords || '[]')[0] || null, employer: p.employer_name, posts: [] });
     groups.get(key).posts.push(p);
   }
+  const states = issueStates([...groups.keys()]);
   const issues = [];
   let belowThreshold = 0;
   for (const [key, g] of groups) {
@@ -458,9 +458,19 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
       : (n >= minGroup * 3 && sentiment < -0.3) || worst === 'high' ? 'high'
         : sentiment < -0.2 ? 'medium' : 'low';
     const summaries = [...new Set(g.posts.map((p) => p.summary).filter(Boolean))];
+    const state = states.get(key);
     issues.push({
       key,
-      title: summaries[0] || `${FEED_TOPICS[g.topic]?.label || g.topic}${g.keyword ? ` — ${g.keyword}` : ''}`,
+      company: g.employer,
+      title: state?.title || summaries[0] || `${FEED_TOPICS[g.topic]?.label || g.topic}${g.keyword ? ` — ${g.keyword}` : ''}`,
+      // Phần quản lý (mặc định "Mới" khi chưa ai đụng tới).
+      status: state?.status || 'open',
+      owner: state?.owner || null,
+      dueOn: state?.due_on || null,
+      note: state?.note || null,
+      updatedAt: state?.updated_at || null,
+      // Có góp ý mới gửi tới SAU lúc đánh dấu đã giải quyết → cần xem lại.
+      newSinceResolved: state?.resolved_at ? g.posts.filter((p) => (p.submitted_at || p.created_at) > state.resolved_at).length : 0,
       topic: g.topic,
       keyword: g.keyword,
       people: n,
@@ -473,7 +483,9 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
       quotes: summaries.slice(0, 3),
     });
   }
-  issues.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] || b.people - a.people);
+  const STATUS_ORDER = { open: 0, in_progress: 1, resolved: 2, dismissed: 3 };
+  issues.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+    || PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] || b.people - a.people);
 
   const tally = (field, labels) => Object.keys(labels).map((code) => {
     const list = posts.filter((p) => p[field] === code);
@@ -496,6 +508,129 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
     byTopic: tally('topic', FEED_TOPICS),
     byType: tally('type', FEED_TYPES),
   };
+}
+
+// --- quản lý từng vấn đề cần giải quyết ---------------------------------------------
+
+export const ISSUE_STATUS = { open: 'Mới', in_progress: 'Đang xử lý', resolved: 'Đã giải quyết', dismissed: 'Không xử lý' };
+
+/** Khoá nhóm vấn đề của một góp ý: '<công ty>|<chủ đề>|<từ khoá chính bỏ dấu>'. */
+export function issueKeyOf(post) {
+  const main = JSON.parse(post.keywords || '[]')[0];
+  return `${post.employer_key || ''}|${post.topic}|${main ? normalize(main) : ''}`;
+}
+
+function issueStates(keys) {
+  if (!keys.length) return new Map();
+  const rows = all(`SELECT * FROM feed_issues WHERE issue_key IN (${keys.map(() => '?').join(',')})`, ...keys);
+  return new Map(rows.map((r) => [r.issue_key, r]));
+}
+
+/** Kiểm quyền với một vấn đề: HR chỉ đụng được vấn đề của công ty mình. */
+function issueAllowed(access, key) {
+  const parts = String(key || '').split('|');
+  if (parts.length !== 3 || !FEED_TOPICS[parts[1]]) return null;
+  const employerKey = parts[0];
+  if (!access.ekko && employerKey !== access.employerKey) return null;
+  return { employerKey, topic: parts[1], keyword: parts[2] };
+}
+
+/** Mọi góp ý (không giới hạn kỳ) thuộc một vấn đề, mà người xem được phép thấy. */
+function issuePosts(access, key, info) {
+  const statuses = access.ekko ? [...VISIBLE_TO_HR, 'review'] : VISIBLE_TO_HR;
+  return all(
+    `SELECT p.*, u.name author_name, u.email author_email FROM feed_posts p JOIN users u ON u.id = p.user_id
+      WHERE COALESCE(p.employer_key, '') = ? AND p.topic = ? AND p.status IN (${statuses.map(() => '?').join(',')})
+      ORDER BY p.id DESC`,
+    info.employerKey, info.topic, ...statuses,
+  ).filter((p) => issueKeyOf(p) === key);
+}
+
+function ensureIssue(key, employerKey) {
+  run(`INSERT INTO feed_issues (employer_key, issue_key, status, created_at, updated_at) VALUES (?,?, 'open', ?, ?)
+       ON CONFLICT(issue_key) DO NOTHING`, employerKey, key, nowIso(), nowIso());
+  return get('SELECT * FROM feed_issues WHERE issue_key = ?', key);
+}
+
+function issueEvent(issueId, userId, action, detail = null) {
+  run('INSERT INTO feed_issue_events (issue_id, user_id, action, detail, created_at) VALUES (?,?,?,?,?)', issueId, userId, action, detail, nowIso());
+}
+
+/** Chi tiết một vấn đề: phần quản lý + toàn bộ góp ý trong nhóm + lịch sử thao tác. */
+export function issueDetail(access, key) {
+  const info = issueAllowed(access, key);
+  if (!info) return fail('Không tìm thấy vấn đề này', 404);
+  const posts = issuePosts(access, key, info);
+  if (!posts.length) return fail('Không tìm thấy vấn đề này', 404);
+  const state = get('SELECT * FROM feed_issues WHERE issue_key = ?', key);
+  return {
+    key,
+    company: posts[0].employer_name,
+    topic: info.topic,
+    keyword: JSON.parse(posts[0].keywords || '[]')[0] || null,
+    title: state?.title || posts.find((p) => p.summary)?.summary || FEED_TOPICS[info.topic].label,
+    status: state?.status || 'open',
+    owner: state?.owner || null,
+    dueOn: state?.due_on || null,
+    note: state?.note || null,
+    people: new Set(posts.map((p) => p.user_id)).size,
+    posts: posts.map((p) => ({
+      id: p.id,
+      createdAt: p.submitted_at || p.created_at,
+      type: p.type,
+      text: p.redacted_text,
+      status: p.status,
+      author: p.anonymous ? null : { name: p.author_name },
+      replies: repliesOf(p.id).map((r) => ({ text: r.text, createdAt: r.created_at, by: r.author_role })),
+    })),
+    events: state ? all(
+      `SELECT e.action, e.detail, e.created_at, u.name FROM feed_issue_events e LEFT JOIN users u ON u.id = e.user_id
+        WHERE e.issue_id = ? ORDER BY e.id DESC LIMIT 50`, state.id,
+    ) : [],
+  };
+}
+
+/**
+ * Cập nhật phần quản lý của một vấn đề. Đổi trạng thái thì góp ý trong nhóm đổi
+ * theo cho người lao động thấy: Đang xử lý → "Đang xử lý"; Đã giải quyết → "Đã đóng".
+ */
+export function updateIssue(access, user, key, changes = {}) {
+  const info = issueAllowed(access, key);
+  if (!info) return fail('Không tìm thấy vấn đề này', 404);
+  const posts = issuePosts(access, key, info);
+  if (!posts.length) return fail('Không tìm thấy vấn đề này', 404);
+  const issue = ensureIssue(key, info.employerKey);
+  const next = {
+    title: changes.title === undefined ? issue.title : (String(changes.title || '').trim().slice(0, 160) || null),
+    status: changes.status === undefined ? issue.status : changes.status,
+    owner: changes.owner === undefined ? issue.owner : (String(changes.owner || '').trim().slice(0, 80) || null),
+    due_on: changes.dueOn === undefined ? issue.due_on : (changes.dueOn || null),
+    note: changes.note === undefined ? issue.note : (String(changes.note || '').trim().slice(0, 2000) || null),
+  };
+  if (!ISSUE_STATUS[next.status]) return fail('Trạng thái vấn đề không hợp lệ');
+  if (next.due_on && !/^\d{4}-\d{2}-\d{2}$/.test(next.due_on)) return fail('Hạn xử lý không hợp lệ');
+  tx(() => {
+    run(
+      `UPDATE feed_issues SET title = ?, status = ?, owner = ?, due_on = ?, note = ?, updated_at = ?,
+              resolved_at = CASE WHEN ? = 'resolved' AND status <> 'resolved' THEN ? WHEN ? <> 'resolved' THEN NULL ELSE resolved_at END
+        WHERE id = ?`,
+      next.title, next.status, next.owner, next.due_on, next.note, nowIso(),
+      next.status, nowIso(), next.status, issue.id,
+    );
+    const labels = { title: 'Đổi tiêu đề', owner: 'Người phụ trách', due_on: 'Hạn xử lý', note: 'Sửa ghi chú nội bộ' };
+    if (next.status !== issue.status) {
+      issueEvent(issue.id, user.id, 'status', ISSUE_STATUS[next.status]);
+      const ids = posts.map((p) => p.id);
+      const inList = ids.map(() => '?').join(',');
+      if (next.status === 'in_progress') run(`UPDATE feed_posts SET status = 'in_progress' WHERE id IN (${inList}) AND status IN ('sent', 'received')`, ...ids);
+      if (next.status === 'resolved') run(`UPDATE feed_posts SET status = 'closed' WHERE id IN (${inList}) AND status <> 'review'`, ...ids);
+    }
+    for (const field of ['title', 'owner', 'due_on', 'note']) {
+      if ((next[field] || null) !== (issue[field] || null)) issueEvent(issue.id, user.id, field, field === 'note' ? null : `${labels[field]}: ${next[field] || '—'}`);
+    }
+    audit(user.id, 'issue_update', key);
+  });
+  return { ok: true, issue: issueDetail(access, key) };
 }
 
 /** Danh sách góp ý cho quản trị — chỉ bản đã che; tên chỉ hiện khi người gửi chọn ghi tên. */
@@ -536,7 +671,7 @@ function ownedPost(access, postId) {
 }
 
 /** Trả lời một hoặc nhiều góp ý (trả lời cả nhóm vấn đề = gửi riêng tới từng người). */
-export function replyPosts(access, user, postIds, text) {
+export function replyPosts(access, user, postIds, text, issueKey = null) {
   const clean = String(text || '').trim();
   if (clean.length < 2) return fail('Bạn chưa nhập nội dung trả lời');
   if (clean.length > 2000) return fail('Trả lời tối đa 2.000 ký tự');
@@ -551,6 +686,9 @@ export function replyPosts(access, user, postIds, text) {
       if (p.status !== 'closed') run("UPDATE feed_posts SET status = 'replied' WHERE id = ?", p.id);
     }
     audit(user.id, 'reply', ids.join(','));
+    // Trả lời từ màn quản lý vấn đề: ghi vào lịch sử của vấn đề đó.
+    const info = issueKey ? issueAllowed(access, issueKey) : null;
+    if (info) issueEvent(ensureIssue(issueKey, info.employerKey).id, user.id, 'reply', `Trả lời ${ids.length} người: ${clean.slice(0, 120)}`);
   });
   return { ok: true, replied: ids.length };
 }

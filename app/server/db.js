@@ -669,6 +669,30 @@ CREATE TABLE IF NOT EXISTS employer_admins (
   created_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at    TEXT NOT NULL
 );
+-- Vấn đề cần giải quyết: nhóm góp ý tính tự động (cùng công ty + chủ đề + từ khoá
+-- chính); bảng này lưu phần quản lý của từng nhóm — trạng thái, người phụ trách,
+-- hạn, ghi chú nội bộ. issue_key = '<công ty>|<chủ đề>|<từ khoá bỏ dấu>'.
+CREATE TABLE IF NOT EXISTS feed_issues (
+  id            INTEGER PRIMARY KEY,
+  employer_key  TEXT NOT NULL DEFAULT '',
+  issue_key     TEXT NOT NULL UNIQUE,
+  title         TEXT,
+  status        TEXT NOT NULL DEFAULT 'open',          -- open | in_progress | resolved | dismissed
+  owner         TEXT,
+  due_on        TEXT,
+  note          TEXT,
+  created_at    TEXT NOT NULL,
+  updated_at    TEXT NOT NULL,
+  resolved_at   TEXT
+);
+CREATE TABLE IF NOT EXISTS feed_issue_events (
+  id         INTEGER PRIMARY KEY,
+  issue_id   INTEGER NOT NULL REFERENCES feed_issues(id) ON DELETE CASCADE,
+  user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  action     TEXT NOT NULL,
+  detail     TEXT,
+  created_at TEXT NOT NULL
+);
 -- Nhật ký xem / trả lời EkkoFeed của quản trị (ai, lúc nào, làm gì).
 CREATE TABLE IF NOT EXISTS feed_audit (
   id         INTEGER PRIMARY KEY,

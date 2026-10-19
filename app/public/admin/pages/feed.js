@@ -37,7 +37,7 @@ export default async function feedPage(ctx) {
   const reload = () => go(days);
 
   // --- trả lời (một tin hoặc cả nhóm) --------------------------------------------
-  const openReply = (postIds, title) => {
+  const openReply = (postIds, title, issueKey = null, after = reload) => {
     const text = textAreaField({ label: 'Nội dung trả lời', rows: 6, placeholder: 'VD: Cảm ơn anh chị đã phản ánh. Từ tuần sau nhà ăn ca đêm tăng thêm 40 suất…' });
     modal({
       title,
@@ -48,9 +48,9 @@ export default async function feedPage(ctx) {
         : 'Người gửi nhận trong mục "Góp ý của tôi". Tin ẩn danh thì bạn vẫn không biết là ai.')]],
       onSave: async () => {
         try {
-          await ctx.api.post('/api/admin/feed/reply', { postIds, text: text.get() });
+          await ctx.api.post('/api/admin/feed/reply', { postIds, text: text.get(), issueKey });
           ctx.notify('Đã gửi trả lời', 'success');
-          reload();
+          after();
         } catch (err) { ctx.notify(err.message, 'error'); return false; }
         return true;
       },
@@ -90,22 +90,107 @@ export default async function feedPage(ctx) {
       : el('p.hint', {}, `Chưa có từ khoá nào được từ ${report.minGroup} người trở lên cùng nhắc (ngưỡng ẩn danh).`),
   ]);
 
-  // --- nhóm vấn đề cần giải quyết -------------------------------------------------
-  const issues = el('div.panel', {}, [
-    el('div.panel__head', {}, [el('h2', {}, 'Vấn đề cần giải quyết'), el('span.cellmeta', {}, `nhóm có từ ${report.minGroup} người · xếp theo mức ưu tiên`)]),
-    report.issues.length
-      ? el('div.issuelist', {}, report.issues.map((i) => el('div.issue', {}, [
+  // --- nhóm vấn đề cần giải quyết (+ quản lý từng vấn đề) --------------------------
+  const ISSUE_TONE = { open: 'warning', in_progress: 'brand', resolved: 'success', dismissed: 'neutral' };
+  const issueLabel = Object.fromEntries(meta.issueStatuses.map((x) => [x.code, x.label]));
+  const todayKey = report.to;
+  const issueFilters = [
+    ['active', 'Cần xử lý', (i) => i.status === 'open' || i.status === 'in_progress'],
+    ['resolved', 'Đã giải quyết', (i) => i.status === 'resolved' || i.status === 'dismissed'],
+    ['all', 'Tất cả', () => true],
+  ];
+  let issueFilter = 'active';
+  const issueHost = el('div.issuelist');
+  const filterRow = el('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' } });
+  const drawIssues = () => {
+    filterRow.replaceChildren(...issueFilters.map(([code, label, fn]) => el(
+      `button.ekko-btn.ekko-btn--sm.${code === issueFilter ? 'ekko-btn--primary' : 'ekko-btn--secondary'}`,
+      { type: 'button', onclick: () => { issueFilter = code; drawIssues(); } },
+      `${label} (${report.issues.filter(fn).length})`,
+    )));
+    const fn = issueFilters.find(([code]) => code === issueFilter)[2];
+    const rows = report.issues.filter(fn);
+    issueHost.replaceChildren(...(rows.length ? rows.map((i) => {
+      const overdue = i.dueOn && i.dueOn < todayKey && (i.status === 'open' || i.status === 'in_progress');
+      return el('div.issue', {}, [
         el('div.issue__head', {}, [
+          badge(issueLabel[i.status] || i.status, ISSUE_TONE[i.status]),
           badge(...PRIORITY[i.priority]),
           el('strong', {}, i.title),
         ]),
-        el('div.cellmeta', {}, `${topicLabel[i.topic] || i.topic}${i.keyword ? ` · "${i.keyword}"` : ''} · ${i.people} người · ${i.posts} góp ý · ${mood(i.sentiment)} · đã trả lời ${i.replied}/${i.posts}`),
-        i.quotes.length ? el('ul.issue__quotes', {}, i.quotes.map((x) => el('li', {}, x))) : null,
-        el('div', { style: { display: 'flex', gap: '8px', marginTop: '8px' } }, [
-          el('button.ekko-btn.ekko-btn--primary.ekko-btn--sm', { type: 'button', onclick: () => openReply(i.postIds, `Trả lời nhóm: ${i.title}`) }, `Trả lời cả nhóm (${i.posts})`),
+        el('div.cellmeta', {}, `${meta.ekko && i.company ? `${i.company} · ` : ''}${topicLabel[i.topic] || i.topic}${i.keyword ? ` · "${i.keyword}"` : ''} · ${i.people} người · ${i.posts} góp ý · ${mood(i.sentiment)} · đã trả lời ${i.replied}/${i.posts}`),
+        el('div.issue__mgmt', {}, [
+          el('span', {}, `Phụ trách: ${i.owner || 'chưa giao'}`),
+          i.dueOn ? el(`span${overdue ? '.is-overdue' : ''}`, {}, `Hạn: ${formatDay(i.dueOn)}${overdue ? ' (quá hạn)' : ''}`) : null,
+          i.newSinceResolved ? el('span.is-overdue', {}, `${i.newSinceResolved} góp ý mới sau khi giải quyết`) : null,
         ]),
+        i.quotes.length ? el('ul.issue__quotes', {}, i.quotes.map((x) => el('li', {}, x))) : null,
+        el('div', { style: { display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' } }, [
+          el('button.ekko-btn.ekko-btn--primary.ekko-btn--sm', { type: 'button', onclick: () => openIssue(i.key) }, 'Quản lý'),
+          el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => openReply(i.postIds, `Trả lời nhóm: ${i.title}`, i.key) }, `Trả lời cả nhóm (${i.posts})`),
+        ]),
+      ]);
+    }) : [el('p.hint', {}, report.issues.length ? 'Không có vấn đề nào ở mục này.' : `Chưa có nhóm vấn đề nào đủ ${report.minGroup} người.`)]));
+  };
+
+  /** Màn quản lý một vấn đề: trạng thái, phụ trách, hạn, ghi chú nội bộ, các góp ý, lịch sử. */
+  const openIssue = async (key) => {
+    let d;
+    try { d = await ctx.api.get(`/api/admin/feed/issue?key=${encodeURIComponent(key)}`); } catch (err) { ctx.notify(err.message, 'error'); return; }
+    const title = textField({ label: 'Tiêu đề vấn đề', value: d.title });
+    const status = selectField({ label: 'Trạng thái', value: d.status, options: meta.issueStatuses.map((x) => [x.code, x.label]),
+      hint: 'Đang xử lý → người gửi thấy "Đang xử lý". Đã giải quyết → góp ý của họ chuyển "Đã đóng".' });
+    const owner = textField({ label: 'Người phụ trách', value: d.owner || '', placeholder: 'VD: Chị Hà — Phòng Nhân sự' });
+    const due = textField({ label: 'Hạn xử lý', type: 'date', value: d.dueOn || '' });
+    const note = textAreaField({ label: 'Ghi chú nội bộ (người lao động không thấy)', value: d.note || '', rows: 3, placeholder: 'VD: Đã báo bếp, chờ duyệt thêm 40 suất…' });
+    const postsNode = el('div.issue__posts', {}, d.posts.map((p) => el('div.issue__post', {}, [
+      el('div.cellmeta', {}, `${formatDay(p.createdAt.slice(0, 10))} · ${p.author ? p.author.name : 'Ẩn danh'} · ${statusLabel[p.status] || p.status}`),
+      el('div', { style: { whiteSpace: 'pre-wrap' } }, p.text),
+      ...p.replies.map((r) => el('div.feedreply-admin', {}, [el('b', {}, r.by === 'hr' ? 'Doanh nghiệp: ' : 'Ekko: '), r.text])),
+    ])));
+    const eventsNode = d.events.length
+      ? el('ul.issue__events', {}, d.events.map((e) => el('li', {}, [
+        el('span.cellmeta', { style: { display: 'inline' } }, `${formatDay(e.created_at.slice(0, 10))} ${e.created_at.slice(11, 16)} · ${e.name || '—'} · `),
+        e.action === 'status' ? `Trạng thái → ${e.detail}` : e.action === 'note' ? 'Sửa ghi chú nội bộ' : e.detail,
       ])))
-      : el('p.hint', {}, `Chưa có nhóm vấn đề nào đủ ${report.minGroup} người.`),
+      : el('p.hint', { style: { margin: 0 } }, 'Chưa có thao tác nào.');
+    modal({
+      title: 'Quản lý vấn đề',
+      width: 860,
+      saveLabel: 'Lưu thay đổi',
+      rows: [
+        [el('div.cellmeta', {}, `${d.company || ''} · ${topicLabel[d.topic] || d.topic}${d.keyword ? ` · "${d.keyword}"` : ''} · ${d.people} người · ${d.posts.length} góp ý`)],
+        [title], [status, owner, due], [note],
+        [el('div', {}, [
+          el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 8px' } }, [
+            el('strong', { style: { flex: '1' } }, `Các góp ý trong vấn đề (${d.posts.length})`),
+            el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', {
+              type: 'button',
+              onclick: () => openReply(d.posts.map((p) => p.id), `Trả lời nhóm: ${d.title}`, d.key, () => { reload(); }),
+            }, 'Trả lời cả nhóm'),
+          ]),
+          postsNode,
+        ])],
+        [el('div', {}, [el('strong', { style: { display: 'block', margin: '4px 0 8px' } }, 'Lịch sử thao tác'), eventsNode])],
+      ],
+      onSave: async () => {
+        try {
+          await ctx.api.patch('/api/admin/feed/issue', {
+            key: d.key, title: title.get(), status: status.get(), owner: owner.get(), dueOn: due.get() || null, note: note.get(),
+          });
+          ctx.notify('Đã lưu vấn đề', 'success');
+          reload();
+        } catch (err) { ctx.notify(err.message, 'error'); return false; }
+        return true;
+      },
+    });
+  };
+
+  drawIssues();
+  const issues = el('div.panel', {}, [
+    el('div.panel__head', {}, [el('h2', {}, 'Vấn đề cần giải quyết'), el('span.cellmeta', {}, `nhóm có từ ${report.minGroup} người · xếp theo trạng thái, mức ưu tiên`)]),
+    filterRow,
+    issueHost,
   ]);
 
   const bars = (rows) => {
