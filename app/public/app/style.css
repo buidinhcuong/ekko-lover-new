@@ -3240,17 +3240,9 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .feedstatus.is-success { background: var(--bg-success-50, #ecfdf3); color: var(--text-success-500, #12805c); }
 .feedreply { padding: var(--spacing-10) var(--spacing-12); border-radius: var(--radius-12); background: var(--bg-brand-50); display: grid; gap: 2px; }
 .feedreply p { margin: 0; white-space: pre-wrap; }
-/* Hai thẻ chọn loại góp ý. */
-.feedtypes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-8); }
-.feedtype {
-  display: grid; gap: 2px; align-content: start; text-align: left; padding: var(--spacing-12);
-  border: 1.5px solid var(--border-secondary); border-radius: var(--radius-12); background: var(--bg-primary);
-  font: inherit; color: inherit; cursor: pointer;
-}
-.feedtype b { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); }
-.feedtype small { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-secondary); }
-.feedtype[aria-checked="true"] { border-color: var(--bg-brand-500); background: var(--bg-brand-50); }
-.feedtype[aria-checked="true"] b { color: var(--text-brand-500); }
+/* Ô chọn loại góp ý: gọn, một dòng. */
+.feedtypefield { max-width: 260px; }
+.feedselect { height: 40px; padding: 0 var(--spacing-10); font: inherit; font-size: var(--font-size-text-sm); }
 
 /* EkkoFeed: thanh "Góp ý tới công ty" dưới thẻ chức năng — nền xanh Payday đậm,
    khoanh icon xanh lime, để nổi hẳn so với các thẻ trắng xung quanh. */

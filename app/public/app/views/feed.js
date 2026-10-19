@@ -68,7 +68,7 @@ function composer(ctx, data, redraw) {
 
   // Hai loại, người gửi tự chọn: Chia sẻ · Góp ý / Cần giải quyết.
   let type = null;
-  const typePicker = typeCards(data.types, null, (v) => { type = v; });
+  const typePicker = typeSelect(data.types, null, (v) => { type = v; });
 
   const preview = singleFlight(async () => {
     if (!type) return toast(t('Bạn chọn loại: Chia sẻ hay Góp ý / Cần giải quyết nhé'), 'error');
@@ -79,7 +79,7 @@ function composer(ctx, data, redraw) {
   });
 
   const form = el('div.card.feedform', {}, [
-    el('div.field', {}, [el('span', {}, t('Bạn muốn gửi')), typePicker]),
+    el('label.field.feedtypefield', {}, [el('span', {}, t('Loại')), typePicker]),
     el('label.field', {}, [el('span', {}, t('Bạn muốn công ty biết điều gì?')), text, counter]),
     el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, t('Công ty không thấy tên, email hay mã nhân viên của bạn. Bỏ chọn nếu muốn công ty liên hệ lại với bạn.'))])]),
     el('label.feedcheck', {}, [consent, el('small.muted', {}, t('Tôi đồng ý gửi nội dung này (đã che số điện thoại, CCCD, tên người) tới công ty qua Ekko, theo điều khoản sử dụng EkkoFeed.'))]),
@@ -93,19 +93,13 @@ function composer(ctx, data, redraw) {
   return box;
 }
 
-/** Hai thẻ chọn loại (bấm chọn một). */
-const TYPE_HINT = {
-  share: 'Cảm nhận, lời khen, câu chuyện muốn công ty biết',
-  issue: 'Điều chưa ổn, đề xuất, việc mong công ty giải quyết',
-};
-function typeCards(types, current, onPick) {
-  const row = el('div.feedtypes', { role: 'radiogroup' });
-  const paint = (value) => [...row.children].forEach((c) => c.setAttribute('aria-checked', String(c.dataset.code === value)));
-  types.forEach((item) => row.append(el('button.feedtype', {
-    type: 'button', role: 'radio', dataset: { code: item.code }, 'aria-checked': String(item.code === current),
-    onclick: () => { onPick(item.code); paint(item.code); },
-  }, [el('b', {}, t(item.label)), el('small', {}, t(TYPE_HINT[item.code] || ''))])));
-  return row;
+/** Ô chọn loại gọn: Chia sẻ · Góp ý / Cần giải quyết. */
+function typeSelect(types, current, onPick) {
+  const select = el('select.input.feedselect', { onchange: (e) => onPick(e.target.value || null) }, [
+    current ? null : el('option', { value: '', disabled: true, selected: true }, t('Chọn loại…')),
+    ...types.map((item) => el('option', { value: item.code, selected: item.code === current }, t(item.label))),
+  ]);
+  return select;
 }
 
 function review(ctx, data, draft, anonymousChecked, back, redraw) {
@@ -135,7 +129,7 @@ function review(ctx, data, draft, anonymousChecked, back, redraw) {
     el('h3', {}, t('Xem trước — công ty sẽ thấy')),
     el('blockquote.feedquote', {}, draft.redactedText),
     el('small.muted', {}, t('Số điện thoại, CCCD, số tài khoản và tên người được nhắc tới đã được che.')),
-    el('div.field', {}, [el('span', {}, t('Loại')), typeCards(data.types, type, (v) => { type = v; })]),
+    el('label.field.feedtypefield', {}, [el('span', {}, t('Loại')), typeSelect(data.types, type, (v) => { type = v; })]),
     el('div.field', {}, [el('span', {}, t('Chủ đề (tự gợi ý — chạm để đổi)')), chips(data.topics, topic, (v) => { topic = v; })]),
     el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, draft.hasCompany
       ? t('Bỏ chọn thì {company} thấy tên bạn.', { company: draft.companyName })

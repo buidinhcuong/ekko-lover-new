@@ -901,6 +901,7 @@ const EN = {
   'Báo cáo chi tiết': 'Full report',
   'lặp lại hàng tháng': 'repeats monthly',
   'Lặp lại hàng tháng': 'Repeat monthly',
+  'Chọn loại…': 'Choose type…',
   'Chia sẻ hoặc góp ý điều cần giải quyết tới {company}. Bạn chọn gửi ẩn danh hay ghi tên.': 'Share, or raise something to fix with {company}. Send anonymously or with your name.',
   'Chia sẻ hoặc góp ý điều cần giải quyết tới công ty bạn đang làm. Bạn chọn gửi ẩn danh hay ghi tên.': 'Share, or raise something to fix with your company. Send anonymously or with your name.',
   'Chia sẻ hoặc góp ý điều cần giải quyết — ẩn danh nếu muốn': 'Share or raise something to fix — anonymously if you like',
