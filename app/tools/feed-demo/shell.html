@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EkkoFeed · Bản xem thử</title>
+<link rel="icon" href="{{ICON}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap">
+<style>
+  :root {
+    --brand: #3E58F1; --brand-50: #EEF1FE; --ink: #101828; --muted: #475467; --soft: #667085;
+    --line: #EAECF0; --bg: #F3F5FA; --card: #FFFFFF; --lime: #D7F65B; --midnight: #10153A;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 "Bricolage Grotesque", system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; }
+  header.top { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--card); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header.top img { height: 26px; }
+  .top__title { display: grid; gap: 0; }
+  .top__title b { font-size: 17px; }
+  .top__title span { color: var(--soft); font-size: 13px; }
+  .top__spacer { flex: 1; }
+  .steps { display: flex; gap: 8px; flex-wrap: wrap; }
+  .step { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--bg); font-size: 13px; color: var(--muted); }
+  .step i { font-style: normal; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 12px; font-weight: 700; }
+  .reset { border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 10px; padding: 8px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .reset:hover { color: var(--ink); border-color: #D0D5DD; }
+  .reset:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .tabs { display: none; gap: 4px; padding: 8px 16px 0; }
+  .tabs button { flex: 1; border: 0; border-radius: 10px 10px 0 0; padding: 10px; font: inherit; font-weight: 600; color: var(--muted); background: transparent; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--card); color: var(--brand); }
+
+  main.stage { flex: 1; min-height: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; padding: 20px 24px 24px; }
+  .pane { display: flex; flex-direction: column; min-height: 0; gap: 10px; }
+  .pane__label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .pane__label span { padding: 2px 8px; border-radius: 999px; background: var(--brand-50); color: var(--brand); font-size: 12px; }
+
+  /* Khung điện thoại vẽ bằng CSS; app bên trong là bản 390 × 844 thu nhỏ cho vừa. */
+  .phonewrap { flex: 1; min-height: 0; display: flex; justify-content: center; }
+  .phone { --s: 0.8; position: relative; width: calc((390px + 24px) * var(--s)); height: calc((844px + 24px) * var(--s)); }
+  .phone__body { position: absolute; inset: 0; width: 414px; height: 868px; transform: scale(var(--s)); transform-origin: top left; border-radius: 58px; background: #0B0D17; padding: 12px; box-shadow: 0 30px 60px rgba(16, 21, 58, .25), inset 0 0 0 2px #2A2F45; }
+  .phone__body iframe { display: block; width: 390px; height: 844px; border: 0; border-radius: 46px; background: #fff; }
+  .phone__island { position: absolute; top: 22px; left: 50%; width: 118px; height: 32px; margin-left: -59px; border-radius: 20px; background: #0B0D17; z-index: 2; pointer-events: none; }
+
+  .browser { flex: 1; min-height: 0; display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; background: var(--card); box-shadow: 0 20px 50px rgba(16, 21, 58, .12); border: 1px solid var(--line); }
+  .browser__bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #F9FAFB; border-bottom: 1px solid var(--line); }
+  .browser__bar i { width: 11px; height: 11px; border-radius: 50%; background: #E4E7EC; }
+  .browser__url { flex: 1; margin-left: 8px; padding: 5px 12px; border-radius: 8px; background: var(--card); border: 1px solid var(--line); font-size: 12px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .browser iframe { flex: 1; width: 100%; border: 0; background: #fff; }
+
+  .flash { animation: flash 1.2s ease; }
+  @keyframes flash { 0%, 100% { box-shadow: 0 20px 50px rgba(16, 21, 58, .12); } 30% { box-shadow: 0 0 0 4px var(--lime), 0 20px 50px rgba(16, 21, 58, .12); } }
+  @media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
+
+  /* Màn hẹp (điện thoại, máy tính bảng dọc): hai khung thành hai tab. */
+  @media (max-width: 1100px) {
+    .steps { display: none; }
+    .tabs { display: flex; }
+    main.stage { grid-template-columns: 1fr; padding: 0 16px 16px; gap: 0; }
+    .pane { background: var(--card); padding: 12px; border-radius: 0 0 14px 14px; }
+    .pane[hidden] { display: none; }
+    .pane__label { display: none; }
+  }
+  /* Điện thoại thật: bỏ khung, app tràn màn hình. */
+  @media (max-width: 600px) {
+    header.top { padding: 10px 16px; gap: 10px; }
+    .top__title span, .reset span { display: none; }
+    main.stage { padding: 0; }
+    .tabs { padding: 6px 8px 0; }
+    .pane { padding: 0; border-radius: 0; }
+    .phonewrap { display: block; }
+    .phone { width: 100%; height: 100%; }
+    .phone__body { position: static; transform: none; width: 100%; height: 100%; padding: 0; border-radius: 0; box-shadow: none; background: none; }
+    .phone__body iframe { width: 100%; height: 100%; border-radius: 0; }
+    .phone__island { display: none; }
+    .browser { border-radius: 0; box-shadow: none; border: 0; }
+    .browser__bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <img src="{{LOGO}}" alt="Ekko">
+  <div class="top__title">
+    <b>EkkoFeed · Bản xem thử</b>
+    <span>{{COMPANY}} · Dữ liệu mẫu, chạy ngay trên trình duyệt của bạn</span>
+  </div>
+  <div class="top__spacer"></div>
+  <div class="steps" aria-label="Gợi ý trải nghiệm">
+    <span class="step"><i>1</i>Trên điện thoại, bấm "Góp ý tới công ty" rồi gửi một góp ý</span>
+    <span class="step"><i>2</i>Bên HR: EkkoFeed → Phản hồi, trả lời góp ý mới</span>
+    <span class="step"><i>3</i>Điện thoại nhận phản hồi</span>
+  </div>
+  <button class="reset" type="button" id="reset" title="Xoá mọi thao tác, về dữ liệu ban đầu">↺ <span>Làm lại từ đầu</span></button>
+</header>
+<nav class="tabs" role="tablist" aria-label="Chọn màn hình">
+  <button type="button" role="tab" id="tab-phone" aria-controls="pane-phone" aria-selected="true">Người lao động</button>
+  <button type="button" role="tab" id="tab-hr" aria-controls="pane-hr" aria-selected="false">HR doanh nghiệp</button>
+</nav>
+<main class="stage">
+  <section class="pane" id="pane-phone" role="tabpanel" aria-labelledby="tab-phone">
+    <div class="pane__label">App người lao động <span>điện thoại</span></div>
+    <div class="phonewrap"><div class="phone" id="phone"><div class="phone__body"><div class="phone__island"></div><iframe id="phoneFrame" title="App người lao động"></iframe></div></div></div>
+  </section>
+  <section class="pane" id="pane-hr" role="tabpanel" aria-labelledby="tab-hr">
+    <div class="pane__label">Admin portal <span>HR doanh nghiệp</span></div>
+    <div class="browser" id="browser">
+      <div class="browser__bar" aria-hidden="true"><i></i><i></i><i></i><span class="browser__url">admin.ekko.vn · {{COMPANY}}</span></div>
+      <iframe id="hrFrame" title="Admin portal HR"></iframe>
+    </div>
+  </section>
+</main>
+<script>
+/*{{MOCK}}*/
+</script>
+<script>
+/*{{DOCS}}*/
+(() => {
+  const phoneFrame = document.getElementById('phoneFrame');
+  const hrFrame = document.getElementById('hrFrame');
+  const load = () => { phoneFrame.srcdoc = PHONE_DOC; hrFrame.srcdoc = ADMIN_DOC; };
+  load();
+
+  // Thu nhỏ điện thoại cho vừa chiều cao còn lại.
+  const phone = document.getElementById('phone');
+  const fit = () => {
+    const wrap = phone.parentElement.getBoundingClientRect();
+    const s = Math.min(1, Math.max(0.45, (wrap.height - 4) / 868), (window.innerWidth > 1100 ? 1 : (wrap.width - 4) / 414));
+    phone.style.setProperty('--s', s.toFixed(3));
+  };
+  new ResizeObserver(fit).observe(phone.parentElement);
+  fit();
+
+  // Tab trên màn hẹp.
+  const tabs = { phone: document.getElementById('tab-phone'), hr: document.getElementById('tab-hr') };
+  const panes = { phone: document.getElementById('pane-phone'), hr: document.getElementById('pane-hr') };
+  const narrow = matchMedia('(max-width: 1100px)');
+  let current = 'phone';
+  const show = (which) => {
+    current = which;
+    for (const k of Object.keys(tabs)) {
+      tabs[k].setAttribute('aria-selected', String(k === which));
+      panes[k].hidden = narrow.matches && k !== which;
+    }
+    fit();
+  };
+  tabs.phone.addEventListener('click', () => show('phone'));
+  tabs.hr.addEventListener('click', () => show('hr'));
+  narrow.addEventListener?.('change', () => show(current));
+  show('phone');
+
+  // Gửi ở bên này → nháy viền bên kia; màn hẹp thì gợi ý chuyển tab.
+  const flash = (node) => { node.classList.remove('flash'); void node.offsetWidth; node.classList.add('flash'); };
+  window.DEMO.onChange((who) => {
+    if (who === 'worker') { flash(document.getElementById('browser')); if (narrow.matches) tabs.hr.textContent = 'HR doanh nghiệp •'; }
+    if (who === 'hr') { flash(phone.querySelector('.phone__body')); if (narrow.matches) tabs.phone.textContent = 'Người lao động •'; }
+  });
+  tabs.phone.addEventListener('click', () => { tabs.phone.textContent = 'Người lao động'; });
+  tabs.hr.addEventListener('click', () => { tabs.hr.textContent = 'HR doanh nghiệp'; });
+  window.addEventListener('message', (e) => { if (e.data?.demo === 'focus') show(e.data.target); });
+
+  document.getElementById('reset').addEventListener('click', () => { window.DEMO.reset(); load(); });
+})();
+</script>
+</body>
+</html>
