@@ -1949,6 +1949,39 @@ async function main() {
       check('Xoá bộ demo: xoá tài khoản + dữ liệu mẫu', drop.status === 200 && afterDrop.status === 401
         && !(await get('admin', '/api/admin/stats/companies')).json.some((c) => c.name === 'Demo – Khách A'),
         JSON.stringify({ d: drop.status, a: afterDrop.status, c: (await get('admin', '/api/admin/stats/companies')).json.filter((c) => c.name.includes('Demo')) }));
+
+      // Số lần gửi EkkoFeed mỗi ngày — Super admin đặt (mặc định / riêng công ty).
+      const fa3Before = (await get('fa3', '/api/feed')).json;
+      check('Mặc định 1 lần/ngày: đã gửi rồi thì hết lượt', fa3Before.dailyLimit === 1 && fa3Before.canPostToday === false);
+      check('HR không đổi được số lần gửi', (await put('hrjar', '/api/admin/feed/settings', { employer: 'CT-FEED', dailyLimit: 5 })).status === 403);
+      const setLim = await put('admin', '/api/admin/feed/settings', { employer: 'CT-FEED', dailyLimit: 3 });
+      const fa3After = (await get('fa3', '/api/feed')).json;
+      const limDraft = (await post('fa3', '/api/feed/preview', { text: 'Mong công ty lắp thêm quạt ở khu đóng gói', type: 'issue' })).json.draft;
+      const limSent = await post('fa3', `/api/feed/${limDraft.id}/submit`, {});
+      check('Đặt riêng 3 lần/ngày cho công ty: người lao động gửi tiếp được', setLim.json.dailyLimit === 3 && fa3After.dailyLimit === 3 && fa3After.canPostToday && limSent.status === 200
+        && (await get('admin', '/api/admin/feed/settings?employer=CT-FEED')).json.dailyLimit === 3);
+      check('Số lần gửi ngoài khoảng 1–20 bị từ chối', (await put('admin', '/api/admin/feed/settings', { dailyLimit: 0 })).status === 400);
+
+      // Bật / tắt chức năng toàn hệ thống (services/modules.js).
+      const mods = (await get('admin', '/api/admin/settings/modules')).json;
+      check('Danh sách chức năng bật/tắt có EkkoFeed, Chi tiêu, Tiết kiệm…, mặc định bật', ['feed', 'expenses', 'savings', 'learning', 'bot', 'team'].every((c) => mods.find((m) => m.code === c)?.enabled));
+      check('Chỉ quản trị Ekko bật/tắt được', (await put('hrjar', '/api/admin/settings/modules/feed', { enabled: false })).status === 403);
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: false });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: false });
+      const offWorld = (await get('fa1', '/api/me/world')).json;
+      check('Tắt EkkoFeed + Tiết kiệm: app nhận cờ tắt, API người dùng bị chặn 403',
+        offWorld.modules?.feed === false && offWorld.modules?.savings === false && offWorld.modules?.expenses === true
+        && (await get('fa1', '/api/feed')).status === 403 && (await get('fa1', '/api/savings')).status === 403 && (await get('fa1', '/api/expenses')).status === 200);
+      const hrMeta = (await get('hrjar', '/api/admin/feed/meta')).json;
+      check('EkkoFeed tắt: HR vẫn xem được báo cáo cũ, có cờ báo đang tắt', hrMeta.enabled === false && (await get('hrjar', '/api/admin/feed/report')).status === 200);
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: true });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: true });
+      check('Bật lại: API dùng lại được, dữ liệu cũ còn nguyên', (await get('fa1', '/api/feed')).status === 200 && (await get('fa1', '/api/feed')).json.posts.length >= 1);
+      await put('admin', '/api/admin/settings/modules/expenses', { enabled: false });
+      const botOff = (await post('fa1', '/api/bot/message', { text: 'cà phê 35k' })).json;
+      check('Tắt Ghi chép chi tiêu: chat với bot không lưu khoản chi', botOff.reply?.kind === 'module_off', JSON.stringify(botOff).slice(0, 160));
+      await put('admin', '/api/admin/settings/modules/expenses', { enabled: true });
+      check('Mã chức năng lạ bị từ chối', (await put('admin', '/api/admin/settings/modules/khongco', { enabled: false })).status === 404);
     }
   } finally {
     server.kill();

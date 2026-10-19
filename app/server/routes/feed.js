@@ -11,9 +11,10 @@ import { forbidden, HttpError, Router } from '../lib/http.js';
 import { companyScope } from '../services/companyScope.js';
 import { programOverview } from '../services/overview.js';
 import { createDemoKit, demoKits, removeDemoKit } from '../services/demoKit.js';
+import { moduleOn } from '../services/modules.js';
 import {
   createDraft, createHrAccount, FEED_MOODS, FEED_STATUS, ISSUE_STATUS, issueDetail, updateIssue, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
-  markRepliesSeen, markFeedSeen, feedAssignees, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
+  markRepliesSeen, markFeedSeen, dailyLimitFor, setDailyLimit, feedAssignees, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
 } from '../services/ekkoFeed.js';
 
 const ok = (result) => {
@@ -41,6 +42,8 @@ const ekkoOnly = (ctx) => { if (!ctx.feed.ekko) throw forbidden('Chỉ quản tr
 
 feedAdminRouter.get('/api/admin/feed/meta', ({ feed }) => ({
   ekko: feed.ekko,
+  // Super admin tắt EkkoFeed: người lao động không gửi được nữa, HR vẫn xem dữ liệu cũ.
+  enabled: moduleOn('feed'),
   employerKey: feed.employerKey,
   employerName: feed.employerName,
   types: labels(FEED_TYPES),
@@ -96,9 +99,12 @@ feedAdminRouter.delete('/api/admin/feed/demo-kits/:slug', (ctx) => { ekkoOnly(ct
 feedAdminRouter.get('/api/admin/feed/settings', (ctx) => {
   ekkoOnly(ctx);
   const employer = ctx.url.searchParams.get('employer') || null;
-  return { employer, minGroup: minGroupFor(employer) };
+  return { employer, minGroup: minGroupFor(employer), dailyLimit: dailyLimitFor(employer) };
 });
 feedAdminRouter.put('/api/admin/feed/settings', (ctx) => {
   ekkoOnly(ctx);
-  return ok(setMinGroup(ctx.body?.employer || null, ctx.body?.minGroup));
+  const employer = ctx.body?.employer || null;
+  if (ctx.body?.minGroup !== undefined) ok(setMinGroup(employer, ctx.body.minGroup));
+  if (ctx.body?.dailyLimit !== undefined) ok(setDailyLimit(employer, ctx.body.dailyLimit));
+  return { ok: true, minGroup: minGroupFor(employer), dailyLimit: dailyLimitFor(employer) };
 });

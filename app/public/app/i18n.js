@@ -946,7 +946,7 @@ const EN = {
   'Hôm nay bạn đã gửi góp ý': 'You already sent feedback today',
   'Không tải được EkkoFeed': 'Could not load EkkoFeed',
   'Loại': 'Type',
-  'Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé. Phản hồi của công ty sẽ hiện ở bên dưới.': 'You can send 1 piece of feedback per day — come back tomorrow. Company replies appear below.',
+  'Mỗi ngày gửi được {n} lần — mai bạn gửi tiếp nhé. Phản hồi của công ty sẽ hiện ở bên dưới.': 'You can send {n} per day — come back tomorrow. Company replies appear below.',
   'Nói để ghi': 'Dictate',
   'Phàn nàn, yêu cầu hay mong đợi của bạn sẽ được gửi tới công ty bạn đang làm. Bạn chọn ẩn danh hay ghi tên.': 'Your complaints, requests or expectations go to the company you work for. You choose to stay anonymous or add your name.',
   'Phàn nàn, yêu cầu hay mong đợi của bạn sẽ được gửi tới {company}. Bạn chọn ẩn danh hay ghi tên.': 'Your complaints, requests or expectations go to {company}. You choose to stay anonymous or add your name.',

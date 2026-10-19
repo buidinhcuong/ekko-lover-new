@@ -579,8 +579,16 @@ export default async function feedPage(ctx) {
   } catch { /* trình duyệt chặn bộ nhớ: bỏ qua */ }
   if (pending) setTimeout(() => openIssue(pending), 50);
 
+  const offNote = meta.enabled === false
+    ? el('div.panel', { style: { borderColor: 'var(--border-warning, #FEC84B)', background: '#FFFAEB', marginBottom: '12px' } }, [
+      el('strong', {}, 'EkkoFeed đang tạm tắt trên hệ thống'),
+      el('p.hint', { style: { margin: '4px 0 0' } }, meta.ekko
+        ? 'Người lao động không thấy và không gửi được góp ý mới. Bật lại ở mục Chức năng → Bật / tắt chức năng.'
+        : 'Người lao động tạm thời không gửi được góp ý mới. Dữ liệu cũ vẫn xem và trả lời được.'),
+    ])
+    : null;
   return el('div', {}, [
-    head, tabs,
+    head, offNote, tabs,
     ...(tab === 'report'
       ? [
         stats,
@@ -688,20 +696,34 @@ async function managePanel(ctx, employer) {
   };
 
   const minGroup = el('input', { type: 'number', min: '1', max: '50', value: String(settings.minGroup), style: { width: '80px' } });
+  const dailyLimit = el('input', { type: 'number', min: '1', max: '20', value: String(settings.dailyLimit ?? 1), style: { width: '80px' } });
   const saveMin = async () => {
     try {
-      await ctx.api.put('/api/admin/feed/settings', { employer: employer && employer !== '__none__' ? employer : null, minGroup: Number(minGroup.value) });
-      ctx.notify('Đã lưu ngưỡng ẩn danh', 'success');
+      await ctx.api.put('/api/admin/feed/settings', {
+        employer: employer && employer !== '__none__' ? employer : null,
+        minGroup: Number(minGroup.value),
+        dailyLimit: Number(dailyLimit.value),
+      });
+      ctx.notify('Đã lưu cài đặt EkkoFeed', 'success');
       ctx.navigate(location.hash.slice(1));
     } catch (err) { ctx.notify(err.message, 'error'); }
   };
 
   return el('div.panel', { style: { marginTop: '16px' } }, [
     el('div.panel__head', {}, [el('h2', {}, 'Quản lý (chỉ quản trị Ekko)')]),
-    el('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' } }, [
-      el('span', {}, employer && employer !== '__none__' ? 'Ngưỡng ẩn danh của công ty đang chọn' : 'Ngưỡng ẩn danh mặc định (mọi công ty)'), minGroup, el('span', {}, 'người'),
-      el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: saveMin }, 'Lưu'),
-      el('span.hint', {}, 'Từ khoá / nhóm vấn đề chỉ hiện cho doanh nghiệp khi có từ ngần này người.'),
+    el('p.hint', { style: { margin: '0 0 8px' } }, employer && employer !== '__none__'
+      ? 'Cài đặt riêng cho công ty đang chọn ở trên (ghi đè mặc định).'
+      : 'Cài đặt mặc định cho mọi công ty. Chọn một công ty ở trên để đặt riêng cho công ty đó.'),
+    el('div.feedsettings', {}, [
+      el('label.feedsettings__row', {}, [
+        el('span', {}, [el('b', {}, 'Ngưỡng ẩn danh'), el('small.hint', {}, 'Từ khoá / nhóm vấn đề chỉ hiện cho doanh nghiệp khi có từ ngần này người.')]),
+        el('span.feedsettings__input', {}, [minGroup, 'người']),
+      ]),
+      el('label.feedsettings__row', {}, [
+        el('span', {}, [el('b', {}, 'Số lần gửi mỗi ngày'), el('small.hint', {}, 'Một người được gửi tối đa bao nhiêu lần mỗi ngày (Chia sẻ và Góp ý cộng chung). Chống gửi tràn lan.')]),
+        el('span.feedsettings__input', {}, [dailyLimit, 'lần / người / ngày']),
+      ]),
+      el('div', {}, el('button.ekko-btn.ekko-btn--primary.ekko-btn--sm', { type: 'button', onclick: saveMin }, 'Lưu cài đặt')),
     ]),
     el('div', { style: { display: 'flex', alignItems: 'center', marginBottom: '8px' } }, [
       el('h3', { style: { margin: 0, flex: '1' } }, `Tài khoản HR doanh nghiệp (${accounts.length})`),

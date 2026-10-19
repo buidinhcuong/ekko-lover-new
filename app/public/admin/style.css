@@ -718,3 +718,23 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .moodtag { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
 .moodcounts { display: flex; gap: 10px; align-items: center; }
 .moodcounts span { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
+
+/* EkkoFeed → Quản lý: cài đặt (ngưỡng ẩn danh, số lần gửi mỗi ngày). */
+.feedsettings { display: grid; gap: 10px; max-width: 760px; margin-bottom: 20px; }
+.feedsettings__row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 14px; border: 1px solid var(--border-secondary); border-radius: var(--radius-10); }
+.feedsettings__row > span:first-child { display: grid; gap: 2px; }
+.feedsettings__row small { margin: 0; }
+.feedsettings__input { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-size: var(--font-size-text-sm); color: var(--text-secondary); }
+.feedsettings__input input { height: 34px; padding: 0 8px; border: 1px solid var(--border-primary); border-radius: var(--radius-8); font: inherit; }
+
+/* Chức năng → Bật / tắt chức năng. */
+.modulegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.modulecard { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-secondary); border-radius: var(--radius-12); background: var(--bg-primary); cursor: pointer; }
+.modulecard:hover { border-color: var(--border-brand); }
+.modulecard.is-off { background: var(--bg-secondary); }
+.modulecard.is-off .modulecard__text b { color: var(--text-secondary); }
+.modulecard__text { display: grid; gap: 2px; min-width: 0; }
+.modulecard__text small { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+.modulecard__toggle { flex: none; display: grid; justify-items: center; gap: 4px; }
+.modulecard__state { font-size: 11px; color: var(--text-tertiary); }
+.modulecard:not(.is-off) .modulecard__state { color: var(--text-brand-500); font-weight: var(--font-weight-semibold); }

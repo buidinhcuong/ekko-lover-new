@@ -16,6 +16,10 @@ import { readReceipt, shrinkImage } from './receiptLocal.js';
 import { dateFromReceipt, openAdd, pickReceiptCategory } from './views/expenses.js';
 
 export async function openBot(ctx) {
+  if (ctx.world?.modules?.bot === false) {
+    toast(t('Trợ lý Ekko đang tạm tắt'), 'info');
+    return;
+  }
   const chat = el('div.chat');
   const input = el('input.input', {
     placeholder: t('Hỏi mình, hoặc ghi "cà phê 35k"'),

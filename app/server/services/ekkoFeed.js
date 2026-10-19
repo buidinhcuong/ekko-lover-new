@@ -85,6 +85,24 @@ function companyOf(userId) {
   return get(`SELECT ${COMPANY_KEY} AS key, NULLIF(trim(employer), '') AS name FROM users WHERE id = ?`, userId) || { key: null, name: null };
 }
 
+/**
+ * Số lần một người được gửi (Chia sẻ + Góp ý cộng chung) mỗi ngày — Super admin đặt
+ * trong EkkoFeed → Quản lý: mặc định cho mọi công ty, hoặc riêng từng công ty.
+ */
+export function dailyLimitFor(employerKey) {
+  const own = Number(getSetting(`feed_daily_limit:${employerKey || NO_EMPLOYER}`));
+  const all_ = Number(getSetting('feed_daily_limit'));
+  if (Number.isInteger(own) && own >= 1) return own;
+  if (Number.isInteger(all_) && all_ >= 1) return all_;
+  return DAILY_LIMIT;
+}
+export function setDailyLimit(employerKey, n) {
+  const v = Number(n);
+  if (!Number.isInteger(v) || v < 1 || v > 20) return fail('Số lần gửi mỗi ngày phải từ 1 đến 20');
+  setSetting(employerKey ? `feed_daily_limit:${employerKey}` : 'feed_daily_limit', String(v));
+  return { ok: true, dailyLimit: v };
+}
+
 /** Ngưỡng ẩn danh của một công ty (Ekko chỉnh riêng được), mặc định 5 người. */
 export function minGroupFor(employerKey) {
   const own = Number(getSetting(`feed_min_group:${employerKey || NO_EMPLOYER}`));
@@ -259,7 +277,8 @@ export function feedStatusFor(userId, day = dayKey()) {
     "SELECT 1 FROM activity_log WHERE user_id = ? AND kind = 'feed_post' AND xp > 0 AND day >= ? LIMIT 1", userId, weekStart(day),
   ));
   // Tài khoản người lao động của bộ demo cho khách (demoKit.js): gửi được nhiều hơn để thử đủ 2 loại.
-  const limit = get('SELECT 1 ok FROM demo_kits WHERE worker_user_id = ?', userId) ? DEMO_DAILY_LIMIT : DAILY_LIMIT;
+  const base = dailyLimitFor(companyOf(userId).key);
+  const limit = get('SELECT 1 ok FROM demo_kits WHERE worker_user_id = ?', userId) ? Math.max(base, DEMO_DAILY_LIMIT) : base;
   return { canPostToday: used < limit, dailyLimit: limit, weeklyXp: weekXpTaken ? 0 : WEEKLY_XP };
 }
 
@@ -271,7 +290,7 @@ export async function createDraft(userId, { text, anonymous = true, type, mood }
   const clean = String(text || '').trim().replace(/\s+\n/g, '\n');
   if (clean.length < MIN_TEXT) return fail(`Bạn viết thêm chút nữa nhé (ít nhất ${MIN_TEXT} ký tự)`);
   if (clean.length > MAX_TEXT) return fail(`Góp ý tối đa ${MAX_TEXT} ký tự`);
-  if (!feedStatusFor(userId, day).canPostToday) return fail('Hôm nay bạn đã gửi góp ý rồi. Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé.', 429);
+  if (!feedStatusFor(userId, day).canPostToday) return fail('Hôm nay bạn đã gửi đủ số lần cho phép — mai bạn gửi tiếp nhé.', 429);
 
   const callId = keyState() === 'ok' ? takeAiCall(userId, 'feed') : false;
   const pickedMood = moodOrNull(mood);
@@ -313,7 +332,7 @@ export function submitDraft(userId, draftId, { type, topic, anonymous, mood } = 
   const draft = get("SELECT * FROM feed_posts WHERE id = ? AND user_id = ? AND status = 'draft'", Number(draftId), userId);
   if (!draft) return fail('Không tìm thấy bản nháp — bạn bấm "Xem trước" lại giúp nhé', 404);
   const status = feedStatusFor(userId, day);
-  if (!status.canPostToday) return fail('Hôm nay bạn đã gửi góp ý rồi. Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé.', 429);
+  if (!status.canPostToday) return fail('Hôm nay bạn đã gửi đủ số lần cho phép — mai bạn gửi tiếp nhé.', 429);
   const finalType = FEED_TYPES[type] ? type : draft.type;
   const finalTopic = FEED_TOPICS[topic] ? topic : draft.topic;
   // mood: bỏ qua = giữ như lúc xem trước; '' / null = bỏ chọn.

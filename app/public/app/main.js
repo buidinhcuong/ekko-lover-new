@@ -84,6 +84,15 @@ const ROUTES = {
   '/news': newsListView,
 };
 
+// Chức năng Super admin có thể tắt (Admin → Chức năng). Mở thẳng đường dẫn của
+// chức năng đang tắt thì về màn chủ; server cũng chặn API tương ứng.
+const ROUTE_MODULE = [
+  ['/explore', 'learning'], ['/goals', 'goals'], ['/plans', 'goals'], ['/budget', 'budget'],
+  ['/expenses', 'expenses'], ['/savings', 'savings'], ['/team', 'team'], ['/feed', 'feed'], ['/news', 'news'],
+];
+const moduleOn = (code) => store.world?.modules?.[code] !== false;
+const moduleOfPath = (path) => ROUTE_MODULE.find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`))?.[1] || null;
+
 // --- context handed to every view ---------------------------------------
 const ctx = {
   get world() { return store.world; },
@@ -203,8 +212,10 @@ function renderChrome() {
   // Simple mode ghi chép bằng nút "Nói để ghi" to ở màn chủ và màn Ghi chép,
   // nên không cần thêm ô gõ nhỏ nổi ở đáy màn.
   const simple = store.world?.concept === 'simple';
-  document.querySelector('.quickbar')?.style.setProperty('display', hide || simple ? 'none' : '');
-  document.querySelector('.botfab')?.style.setProperty('display', hide ? 'none' : '');
+  document.querySelector('.quickbar')?.style.setProperty('display', hide || simple || !moduleOn('expenses') ? 'none' : '');
+  // Ekko Lover: mascot vẫn đứng đó (là nhân vật), chỉ mở bot thì báo đang tắt.
+  document.querySelector('.botfab:not(.botfab--mascot)')?.style.setProperty('display', hide || !moduleOn('bot') ? 'none' : '');
+  if (store.world?.concept === 'lover') document.querySelector('.botfab--mascot')?.style.setProperty('display', hide ? 'none' : '');
   // Tabbar của app Ekko (chỉ để demo) hiện ở màn chủ của Ekko Lover và Ekko
   // Lover Colors; class trên <html> đẩy thanh ghi nhanh, nút bot / mascot và
   // đáy màn chủ lên theo.
@@ -279,6 +290,12 @@ async function render() {
   innerBack = null;
   const hash = location.hash.slice(1) || '/';
   const [path] = hash.split('?');
+  const off = moduleOfPath(path);
+  if (off && !moduleOn(off)) {
+    toast(t('Chức năng này đang tạm tắt'), 'info');
+    location.hash = '/';
+    return;
+  }
   const view = ROUTES[path] || ROUTES['/'];
 
   currentPath = path === '' ? '/' : path;

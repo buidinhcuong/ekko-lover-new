@@ -53,6 +53,8 @@ export function buildTabbar(navigate) {
     // Chấm đỏ ở tab Dream Team: có lời mời đang chờ hoặc lời nhắc chưa xem.
     const alerts = world?.team;
     const teamTab = bar.querySelector('[data-route="/team"]');
+    // Super admin tắt Heo Dream Team: ẩn tab (giữ chỗ để mascot vẫn đứng giữa).
+    if (teamTab) teamTab.style.visibility = world?.modules?.team === false ? 'hidden' : '';
     teamTab?.classList.toggle('has-dot', Boolean(alerts && (alerts.invites || alerts.nudges?.length)));
   };
   return bar;

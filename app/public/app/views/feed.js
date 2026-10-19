@@ -4,7 +4,7 @@
  *  - Gửi góp ý: viết (hoặc nói) → "Xem trước" (đúng bản doanh nghiệp sẽ thấy:
  *    đã che SĐT, CCCD, tên người…; AI gợi ý loại & chủ đề) → "Gửi".
  *  - Góp ý của tôi: trạng thái + phản hồi của doanh nghiệp (chỉ mình thấy).
- * Mỗi ngày gửi được 1 góp ý; góp ý đầu tiên mỗi tuần +10 XP.
+ * Mỗi ngày gửi được tối đa `dailyLimit` lần (Super admin đặt); bài đầu tiên mỗi tuần +10 XP.
  */
 import { api, el, formatDay, guard, mount, singleFlight, spriteIcon, toast, uiIcon } from '/shared/client.js';
 import { moodFace } from '/shared/moods.js';
@@ -52,7 +52,7 @@ function composer(ctx, data, redraw) {
       uiIcon('tick-02', 20),
       el('div', {}, [
         el('b', {}, t('Hôm nay bạn đã gửi góp ý')),
-        el('p.muted', {}, t('Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé. Phản hồi của công ty sẽ hiện ở bên dưới.')),
+        el('p.muted', {}, t('Mỗi ngày gửi được {n} lần — mai bạn gửi tiếp nhé. Phản hồi của công ty sẽ hiện ở bên dưới.', { n: data.dailyLimit || 1 })),
       ]),
     ]);
   }
