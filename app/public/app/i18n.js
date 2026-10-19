@@ -902,6 +902,8 @@ const EN = {
   'lặp lại hàng tháng': 'repeats monthly',
   'Lặp lại hàng tháng': 'Repeat monthly',
   'Chọn loại…': 'Choose type…',
+  'Tôi đồng ý điều khoản EkkoFeed': 'I agree to the EkkoFeed terms',
+  'Giải thích: {label}': 'About: {label}',
   'Cảm nhận, lời khen, câu chuyện': 'Thoughts, praise, stories',
   'Điều chưa ổn, đề xuất, việc cần giải quyết': 'Problems, suggestions, things to fix',
   'Chia sẻ hoặc góp ý điều cần giải quyết tới {company}. Bạn chọn gửi ẩn danh hay ghi tên.': 'Share, or raise something to fix with {company}. Send anonymously or with your name.',

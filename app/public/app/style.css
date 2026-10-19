@@ -3222,6 +3222,24 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .feedcheck { display: flex; gap: var(--spacing-10); align-items: flex-start; cursor: pointer; }
 .feedcheck input { margin-top: 3px; flex: none; width: 18px; height: 18px; accent-color: var(--bg-brand-500); }
 .feedcheck span { display: grid; gap: 2px; }
+/* Ô đánh dấu gọn: nhãn ngắn + nút (?) mở bong bóng giải thích. */
+.feedchecks { display: grid; gap: var(--spacing-10); }
+.feedcheckrow { position: relative; display: flex; align-items: center; gap: var(--spacing-6, 6px); }
+.feedcheckrow .feedcheck { align-items: center; }
+.feedcheckrow .feedcheck input { margin-top: 0; }
+.feedcheckrow .feedcheck b { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); }
+.feedtip { flex: none; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--text-tertiary); cursor: pointer; }
+.feedtip:hover, .feedtip[aria-expanded="true"] { color: var(--text-brand-500); background: var(--bg-brand-50); }
+.feedtip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--bg-brand-50); color: var(--text-brand-500); }
+.feedtip__bubble {
+  position: absolute; z-index: 15; top: calc(100% + 6px); left: 0; right: 0;
+  padding: 10px 12px; border-radius: var(--radius-12);
+  background: var(--ekko-midnight, #1B1F3B); color: #fff;
+  font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs);
+  box-shadow: var(--shadow-float);
+}
+.feedtip__bubble[hidden] { display: none; }
+.feedtip__bubble::before { content: ''; position: absolute; top: -5px; left: var(--arrow-x, 30px); width: 10px; height: 10px; background: inherit; transform: rotate(45deg); border-radius: 2px; }
 .feedxp { text-align: center; }
 .feedreview h3 { margin: 0; font-size: var(--font-size-text-md); }
 .feedquote { margin: 0; padding: var(--spacing-12); border-left: 3px solid var(--border-brand); background: var(--bg-secondary); border-radius: 0 var(--radius-8) var(--radius-8) 0; white-space: pre-wrap; }

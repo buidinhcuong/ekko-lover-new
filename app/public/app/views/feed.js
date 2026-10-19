@@ -81,8 +81,10 @@ function composer(ctx, data, redraw) {
   const form = el('div.card.feedform', {}, [
     el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typePicker]),
     el('label.field', {}, [el('span', {}, t('Bạn muốn công ty biết điều gì?')), text, counter]),
-    el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, t('Công ty không thấy tên, email hay mã nhân viên của bạn. Bỏ chọn nếu muốn công ty liên hệ lại với bạn.'))])]),
-    el('label.feedcheck', {}, [consent, el('small.muted', {}, t('Tôi đồng ý gửi nội dung này (đã che số điện thoại, CCCD, tên người) tới công ty qua Ekko, theo điều khoản sử dụng EkkoFeed.'))]),
+    el('div.feedchecks', {}, [
+      checkRow(anonymous, t('Gửi ẩn danh'), t('Công ty không thấy tên, email hay mã nhân viên của bạn. Bỏ chọn nếu muốn công ty liên hệ lại với bạn.')),
+      checkRow(consent, t('Tôi đồng ý điều khoản EkkoFeed'), t('Tôi đồng ý gửi nội dung này (đã che số điện thoại, CCCD, tên người) tới công ty qua Ekko, theo điều khoản sử dụng EkkoFeed.')),
+    ]),
     el('button.btn.btn--block', {
       type: 'button',
       onclick: () => (consent.checked ? preview() : toast(t('Bạn đánh dấu đồng ý điều khoản trước khi gửi nhé'), 'error')),
@@ -91,6 +93,38 @@ function composer(ctx, data, redraw) {
   ]);
   const box = el('div', {}, [form]);
   return box;
+}
+
+/**
+ * Một dòng ô đánh dấu gọn: chỉ nhãn ngắn, phần giải thích ẩn trong nút (?) —
+ * chạm để mở / đóng bong bóng, chạm ra ngoài hoặc Esc để đóng.
+ */
+let tipSeq = 0;
+function checkRow(input, label, tip) {
+  const id = `feedtip-${(tipSeq += 1)}`;
+  const bubble = el('div.feedtip__bubble', { id, role: 'tooltip', hidden: true }, tip);
+  const onOutside = (e) => { if (!row.contains(e.target)) toggle(false); };
+  const toggle = (show = bubble.hidden) => {
+    bubble.hidden = !show;
+    // Mũi nhọn của bong bóng chỉ đúng vào nút (?).
+    if (show) bubble.style.setProperty('--arrow-x', `${button.offsetLeft + 9}px`);
+    button.setAttribute('aria-expanded', String(show));
+    if (show) document.addEventListener('pointerdown', onOutside, true);
+    else document.removeEventListener('pointerdown', onOutside, true);
+  };
+  const button = el('button.feedtip', {
+    type: 'button', 'aria-label': t('Giải thích: {label}', { label }), 'aria-expanded': 'false', 'aria-controls': id,
+    onclick: () => toggle(),
+  }, uiIcon('help-circle', 18));
+  input.setAttribute('aria-describedby', id);
+  const row = el('div.feedcheckrow', {
+    onkeydown: (e) => { if (e.key === 'Escape' && !bubble.hidden) { e.preventDefault(); toggle(false); button.focus(); } },
+  }, [
+    el('label.feedcheck', {}, [input, el('b', {}, label)]),
+    button,
+    bubble,
+  ]);
+  return row;
 }
 
 /**
@@ -198,9 +232,9 @@ function review(ctx, data, draft, anonymousChecked, back, redraw) {
     el('small.muted', {}, t('Số điện thoại, CCCD, số tài khoản và tên người được nhắc tới đã được che.')),
     el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typeSelect(data.types, type, (v) => { type = v; })]),
     el('div.field', {}, [el('span', {}, t('Chủ đề (tự gợi ý — chạm để đổi)')), chips(data.topics, topic, (v) => { topic = v; })]),
-    el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, draft.hasCompany
+    checkRow(anonymous, t('Gửi ẩn danh'), draft.hasCompany
       ? t('Bỏ chọn thì {company} thấy tên bạn.', { company: draft.companyName })
-      : t('Bỏ chọn thì công ty thấy tên bạn.'))])]),
+      : t('Bỏ chọn thì công ty thấy tên bạn.')),
     el('div.feedactions', {}, [
       el('button.btn.btn--ghost', { type: 'button', onclick: back }, t('Sửa lại')),
       el('button.btn', { type: 'button', onclick: send }, t('Gửi góp ý')),
