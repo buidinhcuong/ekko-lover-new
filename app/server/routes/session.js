@@ -19,7 +19,7 @@ import { claimBadge, dailyCheckin, evaluateBadges } from '../services/progressio
 import { challengeBoard, claimChallenge, claimChallengeBonus } from '../services/challenges.js';
 import { readState } from '../services/streak.js';
 import { buildWorld } from '../services/world.js';
-import { feedAccess } from '../services/ekkoFeed.js';
+import { feedAccess, seedFeedDemo } from '../services/ekkoFeed.js';
 import { activeConcept, conceptByCode, setActiveConcept } from '../services/concepts.js';
 import { buildPersona, dropPersona, personaClaims, personaOf, PERSONAS } from '../services/personas.js';
 import { nowIso } from '../lib/time.js';
@@ -170,6 +170,27 @@ sessionRouter.get('/dev/login', ({ url, res }) => {
  * `?as=new` — vừa vào chức năng, cấp 1, chưa có gì (sẽ thấy onboarding);
  * `?as=veteran` — đã dùng lâu, học hết bài, cấp cao nhất, đủ dữ liệu.
  */
+/**
+ * Bấm thử EkkoFeed (chỉ dev): đăng nhập thẳng vào một tài khoản HR doanh nghiệp
+ * của công ty mẫu (không cần mật khẩu) và nạp sẵn ~30 góp ý mẫu để báo cáo có số
+ * liệu. ?employer= đổi công ty (mặc định công ty của người dùng mẫu).
+ */
+sessionRouter.get('/dev/hr', ({ url, res }) => {
+  if (!config.devMode) throw bad('Chỉ dùng được ở môi trường phát triển');
+  const employer = url.searchParams.get('employer') || 'Công ty TNHH Minh Phát';
+  seedFeedDemo(employer);
+  const hr = upsertMember({ sub: 'dev-hr-demo', name: `HR ${employer}`, email: 'hr.demo@ekko.local' });
+  run(
+    `INSERT INTO employer_admins (user_id, employer_key, employer_name, created_at) VALUES (?,?,?,?)
+     ON CONFLICT(user_id) DO UPDATE SET employer_key = excluded.employer_key, employer_name = excluded.employer_name`,
+    hr.id, employer, employer, nowIso(),
+  );
+  issueSession(res, hr);
+  res.writeHead(302, { location: '/admin/#/' });
+  res.end();
+  return undefined;
+});
+
 sessionRouter.get('/dev/persona', ({ url, res }) => {
   if (!config.devMode) throw bad('Chỉ dùng được ở môi trường phát triển');
   const key = url.searchParams.get('as');

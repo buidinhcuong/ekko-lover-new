@@ -615,3 +615,39 @@ export function removeHrAccount(adminId, userId) {
   audit(adminId, 'hr_revoke', String(row.user_id));
   return { ok: true };
 }
+
+// --- chỉ môi trường dev: dữ liệu mẫu để bấm thử báo cáo ---------------------------
+
+const DEMO_POSTS = [
+  ['complaint', 'overtime', ['tăng ca', 'trả chậm', 'lương tăng ca'], -0.8, 'high', 'Lương tăng ca trả chậm 2 tuần, không báo trước', 'Tiền tăng ca tháng này trả chậm, hỏi thì bảo chờ', 8],
+  ['complaint', 'facilities', ['nhà ăn', 'ca đêm', 'hết suất'], -0.6, 'medium', 'Nhà ăn ca đêm hết suất trước 1h sáng', 'Nhà ăn ca đêm hết cơm sớm, anh em ca muộn nhịn đói', 6],
+  ['request', 'facilities', ['xe đưa đón', 'đến muộn'], -0.4, 'medium', 'Xe đưa đón buổi sáng thường đến muộn', 'Xe đưa đón hay đến muộn 20–30 phút', 5],
+  ['complaint', 'safety', ['nóng', 'thông gió', 'xưởng'], -0.7, 'high', 'Xưởng quá nóng, quạt thông gió hỏng', 'Xưởng B nóng quá, quạt hỏng cả tuần', 6],
+  ['suggestion', 'benefits', ['bhxh', 'sổ bảo hiểm'], -0.1, 'low', 'Muốn được hướng dẫn tra cứu BHXH', 'Mong công ty hướng dẫn tra cứu quá trình đóng BHXH', 2],
+  ['praise', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', 'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm', 3],
+];
+
+/**
+ * Nạp ~30 góp ý mẫu (người dùng `demo-feed-*`) cho một công ty, để báo cáo
+ * EkkoFeed có số liệu khi bấm thử. Chạy lại thì thay bộ mẫu cũ. Chỉ gọi ở dev.
+ */
+export function seedFeedDemo(employerName, today = dayKey()) {
+  tx(() => {
+    run("DELETE FROM users WHERE ekko_user_id LIKE 'demo-feed-%'");
+    let i = 0;
+    for (const [type, topic, keywords, sentiment, urgency, summary, text, count] of DEMO_POSTS) {
+      for (let k = 0; k < count; k += 1, i += 1) {
+        const user = run("INSERT INTO users (ekko_user_id, name, role, employer, created_at) VALUES (?,?,'member',?,?)",
+          `demo-feed-${i}`, `Nhân viên mẫu ${i + 1}`, employerName, nowIso());
+        const day = shiftDay(today, -(i % 20));
+        run(
+          `INSERT INTO feed_posts (user_id, employer_key, employer_name, type, topic, text, redacted_text, summary, keywords,
+                                   sentiment, urgency, anonymous, status, source, day, created_at, submitted_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,1,'sent','ai',?,?,?)`,
+          Number(user.lastInsertRowid), employerName, employerName, type, topic, text, text, summary, JSON.stringify(keywords),
+          sentiment, urgency, day, `${day}T03:00:00.000Z`, `${day}T03:00:00.000Z`,
+        );
+      }
+    }
+  });
+}

@@ -65,7 +65,7 @@ const ROUTERS = [
 ];
 
 /** Session router mixes public (SSO, dev login) and private (`/api/me`) paths. */
-const PUBLIC_PATHS = new Set(['/sso', '/dev/login', '/dev/persona', '/dev/sso-token', '/api/session/logout', '/healthz',
+const PUBLIC_PATHS = new Set(['/sso', '/dev/login', '/dev/persona', '/dev/hr', '/dev/sso-token', '/api/session/logout', '/healthz',
   '/api/auth/config', '/api/auth/register', '/api/auth/login']);
 
 export async function handle(req, res) {
