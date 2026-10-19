@@ -3242,7 +3242,36 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .feedreply p { margin: 0; white-space: pre-wrap; }
 /* Ô chọn loại góp ý: gọn, một dòng. */
 .feedtypefield { max-width: 260px; }
-.feedselect { height: 40px; padding: 0 var(--spacing-10); font: inherit; font-size: var(--font-size-text-sm); }
+/* Ô chọn loại (tự vẽ, khớp ô nhập của app thay cho menu hệ thống). */
+.feedpick { position: relative; }
+.feedpick__button {
+  width: 100%; height: 44px; padding: 0 var(--spacing-12) 0 var(--spacing-16);
+  display: flex; align-items: center; gap: var(--spacing-8);
+  border-radius: var(--radius-16); border: 1px solid var(--border-primary); background: var(--bg-primary);
+  font: inherit; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold);
+  color: var(--text-primary); text-align: left; cursor: pointer;
+}
+.feedpick.is-empty .feedpick__button { color: var(--text-tertiary); font-weight: var(--font-weight-regular, 400); }
+.feedpick__button:focus-visible, .feedpick__button[aria-expanded="true"] { outline: none; border-color: var(--border-brand); box-shadow: 0 0 0 3px var(--bg-brand-50); }
+.feedpick__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feedpick__chevron { display: grid; color: var(--text-tertiary); transition: transform .15s ease; }
+.feedpick__button[aria-expanded="true"] .feedpick__chevron { transform: rotate(180deg); color: var(--text-brand-500); }
+.feedpick__list {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; min-width: 100%; width: max-content; max-width: min(320px, calc(100vw - 2 * var(--gutter)));
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--bg-primary); border: 1px solid var(--border-secondary); border-radius: var(--radius-16);
+  box-shadow: var(--shadow-float);
+}
+.feedpick__list[hidden] { display: none; }
+.feedpick__option { display: flex; align-items: center; gap: var(--spacing-12); padding: 10px 12px; border-radius: var(--radius-12); cursor: pointer; }
+.feedpick__option.is-active { background: var(--bg-secondary); }
+.feedpick__option[aria-selected="true"] { background: var(--bg-brand-50); }
+.feedpick__text { flex: 1; display: grid; gap: 2px; }
+.feedpick__text b { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+.feedpick__text small { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+.feedpick__option[aria-selected="true"] .feedpick__text b { color: var(--text-brand-500); }
+.feedpick__option > svg, .feedpick__option > .icon { flex: none; color: var(--text-brand-500); visibility: hidden; }
+.feedpick__option[aria-selected="true"] > svg, .feedpick__option[aria-selected="true"] > .icon { visibility: visible; }
 
 /* EkkoFeed: thanh "Góp ý tới công ty" dưới thẻ chức năng — nền xanh Payday đậm,
    khoanh icon xanh lime, để nổi hẳn so với các thẻ trắng xung quanh. */

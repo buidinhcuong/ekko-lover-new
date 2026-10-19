@@ -79,7 +79,7 @@ function composer(ctx, data, redraw) {
   });
 
   const form = el('div.card.feedform', {}, [
-    el('label.field.feedtypefield', {}, [el('span', {}, t('Loại')), typePicker]),
+    el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typePicker]),
     el('label.field', {}, [el('span', {}, t('Bạn muốn công ty biết điều gì?')), text, counter]),
     el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, t('Công ty không thấy tên, email hay mã nhân viên của bạn. Bỏ chọn nếu muốn công ty liên hệ lại với bạn.'))])]),
     el('label.feedcheck', {}, [consent, el('small.muted', {}, t('Tôi đồng ý gửi nội dung này (đã che số điện thoại, CCCD, tên người) tới công ty qua Ekko, theo điều khoản sử dụng EkkoFeed.'))]),
@@ -93,13 +93,80 @@ function composer(ctx, data, redraw) {
   return box;
 }
 
-/** Ô chọn loại gọn: Chia sẻ · Góp ý / Cần giải quyết. */
+/**
+ * Ô chọn loại gọn: Chia sẻ · Góp ý / Cần giải quyết. Tự vẽ (không dùng menu hệ
+ * thống) để khớp giao diện app; bàn phím: mũi tên lên/xuống, Enter, Esc.
+ */
+const TYPE_HINT = {
+  share: 'Cảm nhận, lời khen, câu chuyện',
+  issue: 'Điều chưa ổn, đề xuất, việc cần giải quyết',
+};
+let pickerSeq = 0;
 function typeSelect(types, current, onPick) {
-  const select = el('select.input.feedselect', { onchange: (e) => onPick(e.target.value || null) }, [
-    current ? null : el('option', { value: '', disabled: true, selected: true }, t('Chọn loại…')),
-    ...types.map((item) => el('option', { value: item.code, selected: item.code === current }, t(item.label))),
-  ]);
-  return select;
+  let value = current;
+  let active = -1;
+  const id = `feedpick-${(pickerSeq += 1)}`;
+  const label = el('span.feedpick__value');
+  const chevron = el('span.feedpick__chevron', { 'aria-hidden': 'true' });
+  chevron.innerHTML = '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg>';
+  const button = el('button.feedpick__button', {
+    type: 'button', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': id,
+  }, [label, chevron]);
+  const options = types.map((item, i) => el('li.feedpick__option', {
+    role: 'option', id: `${id}-${item.code}`, dataset: { code: item.code },
+    onclick: () => choose(i),
+    onmousemove: () => highlight(i),
+  }, [
+    el('span.feedpick__text', {}, [el('b', {}, t(item.label)), TYPE_HINT[item.code] ? el('small', {}, t(TYPE_HINT[item.code])) : null]),
+    uiIcon('tick-02', 18),
+  ]));
+  const list = el('ul.feedpick__list', { role: 'listbox', id, tabindex: '-1', hidden: true }, options);
+  const root = el('div.feedpick', {}, [button, list]);
+
+  const paint = () => {
+    const item = types.find((x) => x.code === value);
+    label.textContent = item ? t(item.label) : t('Chọn loại…');
+    root.classList.toggle('is-empty', !item);
+    options.forEach((o, i) => {
+      o.setAttribute('aria-selected', String(types[i].code === value));
+      o.classList.toggle('is-active', i === active);
+    });
+  };
+  const highlight = (i) => { active = i; paint(); };
+  const onOutside = (e) => { if (!root.contains(e.target)) close(); };
+  function open() {
+    list.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    active = Math.max(0, types.findIndex((x) => x.code === value));
+    paint();
+    document.addEventListener('pointerdown', onOutside, true);
+  }
+  function close(focus = false) {
+    list.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', onOutside, true);
+    if (focus) button.focus();
+  }
+  function choose(i) {
+    value = types[i].code;
+    paint();
+    close(true);
+    onPick(value);
+  }
+  button.addEventListener('click', () => (list.hidden ? open() : close()));
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !list.hidden) { e.preventDefault(); close(true); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (list.hidden) { open(); return; }
+      highlight((active + (e.key === 'ArrowDown' ? 1 : types.length - 1)) % types.length);
+    } else if ((e.key === 'Enter' || e.key === ' ') && !list.hidden && active >= 0) {
+      e.preventDefault();
+      choose(active);
+    }
+  });
+  paint();
+  return root;
 }
 
 function review(ctx, data, draft, anonymousChecked, back, redraw) {
@@ -129,7 +196,7 @@ function review(ctx, data, draft, anonymousChecked, back, redraw) {
     el('h3', {}, t('Xem trước — công ty sẽ thấy')),
     el('blockquote.feedquote', {}, draft.redactedText),
     el('small.muted', {}, t('Số điện thoại, CCCD, số tài khoản và tên người được nhắc tới đã được che.')),
-    el('label.field.feedtypefield', {}, [el('span', {}, t('Loại')), typeSelect(data.types, type, (v) => { type = v; })]),
+    el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typeSelect(data.types, type, (v) => { type = v; })]),
     el('div.field', {}, [el('span', {}, t('Chủ đề (tự gợi ý — chạm để đổi)')), chips(data.topics, topic, (v) => { topic = v; })]),
     el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, draft.hasCompany
       ? t('Bỏ chọn thì {company} thấy tên bạn.', { company: draft.companyName })

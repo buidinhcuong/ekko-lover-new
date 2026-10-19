@@ -902,6 +902,8 @@ const EN = {
   'lặp lại hàng tháng': 'repeats monthly',
   'Lặp lại hàng tháng': 'Repeat monthly',
   'Chọn loại…': 'Choose type…',
+  'Cảm nhận, lời khen, câu chuyện': 'Thoughts, praise, stories',
+  'Điều chưa ổn, đề xuất, việc cần giải quyết': 'Problems, suggestions, things to fix',
   'Chia sẻ hoặc góp ý điều cần giải quyết tới {company}. Bạn chọn gửi ẩn danh hay ghi tên.': 'Share, or raise something to fix with {company}. Send anonymously or with your name.',
   'Chia sẻ hoặc góp ý điều cần giải quyết tới công ty bạn đang làm. Bạn chọn gửi ẩn danh hay ghi tên.': 'Share, or raise something to fix with your company. Send anonymously or with your name.',
   'Chia sẻ hoặc góp ý điều cần giải quyết — ẩn danh nếu muốn': 'Share or raise something to fix — anonymously if you like',
