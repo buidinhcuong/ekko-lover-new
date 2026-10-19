@@ -693,6 +693,14 @@ CREATE TABLE IF NOT EXISTS feed_issue_events (
   detail     TEXT,
   created_at TEXT NOT NULL
 );
+-- Mỗi người quản trị đã xem vấn đề / góp ý nào tới lúc nào (chấm "chưa đọc" như email).
+-- item_key: '<khoá vấn đề>' hoặc 'post:<id>'.
+CREATE TABLE IF NOT EXISTS feed_seen (
+  user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  item_key TEXT NOT NULL,
+  seen_at  TEXT NOT NULL,
+  PRIMARY KEY (user_id, item_key)
+);
 -- Nhật ký xem / trả lời EkkoFeed của quản trị (ai, lúc nào, làm gì).
 CREATE TABLE IF NOT EXISTS feed_audit (
   id         INTEGER PRIMARY KEY,

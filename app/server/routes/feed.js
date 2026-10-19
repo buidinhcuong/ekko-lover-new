@@ -12,7 +12,7 @@ import { companyScope } from '../services/companyScope.js';
 import { programOverview } from '../services/overview.js';
 import {
   createDraft, createHrAccount, FEED_STATUS, ISSUE_STATUS, issueDetail, updateIssue, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
-  markRepliesSeen, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
+  markRepliesSeen, markFeedSeen, feedAssignees, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
 } from '../services/ekkoFeed.js';
 
 const ok = (result) => {
@@ -53,10 +53,15 @@ feedAdminRouter.get('/api/admin/feed/overview', ({ feed, url }) => (feed.ekko
   ? programOverview(companyScope(url.searchParams.get('employer')))
   : programOverview(companyScope(feed.employerKey), { minKeywordUsers: minGroupFor(feed.employerKey) })));
 
-feedAdminRouter.get('/api/admin/feed/report', ({ feed, url }) => feedReport(feed, {
+feedAdminRouter.get('/api/admin/feed/report', ({ feed, url, user }) => feedReport(feed, {
   employer: url.searchParams.get('employer'),
   days: url.searchParams.get('days') || 30,
+  viewerId: user.id,
 }));
+// Chấm "chưa đọc" (như email) — riêng từng người quản trị.
+feedAdminRouter.post('/api/admin/feed/seen', ({ feed, user, body }) => markFeedSeen(feed, user.id, body?.keys));
+// Danh sách người có thể giao phụ trách vấn đề.
+feedAdminRouter.get('/api/admin/feed/assignees', ({ feed }) => feedAssignees(feed));
 
 feedAdminRouter.get('/api/admin/feed/posts', ({ feed, url, user }) => feedPosts(feed, {
   employer: url.searchParams.get('employer'),

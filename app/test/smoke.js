@@ -1883,6 +1883,17 @@ async function main() {
       const resolvedIssue = (await get('hrjar', '/api/admin/feed/report')).json.issues.find((i) => i.key === issue.key);
       check('Đã giải quyết: góp ý của người gửi chuyển "Đã đóng"', resolvedIssue.status === 'resolved' && (await get('fa1', '/api/feed')).json.posts[0].status === 'closed');
 
+      // Chấm "chưa đọc" như email — riêng từng người quản trị.
+      check('Vấn đề mới hiện chưa đọc', resolvedIssue.unread === true);
+      const seenRes = await post('hrjar', '/api/admin/feed/seen', { keys: [issue.key, otherKey] });
+      const afterSeen = (await get('hrjar', '/api/admin/feed/report')).json.issues.find((i) => i.key === issue.key);
+      const adminView = (await get('admin', '/api/admin/feed/report?employer=CT-FEED')).json.issues.find((i) => i.key === issue.key);
+      check('Đánh dấu đã đọc: chỉ cho người đó, bỏ qua vấn đề công ty khác', seenRes.json.seen === 1 && afterSeen.unread === false && adminView.unread === true);
+      const hrAssignees = (await get('hrjar', '/api/admin/feed/assignees')).json.assignees;
+      const ekkoAssignees = (await get('admin', '/api/admin/feed/assignees')).json.assignees;
+      check('Danh sách giao phụ trách: HR chỉ thấy HR công ty mình; Ekko thấy thêm quản trị Ekko',
+        hrAssignees.length >= 1 && hrAssignees.every((a) => a.role === 'hr' && a.employerKey === 'CT-FEED') && ekkoAssignees.some((a) => a.role === 'ekko'));
+
       const hrBefore = (await get('hrjar', '/api/admin/feed/posts')).json.length;
       await join('fa3', 'feed-a3', 'Công ty Feed', 'CT-FEED');
       const sens = (await post('fa3', '/api/feed/preview', { text: 'Có người trong xưởng đe doạ đánh tôi nếu tôi báo cáo' })).json.draft;

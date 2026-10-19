@@ -390,7 +390,7 @@ const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3 };
  * quyết, phân bố theo chủ đề / loại, cảm xúc. Từ khoá & nhóm vấn đề dưới ngưỡng
  * ẩn danh thì không hiện (chỉ đếm gộp).
  */
-export function feedReport(access, { employer = null, days = 30, today = dayKey() } = {}) {
+export function feedReport(access, { employer = null, days = 30, today = dayKey(), viewerId = null } = {}) {
   const span = Math.max(1, Math.min(365, Math.round(Number(days)) || 30));
   const from = shiftDay(today, -(span - 1));
   const prevFrom = shiftDay(from, -span);
@@ -448,6 +448,7 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
     groups.get(key).posts.push(p);
   }
   const states = issueStates([...groups.keys()]);
+  const seen = seenMap(viewerId);
   const issues = [];
   let belowThreshold = 0;
   for (const [key, g] of groups) {
@@ -482,6 +483,9 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
       priority,
       replied,
       postIds: g.posts.map((p) => p.id),
+      // Chưa đọc: người đang xem chưa mở vấn đề này kể từ góp ý mới nhất.
+      lastAt: g.posts.map((p) => p.submitted_at || p.created_at).sort().at(-1),
+      unread: isUnread(seen, key, g.posts.map((p) => p.submitted_at || p.created_at).sort().at(-1)),
       // Câu đã được AI diễn đạt lại (không phải lời gốc), tối đa 3.
       quotes: summaries.slice(0, 3),
     });
@@ -677,6 +681,7 @@ export function feedPosts(access, { employer = null, status = '', topic = '', ty
   sql += ' ORDER BY p.id DESC LIMIT ?';
   params.push(Math.min(500, Number(limit) || 200));
   if (viewerId) audit(viewerId, 'view_posts', scope.key);
+  const seen = seenMap(viewerId);
   return all(sql, ...params).map((p) => ({
     id: p.id,
     createdAt: p.submitted_at || p.created_at,
@@ -691,8 +696,49 @@ export function feedPosts(access, { employer = null, status = '', topic = '', ty
     status: p.status,
     sensitive: Boolean(p.sensitive),
     author: p.anonymous ? null : { name: p.author_name, email: p.author_email },
+    unread: isUnread(seen, `post:${p.id}`, p.submitted_at || p.created_at),
     replies: repliesOf(p.id).map((r) => ({ text: r.text, createdAt: r.created_at, by: r.author_role })),
   }));
+}
+
+// --- đã xem / chưa đọc (riêng từng người quản trị) ------------------------------------
+function seenMap(userId) {
+  if (!userId) return null;
+  return new Map(all('SELECT item_key, seen_at FROM feed_seen WHERE user_id = ?', userId).map((r) => [r.item_key, r.seen_at]));
+}
+function isUnread(seen, key, lastAt) {
+  if (!seen) return false;
+  const at = seen.get(key);
+  return !at || (lastAt && lastAt > at);
+}
+
+/** Đánh dấu đã xem các vấn đề ('<khoá>') / góp ý ('post:<id>'). Chỉ khoá trong phạm vi được xem. */
+export function markFeedSeen(access, userId, keys) {
+  const list = [...new Set([].concat(keys || []).map(String))].slice(0, 500).filter((k) => (k.startsWith('post:')
+    ? Boolean(ownedPost(access, k.slice(5)))
+    : Boolean(issueAllowed(access, k))));
+  const at = nowIso();
+  tx(() => list.forEach((k) => run(
+    'INSERT INTO feed_seen (user_id, item_key, seen_at) VALUES (?,?,?) ON CONFLICT(user_id, item_key) DO UPDATE SET seen_at = excluded.seen_at',
+    userId, k, at,
+  )));
+  return { ok: true, seen: list.length };
+}
+
+/**
+ * Người có thể giao phụ trách: tài khoản HR của công ty (HR chỉ thấy công ty mình)
+ * + quản trị Ekko (chỉ Ekko thấy). Ô phụ trách vẫn lưu dạng chữ (tên).
+ */
+export function feedAssignees(access) {
+  const hr = all(
+    `SELECT u.name, u.email, e.employer_key FROM employer_admins e JOIN users u ON u.id = e.user_id
+      ${access.ekko ? '' : 'WHERE e.employer_key = ?'} ORDER BY u.name`,
+    ...(access.ekko ? [] : [access.employerKey]),
+  ).map((r) => ({ name: r.name || r.email, email: r.email, employerKey: r.employer_key, role: 'hr' }));
+  const ekko = access.ekko
+    ? all("SELECT name, email FROM users WHERE role = 'admin' ORDER BY name").map((r) => ({ name: r.name || r.email, email: r.email, employerKey: null, role: 'ekko' }))
+    : [];
+  return { assignees: [...hr, ...ekko] };
 }
 
 function ownedPost(access, postId) {
@@ -789,14 +835,69 @@ export function removeHrAccount(adminId, userId) {
 // --- chỉ môi trường dev: dữ liệu mẫu để bấm thử báo cáo ---------------------------
 
 const DEMO_POSTS = [
-  ['issue', 'overtime', ['tăng ca', 'trả chậm', 'lương tăng ca'], -0.8, 'high', 'Lương tăng ca trả chậm 2 tuần, không báo trước', 'Tiền tăng ca tháng này trả chậm, hỏi thì bảo chờ', 8],
-  ['issue', 'facilities', ['nhà ăn', 'ca đêm', 'hết suất'], -0.6, 'medium', 'Nhà ăn ca đêm hết suất trước 1h sáng', 'Nhà ăn ca đêm hết cơm sớm, anh em ca muộn nhịn đói', 6],
-  ['issue', 'facilities', ['xe đưa đón', 'đến muộn'], -0.4, 'medium', 'Xe đưa đón buổi sáng thường đến muộn', 'Xe đưa đón hay đến muộn 20–30 phút', 5],
-  ['issue', 'safety', ['nóng', 'thông gió', 'xưởng'], -0.7, 'high', 'Xưởng quá nóng, quạt thông gió hỏng', 'Xưởng B nóng quá, quạt hỏng cả tuần', 6],
+  ['issue', 'overtime', ['tăng ca', 'trả chậm', 'lương tăng ca'], -0.8, 'high', 'Lương tăng ca trả chậm 2 tuần, không báo trước', [
+    'Tiền tăng ca tháng này trả chậm, hỏi thì bảo chờ',
+    'Lương tăng ca tháng 9 đến giờ vẫn chưa thấy, không ai báo gì',
+    'Tăng ca cả tháng mà tiền về chậm 2 tuần, nhà đang cần tiền đóng học cho con',
+    'Mong công ty trả tiền tăng ca đúng ngày như lương chính',
+    'Hỏi tổ trưởng về tiền tăng ca thì bảo chờ phòng kế toán',
+  ], 8],
+  ['issue', 'facilities', ['nhà ăn', 'ca đêm', 'hết suất'], -0.6, 'medium', 'Nhà ăn ca đêm hết suất trước 1h sáng', [
+    'Nhà ăn ca đêm hết cơm sớm, anh em ca muộn nhịn đói',
+    'Ca đêm xuống nhà ăn lúc 1h là hết suất, chỉ còn mì gói',
+    'Đề nghị để riêng suất cơm cho ca đêm ra muộn',
+  ], 6],
+  ['issue', 'facilities', ['xe đưa đón', 'đến muộn'], -0.4, 'medium', 'Xe đưa đón buổi sáng thường đến muộn', [
+    'Xe đưa đón hay đến muộn 20–30 phút',
+    'Xe tuyến Bắc Ninh sáng nay lại muộn, cả xe bị trừ chuyên cần',
+    'Xe đưa đón đến muộn mà vẫn bị tính đi muộn, không công bằng',
+  ], 5],
+  ['issue', 'safety', ['nóng', 'thông gió', 'xưởng'], -0.7, 'high', 'Xưởng quá nóng, quạt thông gió hỏng', [
+    'Xưởng B nóng quá, quạt hỏng cả tuần',
+    'Trưa nay xưởng B có bạn bị choáng vì nóng, quạt thông gió vẫn chưa sửa',
+    'Đề nghị sửa quạt thông gió và phát thêm nước mát cho xưởng B',
+    'Nóng quá làm không tập trung được, sợ tai nạn máy',
+  ], 6],
   ['issue', 'benefits', ['bhxh', 'sổ bảo hiểm'], -0.1, 'low', 'Muốn được hướng dẫn tra cứu BHXH', 'Mong công ty hướng dẫn tra cứu quá trình đóng BHXH', 2],
-  ['share', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', 'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm', 6],
-  ['share', 'facilities', ['nhà ăn', 'món mới'], 0.6, 'low', 'Nhà ăn có thêm món mới, ngon hơn', 'Nhà ăn tuần này có thêm món canh nóng, ngon hơn hẳn', 5],
-  ['share', 'benefits', ['khám sức khoẻ'], 0.7, 'low', 'Cảm ơn công ty tổ chức khám sức khoẻ', 'Đợt khám sức khoẻ vừa rồi rất chu đáo, cảm ơn công ty', 5],
+  ['share', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', [
+    'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm',
+    'Tổ trưởng chuyền 3 rất tâm lý, hôm mình mệt anh cho nghỉ sớm',
+    'Chị tổ trưởng hỗ trợ em làm giấy tờ nghỉ thai sản rất nhanh',
+    'Tổ trưởng mới hay hỏi han anh em, không khí trong tổ vui hơn',
+    'Được tổ trưởng chỉ việc tận tình nên em quen máy nhanh',
+    'Cảm ơn tổ trưởng đã đứng ra hỗ trợ khi máy hỏng giữa ca',
+  ], 6],
+  ['share', 'facilities', ['nhà ăn', 'món mới'], 0.6, 'low', 'Nhà ăn có thêm món mới, ngon hơn', [
+    'Nhà ăn tuần này có thêm món canh nóng, ngon hơn hẳn',
+    'Thực đơn nhà ăn đổi món thường xuyên hơn, ăn không bị ngán',
+    'Có thêm món chay thứ 6, cảm ơn nhà ăn',
+    'Nhà ăn sạch sẽ hơn hẳn từ khi thay bếp mới',
+    'Cơm trưa nay ngon, cá kho rất vừa miệng',
+  ], 5],
+  ['share', 'benefits', ['khám sức khoẻ'], 0.7, 'low', 'Cảm ơn công ty tổ chức khám sức khoẻ', [
+    'Đợt khám sức khoẻ vừa rồi rất chu đáo, cảm ơn công ty',
+    'Khám sức khoẻ định kỳ phát hiện sớm bệnh cho mẹ con mình, rất biết ơn',
+    'Bác sĩ khám sức khoẻ tư vấn kỹ, lần đầu được khám kỹ thế',
+    'Khám sức khoẻ năm nay có thêm siêu âm, quá tốt',
+    'Được khám sức khoẻ ngay tại công ty, không phải xin nghỉ',
+  ], 5],
+  ['share', 'finance', ['tiết kiệm', 'ekko'], 0.5, 'low', 'Bắt đầu tiết kiệm được nhờ ghi chép chi tiêu', [
+    'Nhờ ghi chép chi tiêu trên Ekko, tháng này mình để dành được 1 triệu',
+    'Lần đầu tiết kiệm được tiền gửi về quê, vui lắm',
+    'Học xong bài về quỹ khẩn cấp, mình đã bắt đầu tiết kiệm mỗi tuần',
+  ], 3],
+  ['share', 'training', ['lớp học', 'kỹ năng'], 0.4, 'low', 'Lớp kỹ năng mềm bổ ích', [
+    'Lớp kỹ năng giao tiếp tuần trước rất bổ ích',
+    'Mong có thêm lớp học như thế này cho ca đêm',
+  ], 2],
+  ['share', 'overtime', ['tăng ca', 'mệt'], -0.3, 'low', 'Tăng ca nhiều nên ít thời gian cho con', [
+    'Tháng này tăng ca nhiều, về nhà con ngủ rồi, hơi buồn',
+    'Tăng ca được thêm tiền nhưng thấy mệt, chỉ muốn chia sẻ vậy thôi',
+  ], 2],
+  ['share', 'other', ['đồng nghiệp', 'sinh nhật'], 0.8, 'low', 'Đồng nghiệp tổ chức sinh nhật bất ngờ', [
+    'Hôm qua cả tổ tổ chức sinh nhật bất ngờ cho mình, cảm động quá',
+    'Anh em trong xưởng góp tiền giúp bạn bị tai nạn xe, thấy ấm lòng',
+  ], 2],
   ['issue', 'training', ['nâng bậc', 'học nghề'], -0.2, 'low', 'Mong có lớp học nâng bậc thợ', 'Mong công ty mở lớp nâng bậc thợ cho công nhân lâu năm', 2],
 ];
 
@@ -812,13 +913,17 @@ export function seedFeedDemo(employerName, today = dayKey()) {
       for (let k = 0; k < count; k += 1, i += 1) {
         const user = run("INSERT INTO users (ekko_user_id, name, role, employer, created_at) VALUES (?,?,'member',?,?)",
           `demo-feed-${i}`, `Nhân viên mẫu ${i + 1}`, employerName, nowIso());
+        const body = Array.isArray(text) ? text[k % text.length] : text;
+        // Vài chia sẻ có ghi tên, cảm xúc dao động nhẹ cho giống thật.
+        const named = type === 'share' && k % 4 === 1 ? 0 : 1;
+        const mood = Math.max(-1, Math.min(1, sentiment + ((k % 3) - 1) * 0.15));
         const day = shiftDay(today, -(i % 20));
         run(
           `INSERT INTO feed_posts (user_id, employer_key, employer_name, type, topic, text, redacted_text, summary, keywords,
                                    sentiment, urgency, anonymous, status, source, day, created_at, submitted_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,1,'sent','ai',?,?,?)`,
-          Number(user.lastInsertRowid), employerName, employerName, type, topic, text, text, summary, JSON.stringify(keywords),
-          sentiment, urgency, day, `${day}T03:00:00.000Z`, `${day}T03:00:00.000Z`,
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'sent','ai',?,?,?)`,
+          Number(user.lastInsertRowid), employerName, employerName, type, topic, body, body, summary, JSON.stringify(keywords),
+          Math.round(mood * 100) / 100, urgency, named, day, `${day}T03:00:00.000Z`, `${day}T03:00:00.000Z`,
         );
       }
     }
