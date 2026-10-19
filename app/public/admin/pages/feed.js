@@ -77,7 +77,6 @@ export default async function feedPage(ctx) {
     stat('Người góp ý', String(t.people)),
     stat('Đã phản hồi', pct(t.replied)),
     stat('Cảm xúc chung', mood(t.sentiment), `điểm ${t.sentiment.toLocaleString('vi-VN')} (−1 đến 1)`),
-    meta.ekko ? stat('Chờ Ekko kiểm duyệt', String(t.waitingReview || 0), 'Nội dung nhạy cảm — chưa tới doanh nghiệp') : null,
   ]);
 
   // --- đám mây từ khoá: chữ to theo số NGƯỜI nhắc ---------------------------------
