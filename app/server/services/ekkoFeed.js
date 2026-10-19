@@ -420,20 +420,24 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
     }
     return map;
   };
-  const kwNow = kwPeople(posts);
-  const kwPrev = kwPeople(prev);
-  const kwList = [...kwNow.entries()].map(([key, e]) => ({ key, text: e.text, people: e.users.size, posts: e.posts }))
-    .sort((a, b) => b.people - a.people || b.posts - a.posts);
-  const shownKw = kwList.filter((k) => k.people >= minGroup).slice(0, 40);
-  const maxKw = Math.max(1, ...shownKw.map((k) => k.people));
-  const keywords = shownKw.map((k) => {
-    const before = kwPrev.get(k.key)?.users.size || 0;
-    return {
-      text: k.text, people: k.people, posts: k.posts,
-      weight: Math.round((k.people / maxKw) * 100) / 100,
-      trend: before ? Math.round(((k.people - before) / before) * 100) : null,
-    };
-  });
+  /** Đám mây từ khoá của một tập bài: độ to theo số NGƯỜI, ẩn từ dưới ngưỡng ẩn danh. */
+  const cloudOf = (list, prevList) => {
+    const kwNow = kwPeople(list);
+    const kwPrev = kwPeople(prevList);
+    const shown = [...kwNow.entries()].map(([key, e]) => ({ key, text: e.text, people: e.users.size, posts: e.posts }))
+      .sort((a, b) => b.people - a.people || b.posts - a.posts)
+      .filter((k) => k.people >= minGroup).slice(0, 40);
+    const maxKw = Math.max(1, ...shown.map((k) => k.people));
+    return shown.map((k) => {
+      const before = kwPrev.get(k.key)?.users.size || 0;
+      return {
+        text: k.text, people: k.people, posts: k.posts,
+        weight: Math.round((k.people / maxKw) * 100) / 100,
+        trend: before ? Math.round(((k.people - before) / before) * 100) : null,
+      };
+    });
+  };
+  const keywords = cloudOf(posts, prev);
 
   // Nhóm vấn đề: cùng công ty + cùng chủ đề + cùng từ khoá chính (từ khoá đầu tiên AI đưa ra).
   const groups = new Map();
@@ -486,10 +490,35 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
   issues.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
     || PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] || b.people - a.people);
 
-  const tally = (field, labels) => Object.keys(labels).map((code) => {
-    const list = posts.filter((p) => p[field] === code);
+  const tally = (field, labels, from_ = posts) => Object.keys(labels).map((code) => {
+    const list = from_.filter((p) => p[field] === code);
     return { code, label: labels[code].label || labels[code], posts: list.length, people: people(list) };
   }).filter((x) => x.posts > 0).sort((a, b) => b.people - a.people || b.posts - a.posts);
+  const avg = (list) => (list.length ? Math.round((list.reduce((n, p) => n + (p.sentiment || 0), 0) / list.length) * 100) / 100 : 0);
+
+  /**
+   * Báo cáo riêng cho từng loại — cùng một cấu trúc: tổng, từ khoá, theo chủ đề.
+   * Góp ý / Cần giải quyết có thêm tỷ lệ đã phản hồi; Chia sẻ có thêm các câu tóm tắt
+   * (đã diễn đạt lại) theo chủ đề để đọc nhanh — Chia sẻ không cần phản hồi.
+   */
+  const sectionOf = (type) => {
+    const list = posts.filter((p) => p.type === type);
+    const prevList = prev.filter((p) => p.type === type);
+    const out = {
+      totals: {
+        posts: list.length,
+        people: people(list),
+        sentiment: avg(list),
+        prevPosts: prevList.length,
+      },
+      keywords: cloudOf(list, prevList),
+      byTopic: tally('topic', FEED_TOPICS, list),
+    };
+    if (type === 'issue') {
+      out.totals.replied = list.length ? Math.round((list.filter((p) => ['replied', 'closed'].includes(p.status)).length / list.length) * 100) / 100 : 0;
+    }
+    return out;
+  };
 
   return {
     employer: scope.key,
@@ -506,6 +535,7 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
     issues,
     byTopic: tally('topic', FEED_TOPICS),
     byType: tally('type', FEED_TYPES),
+    sections: { issue: sectionOf('issue'), share: sectionOf('share') },
   };
 }
 
@@ -764,9 +794,9 @@ const DEMO_POSTS = [
   ['issue', 'facilities', ['xe đưa đón', 'đến muộn'], -0.4, 'medium', 'Xe đưa đón buổi sáng thường đến muộn', 'Xe đưa đón hay đến muộn 20–30 phút', 5],
   ['issue', 'safety', ['nóng', 'thông gió', 'xưởng'], -0.7, 'high', 'Xưởng quá nóng, quạt thông gió hỏng', 'Xưởng B nóng quá, quạt hỏng cả tuần', 6],
   ['issue', 'benefits', ['bhxh', 'sổ bảo hiểm'], -0.1, 'low', 'Muốn được hướng dẫn tra cứu BHXH', 'Mong công ty hướng dẫn tra cứu quá trình đóng BHXH', 2],
-  ['share', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', 'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm', 3],
-  ['share', 'facilities', ['nhà ăn', 'món mới'], 0.6, 'low', 'Nhà ăn có thêm món mới, ngon hơn', 'Nhà ăn tuần này có thêm món canh nóng, ngon hơn hẳn', 3],
-  ['share', 'benefits', ['khám sức khoẻ'], 0.7, 'low', 'Cảm ơn công ty tổ chức khám sức khoẻ', 'Đợt khám sức khoẻ vừa rồi rất chu đáo, cảm ơn công ty', 2],
+  ['share', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', 'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm', 6],
+  ['share', 'facilities', ['nhà ăn', 'món mới'], 0.6, 'low', 'Nhà ăn có thêm món mới, ngon hơn', 'Nhà ăn tuần này có thêm món canh nóng, ngon hơn hẳn', 5],
+  ['share', 'benefits', ['khám sức khoẻ'], 0.7, 'low', 'Cảm ơn công ty tổ chức khám sức khoẻ', 'Đợt khám sức khoẻ vừa rồi rất chu đáo, cảm ơn công ty', 5],
   ['issue', 'training', ['nâng bậc', 'học nghề'], -0.2, 'low', 'Mong có lớp học nâng bậc thợ', 'Mong công ty mở lớp nâng bậc thợ cho công nhân lâu năm', 2],
 ];
 

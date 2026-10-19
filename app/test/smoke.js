@@ -1857,6 +1857,11 @@ async function main() {
         (await get('fa4', '/api/feed')).json.types.map((x) => x.code).join(',') === 'share,issue'
         && shareDraft.type === 'share' && typesReport.byType.some((x) => x.code === 'share')
         && typesReport.issues.every((i) => i.postIds.every((id) => id !== shareDraft.id)), JSON.stringify(typesReport.byType));
+      const sec = typesReport.sections;
+      check('Báo cáo chia 2 phần Góp ý / Chia sẻ, cùng cấu trúc (tổng, từ khoá, theo chủ đề)',
+        sec?.issue && sec?.share && sec.share.totals.posts >= 1 && sec.issue.totals.posts >= 1
+        && Array.isArray(sec.share.keywords) && Array.isArray(sec.issue.byTopic)
+        && sec.issue.totals.posts + sec.share.totals.posts === typesReport.totals.posts, JSON.stringify(sec?.share?.totals));
       const onlyShares = (await get('admin', '/api/admin/feed/posts?employer=CT-FEED&type=share&days=30')).json;
       check('Danh sách lọc được theo loại (mục Chia sẻ) và theo kỳ', onlyShares.length >= 1 && onlyShares.every((x) => x.type === 'share'));
 

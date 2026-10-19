@@ -602,3 +602,26 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .sharegroup { border: 1px solid var(--border-secondary); border-radius: var(--radius-12); padding: 10px 14px; }
 .sharegroup summary { cursor: pointer; list-style: revert; }
 .sharegroup[open] summary { margin-bottom: 10px; }
+
+/* EkkoFeed: hai tab con Báo cáo chung · Phản hồi. */
+.subtabs { display: flex; gap: 4px; margin: 0 0 var(--spacing-16); border-bottom: 1px solid var(--border-secondary); }
+.subtab { all: unset; cursor: pointer; padding: 10px 14px; margin-bottom: -1px; font-weight: var(--font-weight-semibold); color: var(--text-secondary); border-bottom: 2px solid transparent; }
+.subtab[aria-selected="true"] { color: var(--text-brand-500); border-bottom-color: var(--bg-brand-500); }
+.subtab:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; border-radius: 4px; }
+.toplist { display: grid; gap: 6px; }
+.toprow { all: unset; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); font-size: var(--font-size-text-sm); }
+.toprow:hover { border-color: var(--border-brand); background: var(--bg-brand-50); }
+.toprow__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--font-weight-semibold); }
+
+/* Báo cáo chung: hai phần Góp ý · Chia sẻ, cùng cấu trúc, phân biệt bằng vạch màu. */
+.feedsection { margin-top: var(--spacing-24); padding-left: 14px; border-left: 4px solid var(--bg-warning-500, #F79009); }
+.feedsection[data-type="share"] { border-left-color: var(--bg-success-500, #12B76A); }
+.feedsection__head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.feedsection__head h2 { margin: 0; font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); }
+.feedsection__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.feedchip { display: grid; gap: 0; padding: 6px 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); background: var(--bg-primary); min-width: 90px; }
+.feedchip small { font-size: var(--font-size-text-xs); color: var(--text-tertiary); }
+.feedchip b { font-size: var(--font-size-text-md); }
+.wordcloud--share .wordcloud__word { color: var(--text-success-500, #12805C); }
+.wordcloud--share .wordcloud__word:nth-child(3n+2) { color: var(--text-primary); }
+.sharelist { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: var(--font-size-text-sm); }
