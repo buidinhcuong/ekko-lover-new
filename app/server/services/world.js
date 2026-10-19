@@ -134,6 +134,14 @@ export function buildWorld(userId) {
     // Heo Dream Team: mã ID để chia sẻ, lời mời đang chờ, lời nhắc giữ streak chưa xem.
     me: { friendCode: friendCode(userId), name: get('SELECT name FROM users WHERE id = ?', userId)?.name || '' },
     team: teamAlerts(userId),
+    // EkkoFeed: số phản hồi của công ty chưa đọc — dòng nhắc vàng ở màn chủ.
+    feed: {
+      unreadReplies: get(
+        `SELECT COUNT(*) n FROM feed_replies r JOIN feed_posts p ON p.id = r.post_id
+          WHERE p.user_id = ? AND r.seen_at IS NULL`,
+        userId,
+      ).n,
+    },
     learning: {
       lessonsDone,
       lessonsTotal,

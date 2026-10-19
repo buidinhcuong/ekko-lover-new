@@ -114,6 +114,17 @@ Kiểm thử: `npm run smoke`, hiện có 404 kiểm tra, tất cả đều đ�
      ở `video-src/` (xem README trong đó). Bản cũ giữ ở `ekko-hoc-tap-v1.mp4`,
      tab Giới thiệu đặt hai bản cạnh nhau để so sánh.
 
+## Bộ demo cho khách hàng (EkkoFeed)
+
+Admin portal → EkkoFeed → Quản lý (chỉ quản trị Ekko) → **Tạo bộ demo**: một nút tạo
+công ty mẫu + tài khoản người lao động (`nld.<mã>@demo.ekko.vn`, mở `/app/?demo=1`
+trên điện thoại) + tài khoản HR (`hr.<mã>@demo.ekko.vn`, mở `/admin/`) + ~50 góp ý /
+chia sẻ mẫu. Mật khẩu hiện **một lần**; nút **Tải trang truy cập (HTML)** tạo tệp gửi
+khách (đường dẫn, mã QR, tài khoản, gợi ý luồng thử). "Tạo lại" = đổi mật khẩu + nạp
+lại dữ liệu mẫu; "Xoá" = xoá tài khoản và toàn bộ dữ liệu mẫu. Người lao động demo gửi
+được 10 góp ý/ngày (thật: 1). Tài khoản demo vẫn đăng nhập được khi `EKKO_LOCAL_AUTH=0`.
+Code: `server/services/demoKit.js`, `public/admin/demoAccessPage.js`.
+
 ## Deploy
 
 - **Môi trường doanh nghiệp / thử nghiệm nội bộ:** làm theo `DEPLOY.md` (Docker,

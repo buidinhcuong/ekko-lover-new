@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { currentUser, requireAdmin, requireUser, upsertMember } from './auth.js';
 import { ensureBootstrapAdmin } from './services/localAuth.js';
 import { reevaluateBadgesOnce } from './services/progression.js';
-import { HttpError, readJson, sendJson, serveStatic } from './lib/http.js';
+import { forbidden, HttpError, readJson, sendJson, serveStatic } from './lib/http.js';
 import { langOf, translate } from './i18n/index.js';
 import { seed, listSeedTables } from './seed/index.js';
 import { adminRouter } from './routes/admin.js';
@@ -20,6 +20,8 @@ import { featureRouter } from './routes/features.js';
 import { learnRouter } from './routes/learn.js';
 import { sessionRouter, whoami } from './routes/session.js';
 import { teamRouter } from './routes/team.js';
+import { feedAdminRouter, feedRouter } from './routes/feed.js';
+import { feedAccess } from './services/ekkoFeed.js';
 
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
@@ -56,11 +58,14 @@ const ROUTERS = [
   { router: featureRouter, auth: 'user' },
   { router: botRouter, auth: 'user' },
   { router: teamRouter, auth: 'user' },
+  { router: feedRouter, auth: 'user' },
+  // Trước adminRouter: /api/admin/:entity/:id của adminRouter sẽ nuốt /api/admin/feed/… nếu đứng trước.
+  { router: feedAdminRouter, auth: 'feedAdmin' },
   { router: adminRouter, auth: 'admin' },
 ];
 
 /** Session router mixes public (SSO, dev login) and private (`/api/me`) paths. */
-const PUBLIC_PATHS = new Set(['/sso', '/dev/login', '/dev/persona', '/dev/sso-token', '/api/session/logout', '/healthz',
+const PUBLIC_PATHS = new Set(['/sso', '/dev/login', '/dev/persona', '/dev/hr', '/dev/sso-token', '/api/session/logout', '/healthz',
   '/api/auth/config', '/api/auth/register', '/api/auth/login']);
 
 export async function handle(req, res) {
@@ -83,6 +88,12 @@ export async function handle(req, res) {
       const ctx = { req, res, url, params: match.params, user, body: {} };
 
       if (auth === 'admin') requireAdmin(ctx);
+      else if (auth === 'feedAdmin') {
+        // EkkoFeed: quản trị Ekko (mọi công ty) hoặc HR doanh nghiệp (chỉ công ty mình).
+        requireUser(ctx);
+        ctx.feed = feedAccess(ctx.user);
+        if (!ctx.feed) throw forbidden('Chỉ quản trị viên hoặc HR doanh nghiệp mới xem được EkkoFeed');
+      }
       else if (auth === 'user') requireUser(ctx);
       else if (auth === 'mixed' && !PUBLIC_PATHS.has(pathname)) requireUser(ctx);
 

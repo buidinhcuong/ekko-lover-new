@@ -557,3 +557,164 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 
 /* Ô chọn công ty ở đầu trang số liệu. */
 .companypicker { min-width: 220px; max-width: 320px; height: 36px; padding: 0 var(--spacing-10); border: 1px solid var(--border-primary); border-radius: var(--radius-8); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); }
+
+/* ---------------------------------------------------------------- EkkoFeed */
+/* Đám mây từ khoá: cỡ chữ theo số người nhắc (đặt inline), chữ màu thương hiệu. */
+.wordcloud { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 6px 16px; padding: var(--spacing-8) 0; line-height: 1.15; }
+.wordcloud__word { color: var(--text-brand-500); font-weight: var(--font-weight-semibold); cursor: default; white-space: nowrap; }
+.wordcloud__word:nth-child(3n+2) { color: var(--text-primary); }
+.issuelist { display: grid; gap: var(--spacing-10); }
+.issue { padding: var(--spacing-12); border: 1px solid var(--border-secondary); border-radius: var(--radius-12); }
+.issue__head { display: flex; gap: var(--spacing-8); align-items: center; margin-bottom: 4px; }
+.issue__quotes { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 2px; font-size: var(--font-size-text-sm); color: var(--text-secondary); }
+.feedreply-admin { margin-top: 6px; padding: 6px 10px; border-radius: var(--radius-8); background: var(--bg-brand-50); font-size: var(--font-size-text-sm); }
+
+.issue__mgmt { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: var(--font-size-text-sm); color: var(--text-secondary); }
+.issue__mgmt .is-overdue { color: var(--text-error, #d92d20); font-weight: var(--font-weight-semibold); }
+.issue__posts { display: grid; gap: 8px; max-height: 320px; overflow: auto; padding-right: 4px; }
+.issue__post { padding: 10px 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); display: grid; gap: 4px; font-size: var(--font-size-text-sm); }
+.issue__events { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: var(--font-size-text-sm); max-height: 200px; overflow: auto; }
+
+/* Trả lời riêng từng người. */
+.replylist { display: grid; gap: 8px; }
+.replyitem { padding: 10px 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); display: grid; gap: 4px; font-size: var(--font-size-text-sm); }
+.replyitem__form { display: flex; gap: 8px; align-items: flex-end; margin-top: 4px; }
+.replyitem__form textarea { flex: 1; min-height: 36px; resize: vertical; font: inherit; font-size: var(--font-size-text-sm); padding: 6px 10px; border: 1px solid var(--border-primary); border-radius: var(--radius-8); }
+.issue--loose { border-style: dashed; }
+/* Phân bố gọn: thanh loại chia đôi + hàng chủ đề mảnh. */
+.distpanel__grid { display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: var(--spacing-24); align-items: start; }
+@media (max-width: 900px) { .distpanel__grid { grid-template-columns: 1fr; } }
+.distpanel__label { font-size: var(--font-size-text-xs); font-weight: var(--font-weight-semibold); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.typebar { display: flex; gap: 2px; height: 14px; border-radius: var(--radius-full); overflow: hidden; background: var(--bg-grey-200); }
+.typebar span { display: block; min-width: 4px; }
+.typelegend { display: grid; gap: 4px; margin-top: 8px; font-size: var(--font-size-text-sm); }
+.typelegend span { display: flex; align-items: center; gap: 6px; }
+.typelegend i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.topicrows { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
+@media (max-width: 900px) { .topicrows { grid-template-columns: 1fr; } }
+.topicrow { display: grid; grid-template-columns: minmax(0, 1.4fr) 1fr 28px; gap: 8px; align-items: center; font-size: var(--font-size-text-sm); }
+.topicrow__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topicrow__track { height: 6px; border-radius: var(--radius-full); background: var(--bg-grey-200); overflow: hidden; }
+.topicrow__track span { display: block; height: 100%; background: var(--bg-brand-500); }
+.topicrow__n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+/* Chia sẻ theo nhóm chủ đề. */
+.sharegroups { display: grid; gap: 8px; }
+.sharegroup { border: 1px solid var(--border-secondary); border-radius: var(--radius-12); padding: 10px 14px; }
+.sharegroup summary { cursor: pointer; list-style: revert; }
+.sharegroup[open] summary { margin-bottom: 10px; }
+
+/* EkkoFeed: hai tab con Báo cáo chung · Phản hồi. */
+.subtabs { display: flex; gap: 4px; margin: 0 0 var(--spacing-16); border-bottom: 1px solid var(--border-secondary); }
+.subtab { all: unset; cursor: pointer; padding: 10px 14px; margin-bottom: -1px; font-weight: var(--font-weight-semibold); color: var(--text-secondary); border-bottom: 2px solid transparent; }
+.subtab[aria-selected="true"] { color: var(--text-brand-500); border-bottom-color: var(--bg-brand-500); }
+.subtab:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; border-radius: 4px; }
+.toplist { display: grid; gap: 6px; }
+.toprow { all: unset; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); font-size: var(--font-size-text-sm); }
+.toprow:hover { border-color: var(--border-brand); background: var(--bg-brand-50); }
+.toprow__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--font-weight-semibold); }
+
+/* Báo cáo chung: hai phần Góp ý · Chia sẻ, cùng cấu trúc, phân biệt bằng vạch màu. */
+.feedsection { margin-top: var(--spacing-24); padding-left: 14px; border-left: 4px solid var(--bg-warning-500, #F79009); }
+.feedsection[data-type="share"] { border-left-color: var(--bg-success-500, #12B76A); }
+.feedsection__head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.feedsection__head h2 { margin: 0; font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); }
+.feedsection__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.feedchip { display: grid; gap: 0; padding: 6px 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-8); background: var(--bg-primary); min-width: 90px; }
+.feedchip small { font-size: var(--font-size-text-xs); color: var(--text-tertiary); }
+.feedchip b { font-size: var(--font-size-text-md); }
+.wordcloud--share .wordcloud__word { color: var(--text-success-500, #12805C); }
+.wordcloud--share .wordcloud__word:nth-child(3n+2) { color: var(--text-primary); }
+.sharelist { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: var(--font-size-text-sm); }
+
+/* EkkoFeed — tab Chia sẻ: gom nhóm thông minh, điểm nhấn, dòng thời gian. */
+.linkbtn { all: unset; cursor: pointer; color: var(--text-brand-500); font-size: var(--font-size-text-sm); font-weight: var(--font-weight-semibold); }
+.linkbtn:hover { text-decoration: underline; }
+.linkbtn:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; border-radius: 4px; }
+.toprow--share { grid-template-columns: auto 1fr auto 72px; }
+.toprow--share:hover { border-color: #12B76A; background: #ECFDF3; }
+.moodbar { display: inline-flex; width: 72px; height: 6px; border-radius: var(--radius-full); overflow: hidden; background: var(--bg-grey-200); gap: 1px; vertical-align: middle; }
+.moodbar i { display: block; height: 100%; }
+.moodbar .is-pos, .sharequote.is-pos { --mood: #12B76A; }
+.moodbar .is-neu, .sharequote.is-neu { --mood: #98A2B3; }
+.moodbar .is-neg, .sharequote.is-neg { --mood: #F79009; }
+.moodbar i { background: var(--mood); }
+.shareinsights { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 8px; }
+@media (max-width: 1000px) { .shareinsights { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.shareinsight { display: grid; gap: 4px; align-content: start; padding: 14px 16px; border: 1px solid var(--border-secondary); border-radius: var(--radius-12); background: var(--bg-primary); }
+.shareinsight small { font-size: var(--font-size-text-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .04em; }
+.shareinsight b { font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); }
+.shareinsight span { font-size: var(--font-size-text-xs); color: var(--text-secondary); }
+.shareinsight.is-pos { background: linear-gradient(135deg, #ECFDF3, var(--bg-primary)); border-color: #ABEFC6; }
+.shareinsight.is-neg { background: linear-gradient(135deg, #FFFAEB, var(--bg-primary)); border-color: #FEDF89; }
+.sharecontrols { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+.sharecontrols__spacer { flex: 1; }
+.sharesearch { flex: 1 1 260px; max-width: 360px; }
+.sharetopic { width: auto; }
+.segment { display: inline-flex; padding: 2px; border-radius: var(--radius-8); background: var(--bg-secondary); border: 1px solid var(--border-secondary); }
+.segment__btn { all: unset; cursor: pointer; padding: 5px 10px; border-radius: 6px; font-size: var(--font-size-text-sm); color: var(--text-secondary); }
+.segment__btn[aria-pressed="true"] { background: var(--bg-primary); color: var(--text-primary); font-weight: var(--font-weight-semibold); box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
+.segment__btn:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 1px; }
+.sharegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.sharecluster { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--border-secondary); border-radius: var(--radius-16); background: var(--bg-primary); border-top: 4px solid #12B76A; }
+.sharecluster.is-neu { border-top-color: #98A2B3; }
+.sharecluster.is-neg { border-top-color: #F79009; }
+.sharecluster__head { display: flex; justify-content: space-between; gap: 12px; }
+.sharecluster__head h3 { margin: 6px 0 0; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); }
+.sharecluster__tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.sharecluster__count { display: grid; justify-items: center; align-content: center; min-width: 52px; height: 52px; border-radius: var(--radius-12); background: #ECFDF3; color: #067647; }
+.sharecluster.is-neg .sharecluster__count { background: #FFFAEB; color: #B54708; }
+.sharecluster.is-neu .sharecluster__count { background: var(--bg-secondary); color: var(--text-secondary); }
+.sharecluster__count b { font-size: 20px; line-height: 1; }
+.sharecluster__count small { font-size: 11px; }
+.sharecluster__mood { display: flex; align-items: center; gap: 8px; }
+.sharecluster__kw { display: flex; flex-wrap: wrap; gap: 6px; }
+.sharecluster__kw span { font-size: var(--font-size-text-xs); color: var(--text-secondary); background: var(--bg-secondary); padding: 2px 8px; border-radius: var(--radius-full); }
+.sharecluster__quotes, .sharecluster__more { display: grid; gap: 8px; }
+.sharenew { font-size: 11px; font-weight: var(--font-weight-semibold); color: #6941C6; background: #F4F3FF; padding: 2px 8px; border-radius: var(--radius-full); }
+.sharequote { margin: 0; padding: 10px 12px; border-radius: var(--radius-10); background: var(--bg-secondary); border-left: 3px solid var(--mood); }
+.sharequote blockquote { margin: 0; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); color: var(--text-primary); }
+.sharequote figcaption { margin-top: 4px; font-size: var(--font-size-text-xs); color: var(--text-tertiary); }
+.sharewall { columns: 3 260px; column-gap: 12px; }
+.sharewall > * { break-inside: avoid; margin-bottom: 12px; display: grid; gap: 6px; justify-items: start; }
+.sharewall .sharequote { width: 100%; box-sizing: border-box; }
+.sharetimeline { display: grid; gap: 20px; }
+.shareweek__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.shareweek__head h3 { margin: 0; font-size: var(--font-size-text-md); }
+
+/* Thẻ vấn đề: nội dung góp ý rõ ràng, ô Phụ trách bên phải, chấm chưa đọc như email. */
+.issue { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; align-items: start; }
+@media (max-width: 760px) { .issue { grid-template-columns: 1fr; } }
+.issue__head strong { font-size: var(--font-size-text-md); }
+.issue.is-unread { background: var(--bg-brand-50); border-color: var(--border-brand); }
+.issue.is-unread .issue__head strong { font-weight: 800; }
+.unreaddot { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-brand-500); box-shadow: 0 0 0 3px rgba(68, 76, 231, .15); margin-right: 2px; vertical-align: middle; }
+.replyitem .cellmeta .unreaddot { width: 8px; height: 8px; margin-right: 6px; }
+.replyitem.is-unread { border-color: var(--border-brand); background: var(--bg-brand-50); }
+.replyitem__text { white-space: pre-wrap; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); color: var(--text-primary); }
+.issue__texts { display: grid; gap: 8px; margin-top: 10px; justify-items: start; }
+.issuequote { margin: 0; width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: var(--radius-10); background: var(--bg-primary); border: 1px solid var(--border-secondary); border-left: 3px solid var(--bg-warning-500, #F79009); }
+.issuequote blockquote { margin: 0; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); color: var(--text-primary); }
+.issuequote figcaption { margin-top: 4px; font-size: var(--font-size-text-xs); color: var(--text-tertiary); }
+.issuequote.is-unread figcaption::before { content: '● mới · '; color: var(--text-brand-500); font-weight: var(--font-weight-semibold); }
+.issue__side { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 6px; padding: 10px 12px; border-radius: var(--radius-10); background: var(--bg-secondary); border: 1px solid var(--border-secondary); }
+.issue__side > small { font-size: var(--font-size-text-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: .04em; }
+.ownerpick { display: flex; align-items: center; gap: 8px; }
+.ownerpick__avatar { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--bg-brand-500); color: #fff; font-size: 12px; font-weight: var(--font-weight-semibold); }
+.ownerpick__select, .ownerpick__input { flex: 1; min-width: 0; width: auto; max-width: 100%; box-sizing: border-box; height: 34px; padding: 0 8px; border: 1px solid var(--border-primary); border-radius: var(--radius-8); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); cursor: pointer; }
+.ownerpick__input { cursor: text; }
+.ownerpick__select.is-empty { color: var(--text-tertiary); }
+.ownerpick:has(.is-empty) .ownerpick__avatar { background: var(--bg-grey-200); color: var(--text-tertiary); }
+.issue:not(.is-unread) .unreaddot, .replyitem:not(.is-unread) .unreaddot { display: none; }
+.sharecluster__more[hidden] { display: none; }
+.sharesearch, .sharetopic { height: 36px; padding: 0 12px; border: 1px solid var(--border-primary); border-radius: var(--radius-8); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); color: var(--text-primary); box-sizing: border-box; }
+.sharesearch:focus, .sharetopic:focus { outline: 2px solid var(--border-brand); outline-offset: 0; }
+.sharetopic { cursor: pointer; max-width: 260px; }
+/* Bộ demo cho khách hàng. */
+.demokit { display: grid; gap: 6px; }
+.demokit__acc { display: grid; grid-template-columns: 150px 1fr auto; gap: 8px; align-items: center; margin-top: 8px; }
+.demokit__acc code { font: 600 13px/1.4 ui-monospace, Menlo, monospace; padding: 6px 8px; border-radius: 6px; background: var(--bg-secondary); border: 1px solid var(--border-secondary); overflow-wrap: anywhere; }
+
+/* EkkoFeed: cảm xúc người gửi tự chọn. */
+.moodtag { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
+.moodcounts { display: flex; gap: 10px; align-items: center; }
+.moodcounts span { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }

@@ -14,7 +14,7 @@ import { all } from '../db.js';
 import { dayKey } from '../lib/time.js';
 import { normalize } from './nlp.js';
 
-const MIN_USERS = 2;
+const MIN_USERS = 2;   // mặc định; HR doanh nghiệp xem thì dùng ngưỡng ẩn danh của công ty
 
 /** Loại câu trả lời của bot cho thấy tin trước đó KHÔNG phải câu hỏi tài chính. */
 const NOT_QUESTION = new Set([
@@ -82,7 +82,28 @@ function words(text) {
     .map((w) => ({ w, n: normalize(w) }));
 }
 
-export function botKeywordReport({ days = 30, today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] } } = {}) {
+/**
+ * Cụm từ khoá của một câu (dạng có dấu để hiển thị): cụm 2 chữ không chứa từ đệm,
+ * và chữ đơn mang nghĩa (không phải từ đệm / chữ chung chung). Dùng cho EkkoFeed
+ * khi không gọi được AI.
+ */
+export function phrasesOf(text, limit = 5) {
+  const ws = words(text).filter((x) => !/^\d+$/.test(x.n));
+  const out = [];
+  const seen = new Set();
+  const push = (key, shown) => { if (!seen.has(key)) { seen.add(key); out.push(shown); } };
+  ws.forEach((x, i) => {
+    const y = ws[i + 1];
+    if (y && !isStop(x) && !isStop(y)) push(`${x.n} ${y.n}`, `${x.w} ${y.w}`);
+  });
+  ws.forEach((x) => {
+    if (!isStop(x) && !GENERIC.has(x.n) && x.n.length > 2 && ![...seen].some((k) => k.split(' ').includes(x.n))) push(x.n, x.w);
+  });
+  return out.slice(0, limit);
+}
+
+export function botKeywordReport({ days = 30, today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] }, minUsers = MIN_USERS } = {}) {
+  const minGroup = Number.isInteger(minUsers) && minUsers >= 1 ? minUsers : MIN_USERS;
   const from = shiftDay(today, -(days - 1));
   // Mỗi tin của người dùng ghép với câu bot trả lời ngay sau (cùng người, id kế tiếp).
   const rows = all(
@@ -161,7 +182,7 @@ export function botKeywordReport({ days = 30, today = dayKey(), scope = { employ
       users: p.users.size,
       words: key.split(' ').length,
     }))
-    .filter((p) => p.users >= MIN_USERS)
+    .filter((p) => p.users >= minGroup)
     .sort((a, b) => b.messages - a.messages || b.words - a.words);
   // Một chữ nằm trong cụm 2 chữ đã chọn với số lần gần bằng thì bỏ (tránh "tiết" + "kiệm" + "tiết kiệm").
   const keywords = [];
@@ -190,7 +211,7 @@ export function botKeywordReport({ days = 30, today = dayKey(), scope = { employ
   }
 
   return {
-    days, from, to: today, minUsers: MIN_USERS,
+    days, from, to: today, minUsers: minGroup,
     totals: {
       messages: rows.length,
       questions: questions.length,

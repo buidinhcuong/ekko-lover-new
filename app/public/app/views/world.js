@@ -176,11 +176,12 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
           [...tabsNode.querySelectorAll('.loverhome__tab')].forEach((n) => n.classList.remove('is-active'));
           node.classList.add('is-active');
           indicatorNode.style.opacity = '1';
-          indicatorNode.style.transform = `translateX(${node.offsetLeft}px)`;
+          // Nút rộng hơn khoanh tròn: canh khoanh trắng vào giữa nút.
+          indicatorNode.style.transform = `translateX(${node.offsetLeft + (node.offsetWidth - indicatorNode.offsetWidth) / 2}px)`;
           setTimeout(() => ctx.navigate(btn.route), 150);
         },
       }, [
-        el('span.loverhome__tabcircle', {}, [spriteIcon(btn.icon, 24, APP_SPRITE)]),
+        el('span.loverhome__tabcircle', {}, [spriteIcon(btn.icon, 24, btn.sprite || APP_SPRITE)]),
         el('span.loverhome__tablabel', {}, btn.label),
       ]);
       return node;
@@ -618,5 +619,28 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     el('span.resumenudge__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 20)),
   ]) : null;
 
-  return el('div.loverhome', {}, [head, streakNudge, resume, tabcard, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
+  // EkkoFeed: công ty đã phản hồi góp ý — dòng vàng như lời nhắc streak, bấm mở EkkoFeed.
+  const feedUnread = ctx.world.feed?.unreadReplies || 0;
+  const feedNudge = ctx.world.concept === 'lover' && feedUnread
+    ? el('button.streaknudge', { type: 'button', onclick: () => ctx.navigate('/feed') }, [
+      el('span.streaknudge__icon', { 'aria-hidden': 'true' }, uiIcon('bubble-chat', 18)),
+      el('span.streaknudge__text', {}, t('Công ty đã phản hồi góp ý của bạn')),
+      el('span.streaknudge__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 18)),
+    ])
+    : null;
+
+  // EkkoFeed: thanh ngang riêng, màu nổi bật, ngay dưới thẻ chức năng — để người lao
+  // động dễ thấy, không lẫn vào 5 nút chức năng.
+  const feedBar = ctx.world.concept === 'lover'
+    ? el('button.feedbar', { type: 'button', onclick: () => ctx.navigate('/feed') }, [
+      el('span.feedbar__icon', { 'aria-hidden': 'true' }, uiIcon('bubble-chat', 22)),
+      el('span.feedbar__text', {}, [
+        el('b', {}, t('Góp ý tới công ty')),
+        el('small', {}, t('Chia sẻ hoặc góp ý điều cần giải quyết — ẩn danh nếu muốn')),
+      ]),
+      el('span.feedbar__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 20)),
+    ])
+    : null;
+
+  return el('div.loverhome', {}, [head, streakNudge, feedNudge, resume, tabcard, feedBar, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
 }

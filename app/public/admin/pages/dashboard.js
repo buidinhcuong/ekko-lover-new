@@ -9,12 +9,16 @@ const stat = (label, value, hint) => el('div.stat', {}, [
 ]);
 
 export default async function dashboard(ctx) {
-  const employer = hashParams().get('employer') || '';
+  // HR doanh nghiệp: số liệu luôn khoá vào công ty của họ (server bỏ qua ?employer), không có ô chọn công ty.
+  const employer = ctx.hr ? '' : (hashParams().get('employer') || '');
   const [s, picker] = await Promise.all([
-    ctx.api.get(`/api/admin/stats/overview${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
-    companyPicker(ctx, '/'),
+    ctx.hr
+      ? ctx.api.get('/api/admin/feed/overview')
+      : ctx.api.get(`/api/admin/stats/overview${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
+    ctx.hr ? Promise.resolve(null) : companyPicker(ctx, '/'),
   ]);
-  const companyName = employer ? picker.selectedOptions[0]?.textContent.replace(/ \(\d+ người\)$/, '') : null;
+  const companyName = ctx.hr ? ctx.hr.employerName
+    : employer ? picker.selectedOptions[0]?.textContent.replace(/ \(\d+ người\)$/, '') : null;
   const daily = s.dailyActive;
   const todayActive = daily.at(-1)?.users || 0;
   const peak = daily.reduce((a, b) => (b.users > a.users ? b : a), daily[0] || { users: 0, day: '' });

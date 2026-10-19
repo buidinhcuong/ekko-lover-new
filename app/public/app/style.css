@@ -3209,3 +3209,111 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 
 /* Thu nhập tháng dưới dòng "Còn lại" (lấy theo các khoản thu nhập đã ghi). */
 .expcentral__income { display: block; margin-top: 2px; color: var(--text-secondary); font-weight: var(--font-weight-regular); }
+
+/* ---------------------------------------------------------------- EkkoFeed */
+.feedview { display: grid; gap: var(--spacing-16); }
+.feedintro { display: flex; gap: var(--spacing-12); align-items: flex-start; }
+.feedintro__icon { flex: none; width: 48px; height: 48px; border-radius: var(--radius-full); display: grid; place-items: center; background: var(--bg-brand-50); color: var(--text-brand-500); }
+.feedintro h2 { margin: 0 0 4px; font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); }
+.feedintro p { margin: 0; }
+.feedform, .feedreview { display: grid; gap: var(--spacing-12); }
+.feedtext { min-height: 120px; resize: vertical; font: inherit; }
+.feedcount { display: block; text-align: right; }
+.feedcheck { display: flex; gap: var(--spacing-10); align-items: flex-start; cursor: pointer; }
+.feedcheck input { margin-top: 3px; flex: none; width: 18px; height: 18px; accent-color: var(--bg-brand-500); }
+.feedcheck span { display: grid; gap: 2px; }
+/* Ô đánh dấu gọn: nhãn ngắn + nút (?) mở bong bóng giải thích. */
+.feedchecks { display: grid; gap: var(--spacing-10); }
+.feedcheckrow { position: relative; display: flex; align-items: center; gap: var(--spacing-6, 6px); }
+.feedcheckrow .feedcheck { align-items: center; }
+.feedcheckrow .feedcheck input { margin-top: 0; }
+.feedcheckrow .feedcheck b { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); }
+.feedtip { flex: none; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--text-tertiary); cursor: pointer; }
+.feedtip:hover, .feedtip[aria-expanded="true"] { color: var(--text-brand-500); background: var(--bg-brand-50); }
+.feedtip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--bg-brand-50); color: var(--text-brand-500); }
+.feedtip__bubble {
+  position: absolute; z-index: 15; top: calc(100% + 6px); left: 0; right: 0;
+  padding: 10px 12px; border-radius: var(--radius-12);
+  background: var(--ekko-midnight, #1B1F3B); color: #fff;
+  font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs);
+  box-shadow: var(--shadow-float);
+}
+.feedtip__bubble[hidden] { display: none; }
+.feedtip__bubble::before { content: ''; position: absolute; top: -5px; left: var(--arrow-x, 30px); width: 10px; height: 10px; background: inherit; transform: rotate(45deg); border-radius: 2px; }
+.feedxp { text-align: center; }
+.feedreview h3 { margin: 0; font-size: var(--font-size-text-md); }
+.feedquote { margin: 0; padding: var(--spacing-12); border-left: 3px solid var(--border-brand); background: var(--bg-secondary); border-radius: 0 var(--radius-8) var(--radius-8) 0; white-space: pre-wrap; }
+.feedactions { display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-8); }
+.feeddone { display: flex; gap: var(--spacing-10); align-items: flex-start; color: var(--text-success-500, #12805c); }
+.feeddone p { margin: 4px 0 0; color: var(--text-secondary); }
+.feeddone b { color: var(--text-primary); }
+.feedlist { display: grid; gap: var(--spacing-10); }
+.feedpost { display: grid; gap: var(--spacing-8); }
+.feedpost.is-new { box-shadow: 0 0 0 2px var(--border-warning); }
+.feedpost__head { display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-8); }
+.feedpost__text { margin: 0; white-space: pre-wrap; }
+.feedstatus { padding: 2px 10px; border-radius: var(--radius-full); font-size: var(--font-size-text-xs); line-height: 18px; font-weight: var(--font-weight-semibold); background: var(--bg-secondary); color: var(--text-secondary); }
+.feedstatus.is-brand { background: var(--bg-brand-50); color: var(--text-brand-500); }
+.feedstatus.is-warning { background: var(--bg-warning-50); color: var(--text-warning); }
+.feedstatus.is-success { background: var(--bg-success-50, #ecfdf3); color: var(--text-success-500, #12805c); }
+.feedreply { padding: var(--spacing-10) var(--spacing-12); border-radius: var(--radius-12); background: var(--bg-brand-50); display: grid; gap: 2px; }
+.feedreply p { margin: 0; white-space: pre-wrap; }
+/* Ô chọn loại góp ý: gọn, một dòng. */
+/* Loại + Cảm xúc nằm cạnh nhau trên một hàng. */
+.feedtyperow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--spacing-10); align-items: end; }
+.feedtypefield { min-width: 0; }
+/* Ô chọn loại (tự vẽ, khớp ô nhập của app thay cho menu hệ thống). */
+.feedpick { position: relative; }
+.feedpick__button {
+  width: 100%; height: 44px; padding: 0 var(--spacing-12) 0 var(--spacing-16);
+  display: flex; align-items: center; gap: var(--spacing-8);
+  border-radius: var(--radius-16); border: 1px solid var(--border-primary); background: var(--bg-primary);
+  font: inherit; font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold);
+  color: var(--text-primary); text-align: left; cursor: pointer;
+}
+.feedpick.is-empty .feedpick__button { color: var(--text-tertiary); font-weight: var(--font-weight-regular, 400); }
+.feedpick__button:focus-visible, .feedpick__button[aria-expanded="true"] { outline: none; border-color: var(--border-brand); box-shadow: 0 0 0 3px var(--bg-brand-50); }
+.feedpick__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feedpick__chevron { display: grid; color: var(--text-tertiary); transition: transform .15s ease; }
+.feedpick__button[aria-expanded="true"] .feedpick__chevron { transform: rotate(180deg); color: var(--text-brand-500); }
+.feedpick__list {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; min-width: 100%; width: max-content; max-width: min(320px, calc(100vw - 2 * var(--gutter)));
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--bg-primary); border: 1px solid var(--border-secondary); border-radius: var(--radius-16);
+  box-shadow: var(--shadow-float);
+}
+.feedpick__list[hidden] { display: none; }
+.feedpick__option { display: flex; align-items: center; gap: var(--spacing-12); padding: 10px 12px; border-radius: var(--radius-12); cursor: pointer; }
+.feedpick__option.is-active { background: var(--bg-secondary); }
+.feedpick__option[aria-selected="true"] { background: var(--bg-brand-50); }
+.feedpick__text { flex: 1; display: grid; gap: 2px; }
+.feedpick__text b { font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+.feedpick__text small { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); color: var(--text-tertiary); }
+.feedpick__option[aria-selected="true"] .feedpick__text b { color: var(--text-brand-500); }
+.feedpick__option > svg, .feedpick__option > .icon { flex: none; color: var(--text-brand-500); visibility: hidden; }
+.feedpick__option[aria-selected="true"] > svg, .feedpick__option[aria-selected="true"] > .icon { visibility: visible; }
+
+/* EkkoFeed: thanh "Góp ý tới công ty" dưới thẻ chức năng — nền xanh Payday đậm,
+   khoanh icon xanh lime, để nổi hẳn so với các thẻ trắng xung quanh. */
+.feedbar {
+  display: flex; align-items: center; gap: var(--spacing-12); width: 100%;
+  margin: 0 0 var(--spacing-16); padding: var(--spacing-12) var(--spacing-14, 14px);
+  border: 0; border-radius: var(--radius-16); cursor: pointer; text-align: left; font: inherit;
+  background: linear-gradient(110deg, var(--ekko-payday-blue, #3E58F1) 0%, #5B3FE0 100%); color: #fff;
+  box-shadow: var(--shadow-card);
+}
+.feedbar__icon { flex: none; width: 40px; height: 40px; border-radius: var(--radius-full); display: grid; place-items: center; background: var(--ekko-lime, #B3F42C); color: #12131A; }
+.feedbar__text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.feedbar__text b { font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); font-weight: var(--font-weight-semibold); }
+.feedbar__text small { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); opacity: .88; }
+.feedbar__go { flex: none; display: grid; place-items: center; opacity: .9; }
+.feedbar:active { transform: scale(.99); }
+
+/* Ô chọn cảm xúc gọn: chỉ hiện mặt cảm xúc + mũi tên. */
+.feedpick--compact .feedpick__button { width: auto; min-width: 76px; padding: 0 var(--spacing-10) 0 var(--spacing-12); }
+.feedpick--compact .feedpick__label { display: none; }
+.feedpick--compact .feedpick__list { left: auto; right: 0; min-width: 210px; }
+.feedpick__value { display: flex; align-items: center; gap: var(--spacing-8); }
+.feedpick__icon { flex: none; display: grid; place-items: center; width: 28px; }
+.feedpick__none { width: 22px; height: 22px; border-radius: 50%; border: 1.5px dashed var(--border-primary); }
+.feedpost__badges { display: inline-flex; align-items: center; gap: var(--spacing-6, 6px); }
