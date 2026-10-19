@@ -28,6 +28,7 @@ import savingsView from './views/savings.js';
 import badgesView, { challengesView, levelView } from './views/badges.js';
 import newsListView from './views/news.js';
 import teamView from './views/team.js';
+import feedView from './views/feed.js';
 import { openLesson } from './views/lesson.js';
 
 const root = document.getElementById('app');
@@ -79,6 +80,7 @@ const ROUTES = {
   '/level': levelView,
   '/challenges': challengesView,
   '/team': teamView,
+  '/feed': feedView,
   '/news': newsListView,
 };
 
@@ -194,7 +196,7 @@ function renderHud() {
 // Ba tính năng này đã có ô nhập/nút hành động riêng của chúng ngay trong màn
 // hình (ví dụ nút Thêm ngân sách, form thêm việc), nên thanh ghi nhanh + nút
 // Ekko bot nổi ở đáy màn chỉ gây rối, không liên quan tới việc đang làm ở đó.
-const HIDE_CHROME_ON = new Set(['/explore', '/budget', '/goals', '/plans', '/savings']);
+const HIDE_CHROME_ON = new Set(['/explore', '/budget', '/goals', '/plans', '/savings', '/feed']);
 
 function renderChrome() {
   const hide = HIDE_CHROME_ON.has(currentPath);

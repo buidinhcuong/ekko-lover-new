@@ -4,7 +4,7 @@
  * nay, ngân sách tháng, biểu đồ chi tiêu tuần và tin tức. Xem `loverHome`.
  * Concept Simple mode có màn chủ riêng ở `home-simple.js`.
  */
-import { APP_SPRITE, api, dataIcon, el, guard, mount, screenScale, spriteIcon, toast, uiIcon, vnd, vndShort } from '/shared/client.js';
+import { APP_SPRITE, UI_SPRITE, api, dataIcon, el, guard, mount, screenScale, spriteIcon, toast, uiIcon, vnd, vndShort } from '/shared/client.js';
 import { confirmSheet, swipeRow } from '../ui.js';
 import { t } from '../i18n.js';
 import { openNewsDetail } from './news.js';
@@ -157,6 +157,8 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     { icon: 'briefcase-dollar', label: t('Ngân sách'), route: '/budget' },
     { icon: 'note', label: t('Ghi chép'), route: '/expenses' },
     { icon: 'savings', label: t('Tiết kiệm'), route: '/savings' },
+    // EkkoFeed: góp ý tới công ty (icon nét trong bộ icon giao diện, không phải bộ icon app).
+    { icon: 'bubble-chat', label: t('Góp ý'), route: '/feed', sprite: UI_SPRITE },
   ];
 
   // 5 tab luôn hiện icon + tên, nằm trong thẻ xanh ngay trên hàng hồ sơ — khác
@@ -176,11 +178,12 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
           [...tabsNode.querySelectorAll('.loverhome__tab')].forEach((n) => n.classList.remove('is-active'));
           node.classList.add('is-active');
           indicatorNode.style.opacity = '1';
-          indicatorNode.style.transform = `translateX(${node.offsetLeft}px)`;
+          // Nút rộng hơn khoanh tròn: canh khoanh trắng vào giữa nút.
+          indicatorNode.style.transform = `translateX(${node.offsetLeft + (node.offsetWidth - indicatorNode.offsetWidth) / 2}px)`;
           setTimeout(() => ctx.navigate(btn.route), 150);
         },
       }, [
-        el('span.loverhome__tabcircle', {}, [spriteIcon(btn.icon, 24, APP_SPRITE)]),
+        el('span.loverhome__tabcircle', {}, [spriteIcon(btn.icon, 24, btn.sprite || APP_SPRITE)]),
         el('span.loverhome__tablabel', {}, btn.label),
       ]);
       return node;
@@ -618,5 +621,15 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     el('span.resumenudge__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 20)),
   ]) : null;
 
-  return el('div.loverhome', {}, [head, streakNudge, resume, tabcard, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
+  // EkkoFeed: công ty đã phản hồi góp ý — dòng vàng như lời nhắc streak, bấm mở EkkoFeed.
+  const feedUnread = ctx.world.feed?.unreadReplies || 0;
+  const feedNudge = ctx.world.concept === 'lover' && feedUnread
+    ? el('button.streaknudge', { type: 'button', onclick: () => ctx.navigate('/feed') }, [
+      el('span.streaknudge__icon', { 'aria-hidden': 'true' }, uiIcon('bubble-chat', 18)),
+      el('span.streaknudge__text', {}, t('Công ty đã phản hồi góp ý của bạn')),
+      el('span.streaknudge__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 18)),
+    ])
+    : null;
+
+  return el('div.loverhome', {}, [head, streakNudge, feedNudge, resume, tabcard, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
 }

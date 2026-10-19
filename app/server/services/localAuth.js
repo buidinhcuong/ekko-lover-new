@@ -144,9 +144,14 @@ export function register({ name, email, password, code }, upsertMember) {
 const GENERIC_LOGIN_ERROR = 'Email hoặc mật khẩu không đúng';
 
 export function login({ email, password }) {
-  if (!localAuthEnabled()) return fail('Đăng nhập bằng email đang tắt', 403);
   const cleanEmail = normalizeEmail(email);
   const account = get('SELECT * FROM local_accounts WHERE email = ?', cleanEmail);
+  // Tắt đăng nhập email (bản thật dùng SSO) vẫn chừa tài khoản quản trị Ekko và HR
+  // doanh nghiệp — họ không có tài khoản trong app Ekko để vào bằng SSO.
+  if (!localAuthEnabled() && !(account && get(
+    "SELECT 1 ok FROM users u WHERE u.id = ? AND (u.role = 'admin' OR EXISTS (SELECT 1 FROM employer_admins e WHERE e.user_id = u.id))",
+    account.user_id,
+  ))) return fail('Đăng nhập bằng email đang tắt', 403);
   if (!account) {
     // Vẫn băm một lần để thời gian trả lời không lộ email nào có tài khoản.
     checkPassword(String(password || ''), hashPassword('placeholder-password'));

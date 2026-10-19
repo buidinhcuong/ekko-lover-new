@@ -19,6 +19,7 @@ import { claimBadge, dailyCheckin, evaluateBadges } from '../services/progressio
 import { challengeBoard, claimChallenge, claimChallengeBonus } from '../services/challenges.js';
 import { readState } from '../services/streak.js';
 import { buildWorld } from '../services/world.js';
+import { feedAccess } from '../services/ekkoFeed.js';
 import { activeConcept, conceptByCode, setActiveConcept } from '../services/concepts.js';
 import { buildPersona, dropPersona, personaClaims, personaOf, PERSONAS } from '../services/personas.js';
 import { nowIso } from '../lib/time.js';
@@ -220,6 +221,8 @@ export function whoami(req, res) {
       localAccount: String(user.ekko_user_id || '').startsWith('local:'),
       persona: config.devMode ? personaOf(user.ekko_user_id) : null,
       concept: activeConcept(),
+      // EkkoFeed: HR doanh nghiệp vào được Admin portal nhưng chỉ trang EkkoFeed của công ty mình.
+      feed: feedAccess(user),
     }
     : { authenticated: false });
 }

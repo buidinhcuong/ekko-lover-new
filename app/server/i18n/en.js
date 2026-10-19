@@ -1688,4 +1688,8 @@ export const EN = {
   'Không có loại lặp lại này': 'No such recurring type',
   'Không tìm thấy khoản lặp lại này': 'Recurring item not found',
   'Ngày trong tháng phải từ 1 đến 31': 'Day of month must be between 1 and 31',
+  'Bạn viết thêm chút nữa nhé (ít nhất 10 ký tự)': 'Please write a bit more (at least 10 characters)',
+  'Góp ý tối đa 1000 ký tự': 'Feedback can be at most 1000 characters',
+  'Hôm nay bạn đã gửi góp ý rồi. Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé.': 'You already sent feedback today. You can send 1 per day — come back tomorrow.',
+  'Không tìm thấy bản nháp — bạn bấm "Xem trước" lại giúp nhé': 'Draft not found — please tap "Preview" again',
 };

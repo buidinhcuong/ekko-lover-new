@@ -593,7 +593,8 @@ body.is-modal .homebar { opacity: 0; }
 /* Cùng bộ thông số với `.expdaycard`: nền trắng, viền `border-secondary`,
    bo `radius-16`, bóng `shadow-card`. */
 .loverhome__tabcard {
-  padding: var(--spacing-16);
+  /* 6 nút chức năng (thêm "Góp ý" — EkkoFeed): đệm ngang hẹp hơn để vừa màn 360–393px. */
+  padding: var(--spacing-16) var(--spacing-10);
   background: var(--bg-primary);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-16);
@@ -658,19 +659,19 @@ body.is-modal .homebar { opacity: 0; }
   z-index: 2;
 }
 .loverhome__tabindicator {
-  position: absolute; top: 0; left: 0; width: 46px; height: 46px;
+  position: absolute; top: 0; left: 0; width: 42px; height: 42px;
   border-radius: 50%; background: transparent;
   box-shadow: 0 0 0 2px var(--bg-brand-500);
   z-index: -1; opacity: 0;
   transition: transform .38s cubic-bezier(.34, 1.56, .64, 1), opacity .2s ease;
 }
-.loverhome__tab { display: flex; flex-direction: column; align-items: center; width: 46px; padding: 0; border: 0; background: none; cursor: pointer; }
+.loverhome__tab { display: flex; flex-direction: column; align-items: center; flex: 1 1 0; min-width: 0; padding: 0; border: 0; background: none; cursor: pointer; }
 /* Đúng màu nút "Function" trong Figma: nền trắng, viền 1px chuyển sắc từ
    #F5F5F5 xuống #ECECEC — chính là `--bg-secondary` và `--border-secondary`.
    Viền chuyển sắc trên hình tròn làm bằng hai lớp nền: lớp trong phủ vùng
    padding, lớp ngoài lộ ra đúng phần viền trong suốt. */
 .loverhome__tabcircle {
-  width: 46px; height: 46px; border-radius: 50%;
+  width: 42px; height: 42px; border-radius: 50%;
   border: 1px solid transparent;
   background:
     linear-gradient(var(--bg-primary), var(--bg-primary)) padding-box,
@@ -679,9 +680,9 @@ body.is-modal .homebar { opacity: 0; }
 }
 /* Icon giữ đúng màu trong Figma: Payday Blue, qua token `--text-brand-500`.
    Sprite dùng currentColor nên chỉ cần đặt `color` ở đây. */
-.loverhome__tabcircle .ekko-icon { width: 24px; height: 24px; color: var(--text-brand-500); }
+.loverhome__tabcircle .ekko-icon { width: 22px; height: 22px; color: var(--text-brand-500); }
 .loverhome__tablabel {
-  margin-top: var(--spacing-6); font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-6); font-size: 11px; line-height: 16px; letter-spacing: -0.1px; font-weight: var(--font-weight-semibold);
   color: var(--text-secondary); white-space: nowrap;
   transition: color .3s ease;
 }
@@ -3209,3 +3210,36 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 
 /* Thu nhập tháng dưới dòng "Còn lại" (lấy theo các khoản thu nhập đã ghi). */
 .expcentral__income { display: block; margin-top: 2px; color: var(--text-secondary); font-weight: var(--font-weight-regular); }
+
+/* ---------------------------------------------------------------- EkkoFeed */
+.feedview { display: grid; gap: var(--spacing-16); }
+.feedintro { display: flex; gap: var(--spacing-12); align-items: flex-start; }
+.feedintro__icon { flex: none; width: 48px; height: 48px; border-radius: var(--radius-full); display: grid; place-items: center; background: var(--bg-brand-50); color: var(--text-brand-500); }
+.feedintro h2 { margin: 0 0 4px; font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); }
+.feedintro p { margin: 0; }
+.feedform, .feedreview { display: grid; gap: var(--spacing-12); }
+.feedtext { min-height: 120px; resize: vertical; font: inherit; }
+.feedtools { display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-8); }
+.feedmic { justify-self: start; display: inline-flex; gap: 6px; align-items: center; }
+.feedmic.is-on { color: var(--text-error-500, #d92d20); }
+.feedcheck { display: flex; gap: var(--spacing-10); align-items: flex-start; cursor: pointer; }
+.feedcheck input { margin-top: 3px; flex: none; width: 18px; height: 18px; accent-color: var(--bg-brand-500); }
+.feedcheck span { display: grid; gap: 2px; }
+.feedxp { text-align: center; }
+.feedreview h3 { margin: 0; font-size: var(--font-size-text-md); }
+.feedquote { margin: 0; padding: var(--spacing-12); border-left: 3px solid var(--border-brand); background: var(--bg-secondary); border-radius: 0 var(--radius-8) var(--radius-8) 0; white-space: pre-wrap; }
+.feedactions { display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-8); }
+.feeddone { display: flex; gap: var(--spacing-10); align-items: flex-start; color: var(--text-success-500, #12805c); }
+.feeddone p { margin: 4px 0 0; color: var(--text-secondary); }
+.feeddone b { color: var(--text-primary); }
+.feedlist { display: grid; gap: var(--spacing-10); }
+.feedpost { display: grid; gap: var(--spacing-8); }
+.feedpost.is-new { box-shadow: 0 0 0 2px var(--border-warning); }
+.feedpost__head { display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-8); }
+.feedpost__text { margin: 0; white-space: pre-wrap; }
+.feedstatus { padding: 2px 10px; border-radius: var(--radius-full); font-size: var(--font-size-text-xs); line-height: 18px; font-weight: var(--font-weight-semibold); background: var(--bg-secondary); color: var(--text-secondary); }
+.feedstatus.is-brand { background: var(--bg-brand-50); color: var(--text-brand-500); }
+.feedstatus.is-warning { background: var(--bg-warning-50); color: var(--text-warning); }
+.feedstatus.is-success { background: var(--bg-success-50, #ecfdf3); color: var(--text-success-500, #12805c); }
+.feedreply { padding: var(--spacing-10) var(--spacing-12); border-radius: var(--radius-12); background: var(--bg-brand-50); display: grid; gap: 2px; }
+.feedreply p { margin: 0; white-space: pre-wrap; }

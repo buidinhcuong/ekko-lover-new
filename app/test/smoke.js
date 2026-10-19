@@ -1784,6 +1784,72 @@ async function main() {
     const openRedirect = await get('anon', `/dev/login?redirect=${encodeURIComponent('https://evil.example.com')}`);
     const redirectTarget = new URL(openRedirect.headers.get('location'), BASE).searchParams.get('redirect');
     check('Chặn chuyển hướng ra ngoài miền', redirectTarget === '/app/', String(redirectTarget));
+
+    section('EkkoFeed (góp ý tới doanh nghiệp)');
+    {
+      const join = async (jar, sub, employer, employerId) => {
+        const r = await get(jar, `/dev/login?sub=${sub}&name=${encodeURIComponent(sub)}&employer=${encodeURIComponent(employer)}&employer_id=${employerId}`);
+        await get(jar, r.headers.get('location'));
+      };
+      await join('fa1', 'feed-a1', 'Công ty Feed', 'CT-FEED');
+      await join('fa2', 'feed-a2', 'Công ty Feed', 'CT-FEED');
+      await join('fb1', 'feed-b1', 'Công ty Khác', 'CT-OTHER');
+
+      const draft = (await post('fa1', '/api/feed/preview', { text: 'Nhà ăn ca đêm hết suất cơm trước 1h, gọi tổ trưởng Nguyễn Văn Bình 0912 345 678 không nghe' })).json.draft;
+      check('Xem trước: che số điện thoại và tên người, gợi ý chủ đề',
+        draft && !/0912|Bình/.test(draft.redactedText) && /\[số điện thoại\]/.test(draft.redactedText) && draft.topic === 'facilities', JSON.stringify(draft));
+      const sent = await post('fa1', `/api/feed/${draft.id}/submit`, { anonymous: true });
+      check('Gửi góp ý: trạng thái Đã gửi, góp ý đầu tuần +10 XP', sent.status === 200 && sent.json.post.status === 'sent' && sent.json.rewards.xp === 10, JSON.stringify(sent.json).slice(0, 200));
+      const again = await post('fa1', '/api/feed/preview', { text: 'Thêm một góp ý nữa trong cùng ngày hôm nay' });
+      check('Mỗi ngày tối đa 1 góp ý', again.status === 429);
+      const mine = (await get('fa1', '/api/feed')).json;
+      check('Góp ý của tôi: thấy lời gốc của mình, hết lượt hôm nay', mine.posts.length === 1 && /0912/.test(mine.posts[0].text) && mine.canPostToday === false);
+
+      const d2 = (await post('fa2', '/api/feed/preview', { text: 'Lương tăng ca tháng 9 trả chậm quá, anh em rất bức xúc' })).json.draft;
+      await post('fa2', `/api/feed/${d2.id}/submit`, { anonymous: false });
+      const db1 = (await post('fb1', '/api/feed/preview', { text: 'Xe đưa đón buổi sáng hay đến muộn nửa tiếng' })).json.draft;
+      await post('fb1', `/api/feed/${db1.id}/submit`, {});
+
+      const r5 = (await get('admin', '/api/admin/feed/report?employer=CT-FEED')).json;
+      check('Báo cáo: dưới ngưỡng ẩn danh (5 người) thì không hiện từ khoá / nhóm vấn đề',
+        r5.totals.posts === 2 && r5.keywords.length === 0 && r5.issues.length === 0 && r5.minGroup === 5, JSON.stringify(r5.totals));
+      check('Ekko chỉnh ngưỡng ẩn danh theo công ty', (await put('admin', '/api/admin/feed/settings', { employer: 'CT-FEED', minGroup: 1 })).status === 200);
+      const r1 = (await get('admin', '/api/admin/feed/report?employer=CT-FEED')).json;
+      check('Báo cáo: đám mây từ khoá (độ to theo số người) và nhóm vấn đề',
+        r1.keywords.length > 0 && r1.keywords.every((k) => k.weight > 0 && k.weight <= 1) && r1.issues.length > 0 && r1.byTopic.length > 0,
+        JSON.stringify({ k: r1.keywords.slice(0, 3), i: r1.issues.map((i) => i.title) }));
+
+      const hr = await post('admin', '/api/admin/feed/hr-accounts', { email: 'hr@congtyfeed.vn', name: 'HR Feed', employer: 'CT-FEED' });
+      check('Ekko tạo tài khoản HR doanh nghiệp (mật khẩu tạm)', hr.status === 200 && hr.json.password && hr.json.company === 'Công ty Feed', JSON.stringify(hr.json));
+      const hrLogin = await post('hrjar', '/api/auth/login', { email: 'hr@congtyfeed.vn', password: hr.json.password });
+      const hrWho = (await get('hrjar', '/api/session/whoami')).json;
+      check('HR đăng nhập được, whoami báo quyền EkkoFeed của công ty mình', hrLogin.status === 200 && hrWho.feed?.employerKey === 'CT-FEED' && hrWho.feed.ekko === false);
+      const hrReport = (await get('hrjar', '/api/admin/feed/report?employer=CT-OTHER')).json;
+      check('HR chỉ thấy công ty mình (đổi tham số công ty cũng không thấy công ty khác)', hrReport.employer === 'CT-FEED' && hrReport.totals.posts === 2);
+      check('HR không vào được các trang quản trị khác', (await get('hrjar', '/api/admin/stats/users')).status === 403
+        && (await get('hrjar', '/api/admin/feed/hr-accounts')).status === 403);
+      const hrPosts = (await get('hrjar', '/api/admin/feed/posts')).json;
+      const anonPost = hrPosts.find((x) => x.topic === 'facilities');
+      const namedPost = hrPosts.find((x) => x.author);
+      check('HR thấy bản đã che; tin ẩn danh không có tên, tin ghi tên thì có',
+        hrPosts.length === 2 && anonPost && anonPost.author === null && !/0912/.test(anonPost.text) && namedPost?.author.name === 'feed-a2');
+      const otherId = (await get('admin', '/api/admin/feed/posts?employer=CT-OTHER')).json[0].id;
+      check('HR không trả lời được góp ý của công ty khác', (await post('hrjar', '/api/admin/feed/reply', { postIds: [otherId], text: 'Xin chào' })).status === 404);
+      const reply = await post('hrjar', '/api/admin/feed/reply', { postIds: [anonPost.id], text: 'Từ tuần sau nhà ăn ca đêm tăng thêm 40 suất.' });
+      const afterReply = (await get('fa1', '/api/feed')).json.posts[0];
+      const worldA1 = (await get('fa1', '/api/me/world')).json;
+      check('HR trả lời: người gửi thấy phản hồi, trạng thái Đã phản hồi, có dòng nhắc ở màn chủ',
+        reply.status === 200 && afterReply.status === 'replied' && afterReply.replies[0].fromCompany && worldA1.feed.unreadReplies === 1);
+      await post('fa1', '/api/feed/replies/seen', {});
+      check('Mở EkkoFeed thì hết dòng nhắc', (await get('fa1', '/api/me/world')).json.feed.unreadReplies === 0);
+
+      await join('fa3', 'feed-a3', 'Công ty Feed', 'CT-FEED');
+      const sens = (await post('fa3', '/api/feed/preview', { text: 'Có người trong xưởng đe doạ đánh tôi nếu tôi báo cáo' })).json.draft;
+      await post('fa3', `/api/feed/${sens.id}/submit`, {});
+      const hrAfter = (await get('hrjar', '/api/admin/feed/posts')).json;
+      const ekkoReview = (await get('admin', '/api/admin/feed/posts?employer=CT-FEED&status=review')).json;
+      check('Nội dung nhạy cảm chờ Ekko kiểm duyệt, HR chưa thấy', hrAfter.length === 2 && ekkoReview.length === 1);
+    }
   } finally {
     server.kill();
   }

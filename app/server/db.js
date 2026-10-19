@@ -623,6 +623,61 @@ CREATE TABLE IF NOT EXISTS team_nudges (
   UNIQUE (from_user_id, to_user_id, day)
 );
 `);
+// --- EkkoFeed: người lao động góp ý tới doanh nghiệp (services/ekkoFeed.js) ---
+db.exec(`
+-- Mỗi góp ý một dòng. text = lời gốc (chỉ người gửi và Ekko thấy); redacted_text =
+-- bản đã che SĐT / CCCD / số tài khoản / tên người — bản doanh nghiệp thấy.
+-- employer_key = công ty của người gửi lúc gửi (mã công ty, không có thì tên).
+CREATE TABLE IF NOT EXISTS feed_posts (
+  id             INTEGER PRIMARY KEY,
+  user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  employer_key   TEXT,
+  employer_name  TEXT,
+  type           TEXT NOT NULL DEFAULT 'suggestion',   -- complaint | request | suggestion | praise
+  topic          TEXT NOT NULL DEFAULT 'other',
+  text           TEXT NOT NULL,
+  redacted_text  TEXT NOT NULL,
+  summary        TEXT,
+  keywords       TEXT,                                 -- JSON mảng cụm từ khoá
+  sentiment      REAL,                                 -- -1 (rất tiêu cực) .. 1
+  urgency        TEXT NOT NULL DEFAULT 'medium',       -- low | medium | high | urgent
+  anonymous      INTEGER NOT NULL DEFAULT 1,
+  sensitive      INTEGER NOT NULL DEFAULT 0,           -- đe doạ / tự hại / quấy rối → Ekko xem trước
+  source         TEXT NOT NULL DEFAULT 'rule',         -- ai | rule (ai phân loại hay bộ từ khoá)
+  status         TEXT NOT NULL DEFAULT 'draft',        -- draft | review | sent | received | in_progress | replied | closed
+  day            TEXT NOT NULL,
+  created_at     TEXT NOT NULL,
+  submitted_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS feed_posts_employer ON feed_posts(employer_key, status, day);
+CREATE INDEX IF NOT EXISTS feed_posts_user ON feed_posts(user_id, status, day);
+CREATE TABLE IF NOT EXISTS feed_replies (
+  id          INTEGER PRIMARY KEY,
+  post_id     INTEGER NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+  author_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  author_role TEXT NOT NULL,                           -- hr | ekko
+  text        TEXT NOT NULL,
+  created_at  TEXT NOT NULL,
+  seen_at     TEXT
+);
+CREATE INDEX IF NOT EXISTS feed_replies_post ON feed_replies(post_id);
+-- Quản trị doanh nghiệp (HR): vào được Admin portal nhưng chỉ trang EkkoFeed của công ty mình.
+CREATE TABLE IF NOT EXISTS employer_admins (
+  user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  employer_key  TEXT NOT NULL,
+  employer_name TEXT,
+  created_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TEXT NOT NULL
+);
+-- Nhật ký xem / trả lời EkkoFeed của quản trị (ai, lúc nào, làm gì).
+CREATE TABLE IF NOT EXISTS feed_audit (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  action     TEXT NOT NULL,
+  target     TEXT,
+  created_at TEXT NOT NULL
+);
+`);
 // Lúc người dùng bấm "Nhận thưởng" của một huy hiệu (Ekko Lover). NULL = XP của
 // huy hiệu còn chờ nhận. Huy hiệu trao trước khi có cột này đã được cộng XP ngay
 // lúc trao, nên đánh dấu là đã nhận.

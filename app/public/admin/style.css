@@ -557,3 +557,14 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 
 /* Ô chọn công ty ở đầu trang số liệu. */
 .companypicker { min-width: 220px; max-width: 320px; height: 36px; padding: 0 var(--spacing-10); border: 1px solid var(--border-primary); border-radius: var(--radius-8); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); }
+
+/* ---------------------------------------------------------------- EkkoFeed */
+/* Đám mây từ khoá: cỡ chữ theo số người nhắc (đặt inline), chữ màu thương hiệu. */
+.wordcloud { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 6px 16px; padding: var(--spacing-8) 0; line-height: 1.15; }
+.wordcloud__word { color: var(--text-brand-500); font-weight: var(--font-weight-semibold); cursor: default; white-space: nowrap; }
+.wordcloud__word:nth-child(3n+2) { color: var(--text-primary); }
+.issuelist { display: grid; gap: var(--spacing-10); }
+.issue { padding: var(--spacing-12); border: 1px solid var(--border-secondary); border-radius: var(--radius-12); }
+.issue__head { display: flex; gap: var(--spacing-8); align-items: center; margin-bottom: 4px; }
+.issue__quotes { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 2px; font-size: var(--font-size-text-sm); color: var(--text-secondary); }
+.feedreply-admin { margin-top: 6px; padding: 6px 10px; border-radius: var(--radius-8); background: var(--bg-brand-50); font-size: var(--font-size-text-sm); }

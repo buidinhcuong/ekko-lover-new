@@ -1,4 +1,14 @@
-# EkkoFeed — Đề xuất tính năng (bản nháp 2, 19/10/2026)
+# EkkoFeed — Đề xuất tính năng (bản nháp 3, 19/10/2026)
+
+> **Trạng thái:** đã làm xong **MVP** trên nhánh `tinh-nang/ekkofeed` (chưa gộp vào
+> `main`, chưa deploy). Gồm: ô Góp ý ở màn chủ · xem trước có che SĐT / CCCD /
+> số tài khoản / tên người · AI phân loại loại / chủ đề / từ khoá / mức gấp (không có
+> AI thì dùng bộ từ khoá) · tự chọn ẩn danh · 1 góp ý/ngày, +10 XP/tuần · Góp ý của
+> tôi + trạng thái + phản hồi · dòng nhắc vàng khi công ty phản hồi · Admin: đám mây
+> từ khoá, nhóm vấn đề, theo chủ đề / loại, danh sách, trả lời từng tin hoặc cả nhóm,
+> đổi trạng thái · nội dung nhạy cảm chờ Ekko duyệt · ngưỡng ẩn danh theo công ty ·
+> tài khoản HR doanh nghiệp (chỉ thấy công ty mình) · API báo cáo. Còn chờ: điều
+> khoản do pháp chế duyệt (đang để câu tạm), xem danh tính tin ẩn danh khi nguy hiểm (GĐ 2).
 
 > Nhánh: `tinh-nang/ekkofeed`. Đây là bản nháp để thống nhất trước khi làm —
 > các mục **❓ Cần chốt** ở cuối là những chỗ cần anh/chị quyết.
@@ -37,7 +47,8 @@ Giá trị cho từng bên:
 
 ## 3. Người lao động thấy gì (app)
 
-Một mục mới **"EkkoFeed"** (gợi ý: tab hoặc ô thứ 6 ở màn chủ, biểu tượng loa).
+Ô **"Góp ý"** là ô thứ 6 trong hàng Chức năng ở màn chủ (cạnh Học tập, Mục tiêu,
+Ngân sách, Ghi chép, Tiết kiệm) — ✅ đã chốt 19/10.
 
 **3.1 Gửi tiếng nói** — một màn đơn giản, gõ được trong 30 giây:
 
@@ -61,8 +72,8 @@ hiện dòng nhắc vàng ở màn chủ (giống lời nhắc streak).
 
 **3.4 Ekko bot** — nhắn "muốn góp ý với công ty…" thì bot mở sẵn màn gửi.
 
-**3.5 Thưởng (tuỳ chọn):** +10 XP cho góp ý đầu tiên mỗi tuần, huy hiệu
-"Tiếng nói" — đủ khuyến khích nhưng không đủ để gửi rác lấy XP. Giới hạn 5 góp ý / ngày.
+**3.5 Thưởng & giới hạn (✅ đã chốt 19/10):** +10 XP cho góp ý đầu tiên mỗi tuần.
+Mỗi người **tối đa 1 góp ý mỗi ngày** để tránh gửi rác. (Huy hiệu "Tiếng nói" để sau.)
 
 ## 4. Admin / doanh nghiệp thấy gì
 

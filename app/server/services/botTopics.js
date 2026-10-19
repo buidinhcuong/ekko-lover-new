@@ -82,6 +82,26 @@ function words(text) {
     .map((w) => ({ w, n: normalize(w) }));
 }
 
+/**
+ * Cụm từ khoá của một câu (dạng có dấu để hiển thị): cụm 2 chữ không chứa từ đệm,
+ * và chữ đơn mang nghĩa (không phải từ đệm / chữ chung chung). Dùng cho EkkoFeed
+ * khi không gọi được AI.
+ */
+export function phrasesOf(text, limit = 5) {
+  const ws = words(text).filter((x) => !/^\d+$/.test(x.n));
+  const out = [];
+  const seen = new Set();
+  const push = (key, shown) => { if (!seen.has(key)) { seen.add(key); out.push(shown); } };
+  ws.forEach((x, i) => {
+    const y = ws[i + 1];
+    if (y && !isStop(x) && !isStop(y)) push(`${x.n} ${y.n}`, `${x.w} ${y.w}`);
+  });
+  ws.forEach((x) => {
+    if (!isStop(x) && !GENERIC.has(x.n) && x.n.length > 2 && ![...seen].some((k) => k.split(' ').includes(x.n))) push(x.n, x.w);
+  });
+  return out.slice(0, limit);
+}
+
 export function botKeywordReport({ days = 30, today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] } } = {}) {
   const from = shiftDay(today, -(days - 1));
   // Mỗi tin của người dùng ghép với câu bot trả lời ngay sau (cùng người, id kế tiếp).
