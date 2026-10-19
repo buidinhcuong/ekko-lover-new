@@ -30,17 +30,10 @@ import { COMPANY_KEY, NO_EMPLOYER } from './companyScope.js';
 import { hashPassword, tempPassword } from './localAuth.js';
 
 export const DAILY_LIMIT = 1;
-/**
- * Cảm xúc người gửi tự chọn (tuỳ chọn). Khi có, điểm cảm xúc của bài lấy theo lựa
- * chọn này (người gửi tự nói thì đúng hơn máy đoán từ câu chữ).
- */
-export const FEED_MOODS = {
-  happy: { label: 'Vui', sentiment: 0.6 },
-  neutral: { label: 'Bình thường', sentiment: 0 },
-  sad: { label: 'Buồn', sentiment: -0.5 },
-  angry: { label: 'Phẫn nộ', sentiment: -0.9 },
-};
-const moodOrNull = (m) => (FEED_MOODS[m] ? m : null);
+import { blendMood, FEED_MOODS, moodOrNull, clamp1 } from './feedMood.js';
+
+export { blendMood, FEED_MOODS };
+const URGENCY_UP = { low: 'medium', medium: 'medium', high: 'high', urgent: 'urgent' };
 const DEMO_DAILY_LIMIT = 10;
 export const WEEKLY_XP = 10;
 export const DEFAULT_MIN_GROUP = 5;
@@ -158,7 +151,7 @@ function ruleAnalysis(text) {
   return {
     topic,
     keywords,
-    sentiment: positive && !negative ? 0.6 : negative ? -0.6 : 0,
+    toneSentiment: positive && !negative ? 0.6 : negative ? -0.6 : 0,
     urgency: urgent ? 'urgent' : negative ? 'medium' : 'low',
     summary: null,
     names: [],
@@ -172,8 +165,9 @@ const AI_SYSTEM = [
   'Trả về JSON đúng schema. Quy tắc:',
   `- topic: một trong ${Object.keys(FEED_TOPICS).join(', ')}.`,
   '- keywords: 2–4 cụm từ khoá tiếng Việt CÓ DẤU, ngắn (1–3 chữ), chữ thường, nói về VẤN ĐỀ (vd "tăng ca", "nhà ăn", "trả lương chậm"). Không đưa tên người, số điện thoại.',
-  '- sentiment: số từ -1 (rất tiêu cực) đến 1 (rất tích cực).',
-  '- urgency: low | medium | high | urgent (urgent: nguy hiểm tính mạng / an toàn, bị đe doạ, quấy rối, không trả lương nhiều người).',
+  '- tone_sentiment: số từ -1 (rất tiêu cực) đến 1 (rất tích cực), CHỈ dựa vào từ ngữ và giọng điệu của câu (gay gắt, mỉa mai, than thở, biết ơn…).',
+  '- sentiment: điểm cuối cùng từ -1 đến 1, KẾT HỢP cảm xúc người gửi tự chọn (nếu có) với từ ngữ, giọng điệu. Cảm xúc tự chọn cho biết người gửi cảm thấy thế nào; giọng điệu cho biết cường độ. Hai bên cùng chiều thì đẩy mạnh lên (chọn Phẫn nộ + lời lẽ gay gắt → gần -1). Lệch nhau (chọn Vui nhưng câu than phiền / mỉa mai) thì nghiêng về giọng điệu thật nhưng không bỏ qua lựa chọn. Không chọn thì sentiment = tone_sentiment.',
+  '- urgency: low | medium | high | urgent (urgent: nguy hiểm tính mạng / an toàn, bị đe doạ, quấy rối, không trả lương nhiều người). Người gửi chọn Phẫn nộ hoặc lời lẽ rất bức xúc thì cân nhắc tăng một bậc.',
   '- summary: một câu tóm tắt vấn đề, khách quan, KHÔNG chứa tên người hay chi tiết nhận diện được người gửi (tối đa 15 chữ).',
   '- names: danh sách tên riêng của NGƯỜI được nhắc tới trong câu (để che đi). Không có thì mảng rỗng.',
   '- sensitive: true nếu có dấu hiệu tự hại, đe doạ bạo lực, quấy rối tình dục, hoặc tố cáo nghiêm trọng một cá nhân cụ thể.',
@@ -184,17 +178,19 @@ const AI_SCHEMA = {
   properties: {
     topic: { type: 'string', enum: Object.keys(FEED_TOPICS) },
     keywords: { type: 'array', items: { type: 'string' } },
+    tone_sentiment: { type: 'number' },
     sentiment: { type: 'number' },
     urgency: { type: 'string', enum: URGENCY },
     summary: { type: 'string' },
     names: { type: 'array', items: { type: 'string' } },
     sensitive: { type: 'boolean' },
   },
-  required: ['topic', 'keywords', 'sentiment', 'urgency', 'summary', 'names', 'sensitive'],
+  required: ['topic', 'keywords', 'tone_sentiment', 'sentiment', 'urgency', 'summary', 'names', 'sensitive'],
   additionalProperties: false,
 };
 
-async function aiAnalysis(text, callId) {
+const MOOD_PROMPT = { happy: 'Vui', neutral: 'Bình thường', sad: 'Buồn', angry: 'Phẫn nộ' };
+async function aiAnalysis(text, callId, mood = null) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -213,7 +209,7 @@ async function aiAnalysis(text, callId) {
         output_config: { effort: 'low', format: { type: 'json_schema', schema: AI_SCHEMA } },
         fallbacks: 'default',
         system: [{ type: 'text', text: AI_SYSTEM, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: `Góp ý:\n"""${text}"""` }],
+        messages: [{ role: 'user', content: `Cảm xúc người gửi tự chọn: ${MOOD_PROMPT[mood] || 'không chọn'}\nGóp ý:\n"""${text}"""` }],
       }),
     });
     if (!response.ok) {
@@ -227,7 +223,8 @@ async function aiAnalysis(text, callId) {
     return {
       topic: FEED_TOPICS[out.topic] ? out.topic : 'other',
       keywords: (out.keywords || []).map((k) => String(k).toLowerCase().trim()).filter((k) => k && k.length <= 40).slice(0, 4),
-      sentiment: Math.max(-1, Math.min(1, Number(out.sentiment) || 0)),
+      toneSentiment: clamp1(Number(out.tone_sentiment) || 0),
+      sentiment: clamp1(Number(out.sentiment ?? out.tone_sentiment) || 0),
       urgency: URGENCY.includes(out.urgency) ? out.urgency : 'medium',
       summary: String(out.summary || '').trim().slice(0, 160) || null,
       names: (out.names || []).map(String).slice(0, 10),
@@ -277,17 +274,22 @@ export async function createDraft(userId, { text, anonymous = true, type, mood }
   if (!feedStatusFor(userId, day).canPostToday) return fail('Hôm nay bạn đã gửi góp ý rồi. Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé.', 429);
 
   const callId = keyState() === 'ok' ? takeAiCall(userId, 'feed') : false;
-  const analysis = (callId && await aiAnalysis(clean, callId)) || ruleAnalysis(clean);
+  const pickedMood = moodOrNull(mood);
+  const analysis = (callId && await aiAnalysis(clean, callId, pickedMood)) || ruleAnalysis(clean);
+  // AI đã tự kết hợp cảm xúc tự chọn + giọng điệu; luật thì trộn ở đây.
+  const sentiment = analysis.source === 'ai' ? analysis.sentiment : blendMood(analysis.toneSentiment, pickedMood);
+  // Người gửi chọn "Phẫn nộ": ít nhất mức "trung bình" để HR không bỏ sót.
+  const urgency = pickedMood === 'angry' ? URGENCY_UP[analysis.urgency] : analysis.urgency;
   const company = companyOf(userId);
   // Một người chỉ giữ một bản nháp: xem trước lại thì thay bản cũ.
   run("DELETE FROM feed_posts WHERE user_id = ? AND status = 'draft'", userId);
   const info = run(
     `INSERT INTO feed_posts (user_id, employer_key, employer_name, type, topic, text, redacted_text, summary, keywords,
-                             sentiment, urgency, anonymous, sensitive, source, status, day, created_at, mood)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'draft', ?, ?, ?)`,
+                             sentiment, urgency, anonymous, sensitive, source, status, day, created_at, mood, tone_sentiment)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'draft', ?, ?, ?, ?)`,
     userId, company.key, company.name, FEED_TYPES[type] ? type : DEFAULT_TYPE, analysis.topic, clean, redact(clean, analysis.names),
-    analysis.summary, JSON.stringify(analysis.keywords), moodOrNull(mood) ? FEED_MOODS[mood].sentiment : analysis.sentiment, analysis.urgency,
-    anonymous ? 1 : 0, analysis.sensitive ? 1 : 0, analysis.source, day, nowIso(), moodOrNull(mood),
+    analysis.summary, JSON.stringify(analysis.keywords), sentiment, urgency,
+    anonymous ? 1 : 0, analysis.sensitive ? 1 : 0, analysis.source, day, nowIso(), pickedMood, analysis.toneSentiment,
   );
   return { draft: draftView(get('SELECT * FROM feed_posts WHERE id = ?', Number(info.lastInsertRowid))) };
 }
@@ -318,9 +320,11 @@ export function submitDraft(userId, draftId, { type, topic, anonymous, mood } = 
   const finalMood = mood === undefined ? draft.mood : moodOrNull(mood);
   return tx(() => {
     run(
-      'UPDATE feed_posts SET type = ?, topic = ?, anonymous = ?, mood = ?, sentiment = ?, status = ?, day = ?, submitted_at = ? WHERE id = ?',
+      'UPDATE feed_posts SET type = ?, topic = ?, anonymous = ?, mood = ?, sentiment = ?, urgency = ?, status = ?, day = ?, submitted_at = ? WHERE id = ?',
       finalType, finalTopic, anonymous === undefined ? draft.anonymous : (anonymous ? 1 : 0),
-      finalMood, finalMood && finalMood !== draft.mood ? FEED_MOODS[finalMood].sentiment : draft.sentiment,
+      // Đổi cảm xúc sau khi xem trước: trộn lại với giọng điệu câu chữ (không gọi AI lần nữa).
+      finalMood, finalMood === draft.mood ? draft.sentiment : blendMood(draft.tone_sentiment ?? draft.sentiment, finalMood),
+      finalMood === 'angry' ? URGENCY_UP[draft.urgency] || draft.urgency : draft.urgency,
       draft.sensitive ? 'review' : 'sent', day, nowIso(), draft.id,
     );
     const rewards = recordActivity(userId, { kind: 'feed_post', ref: String(draft.id), xp: status.weeklyXp, countsForStreak: false, day });

@@ -1919,12 +1919,21 @@ async function main() {
       check('Người lao động demo gửi được nhiều hơn 1 góp ý / ngày (thử đủ 2 loại)', ks1.status === 200 && ks2.status === 200);
       const km = (await post('kitw', '/api/feed/preview', { text: 'Ca đêm bị trừ lương vô lý, rất bức xúc', type: 'issue', mood: 'angry' })).json.draft;
       const kmSent = await post('kitw', `/api/feed/${km.id}/submit`, { mood: 'angry' });
+      // Kết hợp cảm xúc tự chọn + giọng điệu (luật, không có AI trong smoke).
+      const { blendMood } = await import('../server/services/feedMood.js');
+      check('Trộn cảm xúc: Phẫn nộ + lời gay gắt rất tiêu cực; Vui + lời than phiền không thành tích cực; không chọn = giọng điệu',
+        blendMood(-0.6, 'angry') <= -0.7 && blendMood(-0.6, 'angry') < blendMood(0, 'angry')
+        && blendMood(-0.6, 'happy') <= 0 && blendMood(0.6, 'happy') >= 0.6 && blendMood(-0.6, null) === -0.6,
+        [blendMood(-0.6, 'angry'), blendMood(0, 'angry'), blendMood(-0.6, 'happy'), blendMood(0.6, 'happy')].join(' '));
       const kmBad = (await post('kitw', '/api/feed/preview', { text: 'Thử cảm xúc không hợp lệ xem sao nhé', type: 'share', mood: 'lol' })).json.draft;
       check('Cảm xúc người gửi tự chọn: lưu lại, điểm cảm xúc theo lựa chọn; mã lạ bị bỏ qua',
         kmSent.json.post.mood === 'angry' && km.mood === 'angry' && kmBad.mood === null, JSON.stringify(kmSent.json.post).slice(0, 160));
       await post('kith', '/api/auth/login', { email: kit.json.hr.email, password: kit.json.hr.password });
       const kitReport = (await get('kith', '/api/admin/feed/report')).json;
       const kitPosts = (await get('kith', '/api/admin/feed/posts')).json;
+      const angryPost = kitPosts.find((x) => x.text.includes('trừ lương vô lý'));
+      check('Phẫn nộ + lời bức xúc: điểm cảm xúc rất tiêu cực, mức gấp ít nhất trung bình',
+        angryPost && angryPost.mood === 'angry' && angryPost.sentiment <= -0.7 && angryPost.urgency !== 'low', JSON.stringify(angryPost && { s: angryPost.sentiment, u: angryPost.urgency }));
       check('Báo cáo có phân bố cảm xúc người gửi theo từng phần', kitReport.sections.issue.moods.find((m) => m.code === 'angry').posts >= 1
         && kitReport.sections.share.moods.some((m) => m.code === 'happy' && m.posts > 0));
       check('HR demo chỉ thấy công ty demo, có sẵn dữ liệu mẫu + góp ý vừa gửi',

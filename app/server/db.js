@@ -724,6 +724,8 @@ CREATE TABLE IF NOT EXISTS feed_audit (
 // EkkoFeed còn 2 loại (19/10): bản ghi theo 4 loại cũ đổi sang loại mới — chạy lại vô hại.
 // EkkoFeed: cảm xúc người gửi tự chọn (happy | neutral | sad | angry), có thể trống.
 addColumn('feed_posts', 'mood', 'TEXT');
+// Điểm cảm xúc chỉ từ câu chữ / giọng điệu (chưa tính cảm xúc tự chọn) — để tính lại khi người gửi đổi cảm xúc.
+addColumn('feed_posts', 'tone_sentiment', 'REAL');
 db.exec(`UPDATE feed_posts SET type = CASE WHEN type = 'praise' THEN 'share' ELSE 'issue' END
           WHERE type NOT IN ('share', 'issue')`);
 // Lúc người dùng bấm "Nhận thưởng" của một huy hiệu (Ekko Lover). NULL = XP của
