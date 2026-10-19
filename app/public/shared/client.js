@@ -14,6 +14,9 @@ export class ApiError extends Error {
  */
 let apiLang = null;
 export const setApiLang = (lang) => { apiLang = lang || null; };
+// Admin portal gọi setApiPortal('admin') để server dùng phiên đăng nhập riêng của Admin.
+let apiPortal = null;
+export const setApiPortal = (portal) => { apiPortal = portal || null; };
 
 async function request(method, path, body) {
   const response = await fetch(path, {
@@ -21,6 +24,7 @@ async function request(method, path, body) {
     headers: {
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
       ...(apiLang ? { 'x-lang': apiLang } : {}),
+      ...(apiPortal ? { 'x-ekko-portal': apiPortal } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: 'same-origin',

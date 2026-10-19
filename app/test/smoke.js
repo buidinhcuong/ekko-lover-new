@@ -35,10 +35,13 @@ const section = (title) => console.log(`\n${title}`);
 // --- a cookie-aware fetch ------------------------------------------------
 const jars = new Map();
 
-async function call(jar, method, path, body, { lang } = {}) {
+async function call(jar, method, path, body, { lang, portal } = {}) {
   const headers = {};
-  const cookie = jars.get(jar);
+  // Một "trình duyệt" giữ nhiều cookie (phiên app + phiên Admin riêng).
+  const cookie = [...(jars.get(jar) || new Map()).entries()].map(([k, v]) => `${k}=${v}`).join('; ');
   if (cookie) headers.cookie = cookie;
+  // Admin portal gửi header này (shared/client.js setApiPortal) để dùng phiên Admin.
+  if (portal) headers['x-ekko-portal'] = portal;
   if (body !== undefined) headers['content-type'] = 'application/json';
   // Ngôn ngữ app người dùng yêu cầu; Admin portal không gửi header này.
   if (lang) headers['x-lang'] = lang;
@@ -53,7 +56,10 @@ async function call(jar, method, path, body, { lang } = {}) {
   const setCookie = response.headers.getSetCookie?.() || [];
   for (const raw of setCookie) {
     const pair = raw.split(';')[0];
-    jars.set(jar, pair);
+    const i = pair.indexOf('=');
+    const map = jars.get(jar) || new Map();
+    if (/Max-Age=0/i.test(raw)) map.delete(pair.slice(0, i)); else map.set(pair.slice(0, i), pair.slice(i + 1));
+    jars.set(jar, map);
   }
 
   const text = await response.text();
@@ -798,12 +804,27 @@ async function main() {
 
     section('Phân quyền');
     const memberOnAdmin = await get('member', '/api/admin/levels');
-    check('Người học không vào được API quản trị', memberOnAdmin.status === 403);
+    check('Người học không vào được API quản trị', [401, 403].includes(memberOnAdmin.status));
 
     const adminLogin = await get('admin', '/dev/login?role=admin');
     await get('admin', adminLogin.headers.get('location'));
-    const who = await get('admin', '/api/session/whoami');
+    const who = await get('admin', '/api/session/whoami', { portal: 'admin' });
     check('Đăng nhập được với vai trò quản trị', who.json.role === 'admin');
+
+    // Phiên app và phiên Admin tách riêng: cùng một trình duyệt dùng được cả hai.
+    const both = 'bothjar';
+    await get(both, '/dev/login');
+    const appLoc = (await get(both, '/dev/login')).headers.get('location');
+    await get(both, appLoc);
+    const adminLoc = (await get(both, '/dev/login?role=admin')).headers.get('location');
+    await get(both, adminLoc);
+    const appWho = (await get(both, '/api/session/whoami')).json;
+    const adminWho = (await get(both, '/api/session/whoami', { portal: 'admin' })).json;
+    check('Cùng trình duyệt: app vẫn là người học, Admin là quản trị viên', appWho.role === 'member' && adminWho.role === 'admin', JSON.stringify([appWho.role, adminWho.role]));
+    await post(both, '/api/session/logout', {}, { portal: 'admin' });
+    check('Đăng xuất Admin không đăng xuất app', (await get(both, '/api/session/whoami')).json.role === 'member'
+      && (await get(both, '/api/session/whoami', { portal: 'admin' })).json.authenticated === false);
+    check('Phiên người học không mở được Admin', (await get(both, '/api/admin/levels')).status === 401);
 
     section('Admin portal');
     const levels = await get('admin', '/api/admin/levels');
@@ -834,7 +855,7 @@ async function main() {
     const changedXp = await put('admin', '/api/admin/settings/learning-xp', { lesson: 35, moduleQuiz: 60 });
     check('Đổi được XP học tập', changedXp.json.lesson === 35 && changedXp.json.moduleQuiz === 60);
     check('XP học tập âm bị chặn', (await put('admin', '/api/admin/settings/learning-xp', { lesson: -1 })).status === 400);
-    check('Người học không đổi được XP học tập', (await put('member', '/api/admin/settings/learning-xp', { lesson: 999 })).status === 403);
+    check('Người học không đổi được XP học tập', [401, 403].includes((await put('member', '/api/admin/settings/learning-xp', { lesson: 999 })).status));
     await put('admin', '/api/admin/settings/learning-xp', { lesson: 30, moduleQuiz: 50 });
 
     const created = await post('admin', '/api/admin/badges', {
@@ -1116,7 +1137,7 @@ async function main() {
     check('Đổi ngược về Ekko Lover được', (await get('member', '/api/learn/map')).json.concept === 'lover');
 
     check('Người học không đổi được concept',
-      (await put('member', '/api/admin/concepts/active', { code: 'lover-colors' })).status === 403);
+      [401, 403].includes((await put('member', '/api/admin/concepts/active', { code: 'lover-colors' })).status));
 
     section('Nhiệm vụ');
     const planTemplates = (await get('member', '/api/plans')).json.templates;
@@ -1424,7 +1445,8 @@ async function main() {
     // Quản trị viên ở đây là một người **đã đăng nhập** nhưng không phải chủ khoản
     // chi — đúng tình huống cần chặn.
     const stranger = await get('admin', `/api/expenses/${receiptId}/receipt`);
-    check('Người khác không xem được ảnh hoá đơn của mình', stranger.status === 404, `status ${stranger.status}`);
+    // (Phiên Admin không dùng được cho API của app → 401; phiên app của người khác → 404.)
+    check('Người khác không xem được ảnh hoá đơn của mình', [401, 404].includes(stranger.status), `status ${stranger.status}`);
 
     // Đọc hoá đơn bằng AI: bộ kiểm này chạy không có khoá API, nên phải thấy đúng
     // câu từ chối rõ ràng chứ không phải lỗi 500 khó hiểu.
@@ -1672,7 +1694,9 @@ async function main() {
       check('Đổi mật khẩu cần đúng mật khẩu hiện tại', (await post('local3', '/api/me/password', { current: 'sai', next: 'matkhau-moi-1' })).status === 400);
       check('Đổi mật khẩu', (await post('local3', '/api/me/password', { current: reset.json.password, next: 'matkhau-moi-1' })).status === 200);
       check('Mật khẩu mới dùng được', (await post('local4', '/api/auth/login', { email: 'tester@ekko.vn', password: 'matkhau-moi-1' })).status === 200);
-      check('Tài khoản thường không vào được Admin', (await get('local4', '/api/admin/stats/users')).status === 403);
+      check('Tài khoản thường không vào được Admin', [401, 403].includes((await get('local4', '/api/admin/stats/users')).status)
+        && (await post('local4a', '/api/auth/login', { email: 'tester@ekko.vn', password: 'matkhau-moi-1' }, { portal: 'admin' })).status === 200
+        && (await get('local4a', '/api/admin/stats/users')).status === 403);
       check('Admin cấp quyền quản trị', (await post('admin', `/api/admin/members/${tester.id}/role`, { role: 'admin' })).status === 200
         && (await get('local4', '/api/admin/stats/users')).status === 200);
       const meAdmin = users.find((u) => u.role === 'admin' && u.email === 'admin@ekko.vn');

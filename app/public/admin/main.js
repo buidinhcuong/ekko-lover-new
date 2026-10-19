@@ -5,7 +5,7 @@
  * the metadata options (asset lists, badge rules, frame kinds) and a `reload()`
  * that re-renders the current page after a mutation.
  */
-import { api, ApiError, el, mount, uiIcon } from '/shared/client.js';
+import { api, ApiError, el, mount, setApiPortal, uiIcon } from '/shared/client.js';
 import { closeDrawer, notify } from './ui.js';
 
 import dashboard from './pages/dashboard.js';
@@ -23,6 +23,9 @@ import concepts from './pages/concepts.js';
 import news from './pages/news.js';
 import aiUsage from './pages/aiUsage.js';
 import feedPage from './pages/feed.js';
+
+// Phiên đăng nhập riêng của Admin — không đụng phiên của app người lao động.
+setApiPortal('admin');
 
 const root = document.getElementById('admin');
 
