@@ -2,7 +2,7 @@
  * Assembles the payload behind the main screen: the player's island, the pig
  * character, the four satellite islands, the HUD numbers and what to do next.
  */
-import { moduleFlags } from './modules.js';
+import { companyKeyOf, moduleFlags } from './modules.js';
 import { all, get } from '../db.js';
 import { activeConcept } from './concepts.js';
 import { dayKey } from '../lib/time.js';
@@ -137,7 +137,7 @@ export function buildWorld(userId) {
     team: teamAlerts(userId),
     // EkkoFeed: số phản hồi của công ty chưa đọc — dòng nhắc vàng ở màn chủ.
     // Chức năng đang bật / tắt (Admin → Chức năng) — app ẩn phần đang tắt.
-    modules: moduleFlags(),
+    modules: moduleFlags(companyKeyOf(get('SELECT employer, employer_id FROM users WHERE id = ?', userId))),
     feed: {
       unreadReplies: get(
         `SELECT COUNT(*) n FROM feed_replies r JOIN feed_posts p ON p.id = r.post_id

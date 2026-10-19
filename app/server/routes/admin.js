@@ -327,9 +327,12 @@ adminRouter.put('/api/admin/settings/learning-xp', ({ body }) => {
 
 // ------------------------------------------------------- XP từ Dream Team
 // Bật / tắt chức năng trên toàn hệ thống (services/modules.js).
-adminRouter.get('/api/admin/settings/modules', () => moduleList());
+// ?employer= / body.employer: đặt riêng cho một công ty; enabled = null là bỏ ghi đè.
+adminRouter.get('/api/admin/settings/modules', ({ url }) => moduleList(url.searchParams.get('employer') || null));
 adminRouter.put('/api/admin/settings/modules/:code', ({ params, body }) => {
-  const result = setModule(params.code, Boolean(body?.enabled));
+  const employer = body?.employer || null;
+  const enabled = body?.enabled === null && employer ? null : Boolean(body?.enabled);
+  const result = setModule(params.code, enabled, employer);
   if (result.status === 404) throw notFound(result.error);
   if (result.error) throw bad(result.error);
   return result;

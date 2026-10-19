@@ -738,3 +738,6 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .modulecard__toggle { flex: none; display: grid; justify-items: center; gap: 4px; }
 .modulecard__state { font-size: 11px; color: var(--text-tertiary); }
 .modulecard:not(.is-off) .modulecard__state { color: var(--text-brand-500); font-weight: var(--font-weight-semibold); }
+
+.modulecard--company { cursor: default; flex-wrap: wrap; }
+.modulecard__segment { flex: none; }

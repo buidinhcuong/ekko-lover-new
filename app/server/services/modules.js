@@ -8,10 +8,12 @@
  *    ai đó mở thẳng đường dẫn.
  * Dữ liệu cũ của người dùng giữ nguyên — bật lại là thấy lại như trước.
  *
- * Lưu một danh sách mã đang TẮT (setting `modules_off`); không có trong danh
- * sách = đang bật, nên chức năng mới thêm sau này mặc định bật.
+ * Hai tầng: mặc định cả hệ thống (setting `modules_off`: danh sách mã đang TẮT —
+ * chức năng mới thêm sau này mặc định bật) và ghi đè riêng từng công ty (setting
+ * `modules_company:<công ty>`: { mã: true | false }). Riêng công ty thắng mặc định.
  */
 import { getSetting, setSetting } from '../db.js';
+import { NO_EMPLOYER } from './companyScope.js';
 
 export const MODULES = [
   { code: 'learning', name: 'Học tập', description: 'Bài học, mô đun, bài kiểm tra.', api: ['/api/learn'] },
@@ -26,36 +28,70 @@ export const MODULES = [
 ];
 const CODES = new Set(MODULES.map((m) => m.code));
 
+const isCompany = (key) => Boolean(key) && key !== NO_EMPLOYER;
+
 function offList() {
   try { return new Set(JSON.parse(getSetting('modules_off', '[]')).filter((c) => CODES.has(c))); } catch { return new Set(); }
 }
-
-/** { learning: true, feed: false, … } — gửi cho app trong world. */
-export function moduleFlags() {
-  const off = offList();
-  return Object.fromEntries(MODULES.map((m) => [m.code, !off.has(m.code)]));
+/** Ghi đè riêng của một công ty: { feed: false, savings: true } — mã không có = theo mặc định hệ thống. */
+function companyOverrides(employerKey) {
+  if (!isCompany(employerKey)) return {};
+  try {
+    const raw = JSON.parse(getSetting(`modules_company:${employerKey}`, '{}'));
+    return Object.fromEntries(Object.entries(raw).filter(([c, v]) => CODES.has(c) && typeof v === 'boolean'));
+  } catch { return {}; }
 }
 
-export const moduleOn = (code) => !offList().has(code);
-
-/** Danh sách cho trang Admin. */
-export function moduleList() {
-  const off = offList();
-  return MODULES.map(({ api, ...m }) => ({ ...m, enabled: !off.has(m.code) }));
+/** Công ty của một người dùng — cùng quy tắc với COMPANY_KEY (mã công ty, rồi tên công ty). */
+export function companyKeyOf(user) {
+  return String(user?.employer_id || '').trim() || String(user?.employer || '').trim() || null;
 }
 
-export function setModule(code, enabled) {
+/** { learning: true, feed: false, … } cho một công ty (riêng công ty thắng mặc định). */
+export function moduleFlags(employerKey = null) {
+  const off = offList();
+  const own = companyOverrides(employerKey);
+  return Object.fromEntries(MODULES.map((m) => [m.code, own[m.code] ?? !off.has(m.code)]));
+}
+
+export const moduleOn = (code, employerKey = null) => moduleFlags(employerKey)[code] !== false;
+
+/**
+ * Danh sách cho trang Admin. Có `employer`: kèm trạng thái mặc định hệ thống và
+ * ghi đè của công ty đó (true / false / null = theo mặc định).
+ */
+export function moduleList(employerKey = null) {
+  const off = offList();
+  const own = companyOverrides(employerKey);
+  return MODULES.map(({ api, ...m }) => ({
+    ...m,
+    system: !off.has(m.code),
+    override: isCompany(employerKey) ? (own[m.code] ?? null) : null,
+    enabled: own[m.code] ?? !off.has(m.code),
+  }));
+}
+
+/**
+ * Bật / tắt. Không có `employer`: đổi mặc định cả hệ thống. Có `employer`: đặt
+ * riêng cho công ty đó; `enabled = null` = bỏ ghi đè, quay về theo mặc định.
+ */
+export function setModule(code, enabled, employerKey = null) {
   if (!CODES.has(code)) return { error: 'Không có chức năng này', status: 404 };
+  if (isCompany(employerKey)) {
+    const own = companyOverrides(employerKey);
+    if (enabled === null || enabled === undefined) delete own[code]; else own[code] = Boolean(enabled);
+    setSetting(`modules_company:${employerKey}`, JSON.stringify(own));
+    return { ok: true, modules: moduleList(employerKey) };
+  }
   const off = offList();
   if (enabled) off.delete(code); else off.add(code);
   setSetting('modules_off', JSON.stringify([...off]));
   return { ok: true, modules: moduleList() };
 }
 
-/** Mã chức năng (đang tắt) mà một đường dẫn API của người dùng thuộc về, nếu có. */
-export function blockedModule(pathname) {
-  const off = offList();
-  if (!off.size) return null;
-  const hit = MODULES.find((m) => off.has(m.code) && m.api.some((p) => pathname === p || pathname.startsWith(`${p}/`) || pathname.startsWith(`${p}?`)));
+/** Mã chức năng đang tắt (với công ty của người dùng) mà một đường dẫn API thuộc về, nếu có. */
+export function blockedModule(pathname, employerKey = null) {
+  const flags = moduleFlags(employerKey);
+  const hit = MODULES.find((m) => flags[m.code] === false && m.api.some((p) => pathname === p || pathname.startsWith(`${p}/`)));
   return hit ? hit.code : null;
 }

@@ -1982,6 +1982,24 @@ async function main() {
       check('Tắt Ghi chép chi tiêu: chat với bot không lưu khoản chi', botOff.reply?.kind === 'module_off', JSON.stringify(botOff).slice(0, 160));
       await put('admin', '/api/admin/settings/modules/expenses', { enabled: true });
       check('Mã chức năng lạ bị từ chối', (await put('admin', '/api/admin/settings/modules/khongco', { enabled: false })).status === 404);
+
+      // Đặt riêng từng công ty: riêng công ty thắng mặc định hệ thống.
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: false, employer: 'CT-FEED' });
+      const aOff = (await get('fa1', '/api/me/world')).json.modules;
+      const bOn = (await get('fb1', '/api/me/world')).json.modules;
+      check('Tắt EkkoFeed riêng CT-FEED: chỉ công ty đó bị tắt, công ty khác vẫn dùng',
+        aOff.feed === false && bOn.feed === true && (await get('fa1', '/api/feed')).status === 403 && (await get('fb1', '/api/feed')).status === 200);
+      const listA = (await get('admin', '/api/admin/settings/modules?employer=CT-FEED')).json.find((m) => m.code === 'feed');
+      check('Danh sách theo công ty: có ghi đè + trạng thái mặc định', listA.override === false && listA.system === true && listA.enabled === false);
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: false });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: true, employer: 'CT-OTHER' });
+      check('Tắt Tiết kiệm cả hệ thống nhưng bật riêng CT-OTHER: CT-OTHER vẫn dùng, CT-FEED bị tắt',
+        (await get('fb1', '/api/savings')).status === 200 && (await get('fa1', '/api/savings')).status === 403);
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: null, employer: 'CT-FEED' });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: null, employer: 'CT-OTHER' });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: true });
+      check('Bỏ ghi đè ("Mặc định"): quay về theo cài đặt chung', (await get('fa1', '/api/feed')).status === 200
+        && (await get('admin', '/api/admin/settings/modules?employer=CT-FEED')).json.find((m) => m.code === 'feed').override === null);
     }
   } finally {
     server.kill();

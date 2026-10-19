@@ -39,7 +39,7 @@ export default async function feedPage(ctx) {
   const employer = params.get('employer') || '';
   // Ba tab con: Báo cáo chung · Phản hồi · Chia sẻ (giữ trên hash: #/feed?tab=reply|share).
   const tab = ['reply', 'share'].includes(params.get('tab')) ? params.get('tab') : 'report';
-  const meta = await ctx.api.get('/api/admin/feed/meta');
+  const meta = await ctx.api.get(`/api/admin/feed/meta${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`);
   const q = (extra = '') => `days=${days}${meta.ekko && employer ? `&employer=${encodeURIComponent(employer)}` : ''}${extra}`;
   const [report, posts, { assignees }, picker] = await Promise.all([
     ctx.api.get(`/api/admin/feed/report?${q()}`),

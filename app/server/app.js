@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import { currentUser, requireAdmin, requireUser, upsertMember } from './auth.js';
 import { ensureBootstrapAdmin } from './services/localAuth.js';
-import { blockedModule } from './services/modules.js';
+import { blockedModule, companyKeyOf } from './services/modules.js';
 import { reevaluateBadgesOnce } from './services/progression.js';
 import { forbidden, HttpError, readJson, sendJson, serveStatic } from './lib/http.js';
 import { langOf, translate } from './i18n/index.js';
@@ -98,7 +98,7 @@ export async function handle(req, res) {
       else if (auth === 'user') {
         requireUser(ctx);
         // Chức năng Super admin đã tắt (services/modules.js).
-        const off = blockedModule(pathname);
+        const off = blockedModule(pathname, companyKeyOf(ctx.user));
         if (off) throw new HttpError(403, 'Chức năng này đang tạm tắt', { module: off });
       }
       else if (auth === 'mixed' && !PUBLIC_PATHS.has(pathname)) requireUser(ctx);

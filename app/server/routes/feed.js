@@ -40,10 +40,10 @@ feedRouter.post('/api/feed/replies/seen', ({ user }) => markRepliesSeen(user.id)
 export const feedAdminRouter = new Router();
 const ekkoOnly = (ctx) => { if (!ctx.feed.ekko) throw forbidden('Chỉ quản trị Ekko mới làm được việc này'); };
 
-feedAdminRouter.get('/api/admin/feed/meta', ({ feed }) => ({
+feedAdminRouter.get('/api/admin/feed/meta', ({ feed, url }) => ({
   ekko: feed.ekko,
   // Super admin tắt EkkoFeed: người lao động không gửi được nữa, HR vẫn xem dữ liệu cũ.
-  enabled: moduleOn('feed'),
+  enabled: moduleOn('feed', feed.ekko ? url.searchParams.get('employer') : feed.employerKey),
   employerKey: feed.employerKey,
   employerName: feed.employerName,
   types: labels(FEED_TYPES),
