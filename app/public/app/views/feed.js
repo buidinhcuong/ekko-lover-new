@@ -9,7 +9,6 @@
 import { api, el, formatDay, guard, mount, singleFlight, spriteIcon, toast, uiIcon } from '/shared/client.js';
 import { t } from '../i18n.js';
 import { celebrateRewards } from '../ui.js';
-import { micIcon } from '../voice.js';
 
 const STATUS = {
   sent: ['Đã gửi', 'neutral'],
@@ -38,8 +37,8 @@ function intro(data) {
     el('div', {}, [
       el('h2', {}, t('Góp ý tới công ty')),
       el('p.muted', {}, data.company
-        ? t('Phàn nàn, yêu cầu hay mong đợi của bạn sẽ được gửi tới {company}. Bạn chọn ẩn danh hay ghi tên.', { company: data.company })
-        : t('Phàn nàn, yêu cầu hay mong đợi của bạn sẽ được gửi tới công ty bạn đang làm. Bạn chọn ẩn danh hay ghi tên.')),
+        ? t('Chia sẻ hoặc góp ý điều cần giải quyết tới {company}. Bạn chọn gửi ẩn danh hay ghi tên.', { company: data.company })
+        : t('Chia sẻ hoặc góp ý điều cần giải quyết tới công ty bạn đang làm. Bạn chọn gửi ẩn danh hay ghi tên.')),
     ]),
   ]);
 }
@@ -67,15 +66,21 @@ function composer(ctx, data, redraw) {
   const anonymous = el('input', { type: 'checkbox', checked: true });
   const consent = el('input', { type: 'checkbox' });
 
+  // Hai loại, người gửi tự chọn: Chia sẻ · Góp ý / Cần giải quyết.
+  let type = null;
+  const typePicker = typeCards(data.types, null, (v) => { type = v; });
+
   const preview = singleFlight(async () => {
+    if (!type) return toast(t('Bạn chọn loại: Chia sẻ hay Góp ý / Cần giải quyết nhé'), 'error');
     if (text.value.trim().length < 10) return toast(t('Bạn viết thêm chút nữa nhé (ít nhất 10 ký tự)'), 'error');
-    const result = await guard(() => api.post('/api/feed/preview', { text: text.value, anonymous: anonymous.checked }), t('Chưa xem trước được, thử lại nhé'));
+    const result = await guard(() => api.post('/api/feed/preview', { text: text.value, anonymous: anonymous.checked, type }), t('Chưa xem trước được, thử lại nhé'));
     if (!result) return;
     mount(box, review(ctx, data, result.draft, anonymous.checked, () => mount(box, form), redraw));
   });
 
   const form = el('div.card.feedform', {}, [
-    el('label.field', {}, [el('span', {}, t('Bạn muốn công ty biết điều gì?')), text, el('div.feedtools', {}, [dictateButton(text) || el('span'), counter])]),
+    el('div.field', {}, [el('span', {}, t('Bạn muốn gửi')), typePicker]),
+    el('label.field', {}, [el('span', {}, t('Bạn muốn công ty biết điều gì?')), text, counter]),
     el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, t('Công ty không thấy tên, email hay mã nhân viên của bạn. Bỏ chọn nếu muốn công ty liên hệ lại với bạn.'))])]),
     el('label.feedcheck', {}, [consent, el('small.muted', {}, t('Tôi đồng ý gửi nội dung này (đã che số điện thoại, CCCD, tên người) tới công ty qua Ekko, theo điều khoản sử dụng EkkoFeed.'))]),
     el('button.btn.btn--block', {
@@ -88,27 +93,19 @@ function composer(ctx, data, redraw) {
   return box;
 }
 
-/** Nút micro: nói để điền nội dung (trình duyệt hỗ trợ nhận giọng nói). */
-function dictateButton(textarea) {
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) return null;
-  let rec = null;
-  const button = el('button.btn.btn--sm.btn--ghost.feedmic', { type: 'button' }, [micIcon(16), t('Nói để ghi')]);
-  button.addEventListener('click', () => {
-    if (rec) { rec.stop(); return; }
-    rec = new Recognition();
-    rec.lang = 'vi-VN';
-    rec.interimResults = false;
-    rec.onresult = (e) => {
-      const said = [...e.results].map((r) => r[0].transcript).join(' ');
-      textarea.value = `${textarea.value ? `${textarea.value.trim()} ` : ''}${said}`.slice(0, 1000);
-      textarea.dispatchEvent(new Event('input'));
-    };
-    rec.onend = () => { rec = null; button.classList.remove('is-on'); };
-    button.classList.add('is-on');
-    rec.start();
-  });
-  return button;
+/** Hai thẻ chọn loại (bấm chọn một). */
+const TYPE_HINT = {
+  share: 'Cảm nhận, lời khen, câu chuyện muốn công ty biết',
+  issue: 'Điều chưa ổn, đề xuất, việc mong công ty giải quyết',
+};
+function typeCards(types, current, onPick) {
+  const row = el('div.feedtypes', { role: 'radiogroup' });
+  const paint = (value) => [...row.children].forEach((c) => c.setAttribute('aria-checked', String(c.dataset.code === value)));
+  types.forEach((item) => row.append(el('button.feedtype', {
+    type: 'button', role: 'radio', dataset: { code: item.code }, 'aria-checked': String(item.code === current),
+    onclick: () => { onPick(item.code); paint(item.code); },
+  }, [el('b', {}, t(item.label)), el('small', {}, t(TYPE_HINT[item.code] || ''))])));
+  return row;
 }
 
 function review(ctx, data, draft, anonymousChecked, back, redraw) {
@@ -138,7 +135,7 @@ function review(ctx, data, draft, anonymousChecked, back, redraw) {
     el('h3', {}, t('Xem trước — công ty sẽ thấy')),
     el('blockquote.feedquote', {}, draft.redactedText),
     el('small.muted', {}, t('Số điện thoại, CCCD, số tài khoản và tên người được nhắc tới đã được che.')),
-    el('div.field', {}, [el('span', {}, t('Loại')), chips(data.types, type, (v) => { type = v; })]),
+    el('div.field', {}, [el('span', {}, t('Loại')), typeCards(data.types, type, (v) => { type = v; })]),
     el('div.field', {}, [el('span', {}, t('Chủ đề (tự gợi ý — chạm để đổi)')), chips(data.topics, topic, (v) => { topic = v; })]),
     el('label.feedcheck', {}, [anonymous, el('span', {}, [el('b', {}, t('Gửi ẩn danh')), el('small.muted', {}, draft.hasCompany
       ? t('Bỏ chọn thì {company} thấy tên bạn.', { company: draft.companyName })

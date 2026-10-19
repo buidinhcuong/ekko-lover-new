@@ -702,6 +702,9 @@ CREATE TABLE IF NOT EXISTS feed_audit (
   created_at TEXT NOT NULL
 );
 `);
+// EkkoFeed còn 2 loại (19/10): bản ghi theo 4 loại cũ đổi sang loại mới — chạy lại vô hại.
+db.exec(`UPDATE feed_posts SET type = CASE WHEN type = 'praise' THEN 'share' ELSE 'issue' END
+          WHERE type NOT IN ('share', 'issue')`);
 // Lúc người dùng bấm "Nhận thưởng" của một huy hiệu (Ekko Lover). NULL = XP của
 // huy hiệu còn chờ nhận. Huy hiệu trao trước khi có cột này đã được cộng XP ngay
 // lúc trao, nên đánh dấu là đã nhận.

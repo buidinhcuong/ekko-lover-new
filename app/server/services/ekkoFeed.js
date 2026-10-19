@@ -36,12 +36,16 @@ const MIN_TEXT = 10;
 const MAX_TEXT = 1000;
 const TIMEOUT_MS = 20_000;
 
+/**
+ * Hai loại, người lao động tự chọn khi gửi (✅ chốt 19/10):
+ *  - share: chia sẻ (cảm nhận, lời khen, câu chuyện) — không cần công ty xử lý;
+ *  - issue: góp ý / cần giải quyết — được gom vào "Vấn đề cần giải quyết".
+ */
 export const FEED_TYPES = {
-  complaint: 'Phàn nàn',
-  request: 'Yêu cầu',
-  suggestion: 'Góp ý / mong đợi',
-  praise: 'Khen ngợi',
+  share: 'Chia sẻ',
+  issue: 'Góp ý / Cần giải quyết',
 };
+const DEFAULT_TYPE = 'issue';
 
 /** Chủ đề + từ khoá (dạng bỏ dấu) để phân loại khi không có AI. */
 export const FEED_TOPICS = {
@@ -136,17 +140,14 @@ function ruleAnalysis(text) {
   const phrases = phrasesOf(text, 8);
   const onTopic = phrases.filter((ph) => terms.some((term) => normalize(ph).includes(term) || term.includes(normalize(ph))));
   const keywords = [...new Set([...onTopic, ...phrases])].slice(0, 4);
-  const type = /\b(cam on|tot qua|hai long|khen|tuyet voi)\b/.test(n) ? 'praise'
-    : /\b(de nghi|mong|xin|yeu cau|can|nen)\b/.test(n) ? 'request'
-      : /\b(buc|te|kem|cham|khong (duoc|cho)|qua dang|ap luc|bat cong|vo ly)\b/.test(n) ? 'complaint'
-        : 'suggestion';
+  const positive = /\b(cam on|tot qua|hai long|khen|tuyet voi|vui)\b/.test(n);
+  const negative = /\b(buc|te|kem|cham|khong (duoc|cho)|qua dang|ap luc|bat cong|vo ly|hong|nong qua)\b/.test(n);
   const urgent = /\b(nguy hiem|tai nan|chay|ngat|chet|tu tu|danh|de doa|quay roi)\b/.test(n);
   return {
-    type,
     topic,
     keywords,
-    sentiment: type === 'praise' ? 0.6 : type === 'complaint' ? -0.6 : 0,
-    urgency: urgent ? 'urgent' : type === 'complaint' ? 'medium' : 'low',
+    sentiment: positive && !negative ? 0.6 : negative ? -0.6 : 0,
+    urgency: urgent ? 'urgent' : negative ? 'medium' : 'low',
     summary: null,
     names: [],
     sensitive: /\b(tu tu|tu sat|giet|danh nhau|de doa|quay roi tinh duc|so hai)\b/.test(n),
@@ -157,7 +158,6 @@ function ruleAnalysis(text) {
 const AI_SYSTEM = [
   'Bạn phân loại góp ý của người lao động Việt Nam gửi tới doanh nghiệp nơi họ làm việc (qua app Ekko).',
   'Trả về JSON đúng schema. Quy tắc:',
-  '- type: complaint (phàn nàn) | request (yêu cầu) | suggestion (góp ý, mong đợi) | praise (khen ngợi).',
   `- topic: một trong ${Object.keys(FEED_TOPICS).join(', ')}.`,
   '- keywords: 2–4 cụm từ khoá tiếng Việt CÓ DẤU, ngắn (1–3 chữ), chữ thường, nói về VẤN ĐỀ (vd "tăng ca", "nhà ăn", "trả lương chậm"). Không đưa tên người, số điện thoại.',
   '- sentiment: số từ -1 (rất tiêu cực) đến 1 (rất tích cực).',
@@ -170,7 +170,6 @@ const AI_SYSTEM = [
 const AI_SCHEMA = {
   type: 'object',
   properties: {
-    type: { type: 'string', enum: Object.keys(FEED_TYPES) },
     topic: { type: 'string', enum: Object.keys(FEED_TOPICS) },
     keywords: { type: 'array', items: { type: 'string' } },
     sentiment: { type: 'number' },
@@ -179,7 +178,7 @@ const AI_SCHEMA = {
     names: { type: 'array', items: { type: 'string' } },
     sensitive: { type: 'boolean' },
   },
-  required: ['type', 'topic', 'keywords', 'sentiment', 'urgency', 'summary', 'names', 'sensitive'],
+  required: ['topic', 'keywords', 'sentiment', 'urgency', 'summary', 'names', 'sensitive'],
   additionalProperties: false,
 };
 
@@ -214,7 +213,6 @@ async function aiAnalysis(text, callId) {
     if (payload.stop_reason === 'refusal' || payload.stop_reason === 'max_tokens') return null;
     const out = JSON.parse((payload.content || []).filter((b) => b.type === 'text').map((b) => b.text).join(''));
     return {
-      type: FEED_TYPES[out.type] ? out.type : 'suggestion',
       topic: FEED_TOPICS[out.topic] ? out.topic : 'other',
       keywords: (out.keywords || []).map((k) => String(k).toLowerCase().trim()).filter((k) => k && k.length <= 40).slice(0, 4),
       sentiment: Math.max(-1, Math.min(1, Number(out.sentiment) || 0)),
@@ -258,7 +256,7 @@ export function feedStatusFor(userId, day = dayKey()) {
  * Bước "Xem trước": phân loại + che thông tin, lưu thành bản nháp. Người dùng xem
  * đúng nội dung doanh nghiệp sẽ thấy rồi mới bấm gửi.
  */
-export async function createDraft(userId, { text, anonymous = true } = {}, day = dayKey()) {
+export async function createDraft(userId, { text, anonymous = true, type } = {}, day = dayKey()) {
   const clean = String(text || '').trim().replace(/\s+\n/g, '\n');
   if (clean.length < MIN_TEXT) return fail(`Bạn viết thêm chút nữa nhé (ít nhất ${MIN_TEXT} ký tự)`);
   if (clean.length > MAX_TEXT) return fail(`Góp ý tối đa ${MAX_TEXT} ký tự`);
@@ -273,7 +271,7 @@ export async function createDraft(userId, { text, anonymous = true } = {}, day =
     `INSERT INTO feed_posts (user_id, employer_key, employer_name, type, topic, text, redacted_text, summary, keywords,
                              sentiment, urgency, anonymous, sensitive, source, status, day, created_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'draft', ?, ?)`,
-    userId, company.key, company.name, analysis.type, analysis.topic, clean, redact(clean, analysis.names),
+    userId, company.key, company.name, FEED_TYPES[type] ? type : DEFAULT_TYPE, analysis.topic, clean, redact(clean, analysis.names),
     analysis.summary, JSON.stringify(analysis.keywords), analysis.sentiment, analysis.urgency,
     anonymous ? 1 : 0, analysis.sensitive ? 1 : 0, analysis.source, day, nowIso(),
   );
@@ -439,7 +437,8 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
 
   // Nhóm vấn đề: cùng công ty + cùng chủ đề + cùng từ khoá chính (từ khoá đầu tiên AI đưa ra).
   const groups = new Map();
-  for (const p of posts) {
+  // Chỉ góp ý loại "Góp ý / Cần giải quyết" mới thành vấn đề; "Chia sẻ" chỉ tính vào từ khoá & phân bố.
+  for (const p of posts.filter((x) => x.type === 'issue')) {
     const key = issueKeyOf(p);
     if (!groups.has(key)) groups.set(key, { topic: p.topic, keyword: JSON.parse(p.keywords || '[]')[0] || null, employer: p.employer_name, posts: [] });
     groups.get(key).posts.push(p);
@@ -540,7 +539,7 @@ function issuePosts(access, key, info) {
   const statuses = access.ekko ? [...VISIBLE_TO_HR, 'review'] : VISIBLE_TO_HR;
   return all(
     `SELECT p.*, u.name author_name, u.email author_email FROM feed_posts p JOIN users u ON u.id = p.user_id
-      WHERE COALESCE(p.employer_key, '') = ? AND p.topic = ? AND p.status IN (${statuses.map(() => '?').join(',')})
+      WHERE COALESCE(p.employer_key, '') = ? AND p.topic = ? AND p.type = 'issue' AND p.status IN (${statuses.map(() => '?').join(',')})
       ORDER BY p.id DESC`,
     info.employerKey, info.topic, ...statuses,
   ).filter((p) => issueKeyOf(p) === key);
@@ -757,12 +756,12 @@ export function removeHrAccount(adminId, userId) {
 // --- chỉ môi trường dev: dữ liệu mẫu để bấm thử báo cáo ---------------------------
 
 const DEMO_POSTS = [
-  ['complaint', 'overtime', ['tăng ca', 'trả chậm', 'lương tăng ca'], -0.8, 'high', 'Lương tăng ca trả chậm 2 tuần, không báo trước', 'Tiền tăng ca tháng này trả chậm, hỏi thì bảo chờ', 8],
-  ['complaint', 'facilities', ['nhà ăn', 'ca đêm', 'hết suất'], -0.6, 'medium', 'Nhà ăn ca đêm hết suất trước 1h sáng', 'Nhà ăn ca đêm hết cơm sớm, anh em ca muộn nhịn đói', 6],
-  ['request', 'facilities', ['xe đưa đón', 'đến muộn'], -0.4, 'medium', 'Xe đưa đón buổi sáng thường đến muộn', 'Xe đưa đón hay đến muộn 20–30 phút', 5],
-  ['complaint', 'safety', ['nóng', 'thông gió', 'xưởng'], -0.7, 'high', 'Xưởng quá nóng, quạt thông gió hỏng', 'Xưởng B nóng quá, quạt hỏng cả tuần', 6],
-  ['suggestion', 'benefits', ['bhxh', 'sổ bảo hiểm'], -0.1, 'low', 'Muốn được hướng dẫn tra cứu BHXH', 'Mong công ty hướng dẫn tra cứu quá trình đóng BHXH', 2],
-  ['praise', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', 'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm', 3],
+  ['issue', 'overtime', ['tăng ca', 'trả chậm', 'lương tăng ca'], -0.8, 'high', 'Lương tăng ca trả chậm 2 tuần, không báo trước', 'Tiền tăng ca tháng này trả chậm, hỏi thì bảo chờ', 8],
+  ['issue', 'facilities', ['nhà ăn', 'ca đêm', 'hết suất'], -0.6, 'medium', 'Nhà ăn ca đêm hết suất trước 1h sáng', 'Nhà ăn ca đêm hết cơm sớm, anh em ca muộn nhịn đói', 6],
+  ['issue', 'facilities', ['xe đưa đón', 'đến muộn'], -0.4, 'medium', 'Xe đưa đón buổi sáng thường đến muộn', 'Xe đưa đón hay đến muộn 20–30 phút', 5],
+  ['issue', 'safety', ['nóng', 'thông gió', 'xưởng'], -0.7, 'high', 'Xưởng quá nóng, quạt thông gió hỏng', 'Xưởng B nóng quá, quạt hỏng cả tuần', 6],
+  ['issue', 'benefits', ['bhxh', 'sổ bảo hiểm'], -0.1, 'low', 'Muốn được hướng dẫn tra cứu BHXH', 'Mong công ty hướng dẫn tra cứu quá trình đóng BHXH', 2],
+  ['share', 'management', ['tổ trưởng', 'hỗ trợ'], 0.7, 'low', 'Tổ trưởng hỗ trợ nhiệt tình khi ốm', 'Cảm ơn tổ trưởng đã cho đổi ca khi con ốm', 3],
 ];
 
 /**

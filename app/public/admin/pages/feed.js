@@ -220,7 +220,7 @@ export default async function feedPage(ctx) {
         el('td', {}, [formatDay(p.createdAt.slice(0, 10)), meta.ekko && p.company ? el('span.cellmeta', {}, p.company) : null]),
         el('td', { style: { maxWidth: '520px' } }, [
           el('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' } }, [
-            badge(typeLabel[p.type] || p.type, p.type === 'complaint' ? 'warning' : p.type === 'praise' ? 'success' : 'neutral'),
+            badge(typeLabel[p.type] || p.type, p.type === 'issue' ? 'warning' : 'success'),
             badge(topicLabel[p.topic] || p.topic, 'brand'),
             p.urgency === 'urgent' || p.urgency === 'high' ? badge(PRIORITY[p.urgency][0], PRIORITY[p.urgency][1]) : null,
             p.sensitive ? badge('Nhạy cảm', 'error') : null,

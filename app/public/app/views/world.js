@@ -4,7 +4,7 @@
  * nay, ngân sách tháng, biểu đồ chi tiêu tuần và tin tức. Xem `loverHome`.
  * Concept Simple mode có màn chủ riêng ở `home-simple.js`.
  */
-import { APP_SPRITE, UI_SPRITE, api, dataIcon, el, guard, mount, screenScale, spriteIcon, toast, uiIcon, vnd, vndShort } from '/shared/client.js';
+import { APP_SPRITE, api, dataIcon, el, guard, mount, screenScale, spriteIcon, toast, uiIcon, vnd, vndShort } from '/shared/client.js';
 import { confirmSheet, swipeRow } from '../ui.js';
 import { t } from '../i18n.js';
 import { openNewsDetail } from './news.js';
@@ -157,8 +157,6 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     { icon: 'briefcase-dollar', label: t('Ngân sách'), route: '/budget' },
     { icon: 'note', label: t('Ghi chép'), route: '/expenses' },
     { icon: 'savings', label: t('Tiết kiệm'), route: '/savings' },
-    // EkkoFeed: góp ý tới công ty (icon nét trong bộ icon giao diện, không phải bộ icon app).
-    { icon: 'bubble-chat', label: t('Góp ý'), route: '/feed', sprite: UI_SPRITE },
   ];
 
   // 5 tab luôn hiện icon + tên, nằm trong thẻ xanh ngay trên hàng hồ sơ — khác
@@ -631,5 +629,18 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     ])
     : null;
 
-  return el('div.loverhome', {}, [head, streakNudge, feedNudge, resume, tabcard, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
+  // EkkoFeed: thanh ngang riêng, màu nổi bật, ngay dưới thẻ chức năng — để người lao
+  // động dễ thấy, không lẫn vào 5 nút chức năng.
+  const feedBar = ctx.world.concept === 'lover'
+    ? el('button.feedbar', { type: 'button', onclick: () => ctx.navigate('/feed') }, [
+      el('span.feedbar__icon', { 'aria-hidden': 'true' }, uiIcon('bubble-chat', 22)),
+      el('span.feedbar__text', {}, [
+        el('b', {}, t('Góp ý tới công ty')),
+        el('small', {}, t('Chia sẻ hoặc góp ý điều cần giải quyết — ẩn danh nếu muốn')),
+      ]),
+      el('span.feedbar__go', { 'aria-hidden': 'true' }, spriteIcon('chevron-right-01', 20)),
+    ])
+    : null;
+
+  return el('div.loverhome', {}, [head, streakNudge, feedNudge, resume, tabcard, feedBar, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
 }

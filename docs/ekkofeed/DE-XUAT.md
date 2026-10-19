@@ -47,8 +47,11 @@ Giá trị cho từng bên:
 
 ## 3. Người lao động thấy gì (app)
 
-Ô **"Góp ý"** là ô thứ 6 trong hàng Chức năng ở màn chủ (cạnh Học tập, Mục tiêu,
-Ngân sách, Ghi chép, Tiết kiệm) — ✅ đã chốt 19/10.
+**Thanh ngang "Góp ý tới công ty"** màu nổi bật (nền xanh Payday, icon lime) ngay
+dưới thẻ 5 chức năng ở màn chủ — không nằm trong hàng chức năng (✅ chốt 19/10).
+**Hai loại**, người gửi tự chọn: **Chia sẻ** (cảm nhận, lời khen — không thành vấn đề
+cần xử lý) · **Góp ý / Cần giải quyết** (gom vào Vấn đề cần giải quyết). Không có
+"Nói để ghi".
 
 **3.1 Gửi tiếng nói** — một màn đơn giản, gõ được trong 30 giây:
 

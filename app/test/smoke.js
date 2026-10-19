@@ -1848,6 +1848,15 @@ async function main() {
         reply.status === 200 && afterReply.status === 'replied' && afterReply.replies[0].fromCompany && worldA1.feed.unreadReplies === 1);
       await post('fa1', '/api/feed/replies/seen', {});
       check('Mở EkkoFeed thì hết dòng nhắc', (await get('fa1', '/api/me/world')).json.feed.unreadReplies === 0);
+      // Hai loại: "Chia sẻ" không thành vấn đề cần giải quyết.
+      await join('fa4', 'feed-a4', 'Công ty Feed', 'CT-FEED');
+      const shareDraft = (await post('fa4', '/api/feed/preview', { text: 'Cảm ơn nhà ăn ca đêm hôm nay có thêm món canh nóng', type: 'share' })).json.draft;
+      await post('fa4', `/api/feed/${shareDraft.id}/submit`, {});
+      const typesReport = (await get('admin', '/api/admin/feed/report?employer=CT-FEED')).json;
+      check('Chỉ 2 loại (Chia sẻ · Góp ý / Cần giải quyết); bài "Chia sẻ" không vào Vấn đề cần giải quyết',
+        (await get('fa4', '/api/feed')).json.types.map((x) => x.code).join(',') === 'share,issue'
+        && shareDraft.type === 'share' && typesReport.byType.some((x) => x.code === 'share')
+        && typesReport.issues.every((i) => i.postIds.every((id) => id !== shareDraft.id)), JSON.stringify(typesReport.byType));
 
       // Quản lý từng vấn đề cần giải quyết.
       const issue = (await get('hrjar', '/api/admin/feed/report')).json.issues.find((i) => i.topic === 'facilities');
@@ -1867,12 +1876,13 @@ async function main() {
       const resolvedIssue = (await get('hrjar', '/api/admin/feed/report')).json.issues.find((i) => i.key === issue.key);
       check('Đã giải quyết: góp ý của người gửi chuyển "Đã đóng"', resolvedIssue.status === 'resolved' && (await get('fa1', '/api/feed')).json.posts[0].status === 'closed');
 
+      const hrBefore = (await get('hrjar', '/api/admin/feed/posts')).json.length;
       await join('fa3', 'feed-a3', 'Công ty Feed', 'CT-FEED');
       const sens = (await post('fa3', '/api/feed/preview', { text: 'Có người trong xưởng đe doạ đánh tôi nếu tôi báo cáo' })).json.draft;
       await post('fa3', `/api/feed/${sens.id}/submit`, {});
       const hrAfter = (await get('hrjar', '/api/admin/feed/posts')).json;
       const ekkoReview = (await get('admin', '/api/admin/feed/posts?employer=CT-FEED&status=review')).json;
-      check('Nội dung nhạy cảm chờ Ekko kiểm duyệt, HR chưa thấy', hrAfter.length === 2 && ekkoReview.length === 1);
+      check('Nội dung nhạy cảm chờ Ekko kiểm duyệt, HR chưa thấy', hrAfter.length === hrBefore && ekkoReview.length === 1);
     }
   } finally {
     server.kill();
