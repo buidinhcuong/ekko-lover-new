@@ -17,6 +17,7 @@
  * Nothing here calls out to the network unless step 5 is reached.
  */
 import { readExpenses } from './expenseReader.js';
+import { companyKeyOf, moduleOn } from './modules.js';
 import { keyState } from './receiptAI.js';
 import { logOutOfScope, takeAiCall } from './aiQuota.js';
 import { recordAiUsage } from './aiUsage.js';
@@ -611,6 +612,10 @@ export async function respond(userId, rawMessage, { createExpense, lang = 'vi' }
   const read = amount && !looksLikeQuestion ? await readExpenses(message, { userId }) : null;
   const notExpense = Boolean(read?.notExpense);
   if (read && !notExpense) {
+    // Super admin tắt Ghi chép chi tiêu (services/modules.js): không lưu qua chat.
+    if (!moduleOn('expenses', companyKeyOf(get('SELECT employer, employer_id FROM users WHERE id = ?', userId)))) {
+      return { kind: 'module_off', text: lang === 'en' ? 'Expense logging is turned off for now, so I could not save this.' : 'Ghi chép chi tiêu đang tạm tắt nên mình chưa lưu được khoản này nhé.' };
+    }
     const { items } = read;
     const list = items.length ? items : [{ amount: amount.amount, note: extractNote(message), category: null, spentOn: undefined }];
     const results = [];

@@ -35,10 +35,13 @@ const section = (title) => console.log(`\n${title}`);
 // --- a cookie-aware fetch ------------------------------------------------
 const jars = new Map();
 
-async function call(jar, method, path, body, { lang } = {}) {
+async function call(jar, method, path, body, { lang, portal } = {}) {
   const headers = {};
-  const cookie = jars.get(jar);
+  // Một "trình duyệt" giữ nhiều cookie (phiên app + phiên Admin riêng).
+  const cookie = [...(jars.get(jar) || new Map()).entries()].map(([k, v]) => `${k}=${v}`).join('; ');
   if (cookie) headers.cookie = cookie;
+  // Admin portal gửi header này (shared/client.js setApiPortal) để dùng phiên Admin.
+  if (portal) headers['x-ekko-portal'] = portal;
   if (body !== undefined) headers['content-type'] = 'application/json';
   // Ngôn ngữ app người dùng yêu cầu; Admin portal không gửi header này.
   if (lang) headers['x-lang'] = lang;
@@ -53,7 +56,10 @@ async function call(jar, method, path, body, { lang } = {}) {
   const setCookie = response.headers.getSetCookie?.() || [];
   for (const raw of setCookie) {
     const pair = raw.split(';')[0];
-    jars.set(jar, pair);
+    const i = pair.indexOf('=');
+    const map = jars.get(jar) || new Map();
+    if (/Max-Age=0/i.test(raw)) map.delete(pair.slice(0, i)); else map.set(pair.slice(0, i), pair.slice(i + 1));
+    jars.set(jar, map);
   }
 
   const text = await response.text();
@@ -798,12 +804,27 @@ async function main() {
 
     section('Phân quyền');
     const memberOnAdmin = await get('member', '/api/admin/levels');
-    check('Người học không vào được API quản trị', memberOnAdmin.status === 403);
+    check('Người học không vào được API quản trị', [401, 403].includes(memberOnAdmin.status));
 
     const adminLogin = await get('admin', '/dev/login?role=admin');
     await get('admin', adminLogin.headers.get('location'));
-    const who = await get('admin', '/api/session/whoami');
+    const who = await get('admin', '/api/session/whoami', { portal: 'admin' });
     check('Đăng nhập được với vai trò quản trị', who.json.role === 'admin');
+
+    // Phiên app và phiên Admin tách riêng: cùng một trình duyệt dùng được cả hai.
+    const both = 'bothjar';
+    await get(both, '/dev/login');
+    const appLoc = (await get(both, '/dev/login')).headers.get('location');
+    await get(both, appLoc);
+    const adminLoc = (await get(both, '/dev/login?role=admin')).headers.get('location');
+    await get(both, adminLoc);
+    const appWho = (await get(both, '/api/session/whoami')).json;
+    const adminWho = (await get(both, '/api/session/whoami', { portal: 'admin' })).json;
+    check('Cùng trình duyệt: app vẫn là người học, Admin là quản trị viên', appWho.role === 'member' && adminWho.role === 'admin', JSON.stringify([appWho.role, adminWho.role]));
+    await post(both, '/api/session/logout', {}, { portal: 'admin' });
+    check('Đăng xuất Admin không đăng xuất app', (await get(both, '/api/session/whoami')).json.role === 'member'
+      && (await get(both, '/api/session/whoami', { portal: 'admin' })).json.authenticated === false);
+    check('Phiên người học không mở được Admin', (await get(both, '/api/admin/levels')).status === 401);
 
     section('Admin portal');
     const levels = await get('admin', '/api/admin/levels');
@@ -834,7 +855,7 @@ async function main() {
     const changedXp = await put('admin', '/api/admin/settings/learning-xp', { lesson: 35, moduleQuiz: 60 });
     check('Đổi được XP học tập', changedXp.json.lesson === 35 && changedXp.json.moduleQuiz === 60);
     check('XP học tập âm bị chặn', (await put('admin', '/api/admin/settings/learning-xp', { lesson: -1 })).status === 400);
-    check('Người học không đổi được XP học tập', (await put('member', '/api/admin/settings/learning-xp', { lesson: 999 })).status === 403);
+    check('Người học không đổi được XP học tập', [401, 403].includes((await put('member', '/api/admin/settings/learning-xp', { lesson: 999 })).status));
     await put('admin', '/api/admin/settings/learning-xp', { lesson: 30, moduleQuiz: 50 });
 
     const created = await post('admin', '/api/admin/badges', {
@@ -1116,7 +1137,7 @@ async function main() {
     check('Đổi ngược về Ekko Lover được', (await get('member', '/api/learn/map')).json.concept === 'lover');
 
     check('Người học không đổi được concept',
-      (await put('member', '/api/admin/concepts/active', { code: 'lover-colors' })).status === 403);
+      [401, 403].includes((await put('member', '/api/admin/concepts/active', { code: 'lover-colors' })).status));
 
     section('Nhiệm vụ');
     const planTemplates = (await get('member', '/api/plans')).json.templates;
@@ -1424,7 +1445,8 @@ async function main() {
     // Quản trị viên ở đây là một người **đã đăng nhập** nhưng không phải chủ khoản
     // chi — đúng tình huống cần chặn.
     const stranger = await get('admin', `/api/expenses/${receiptId}/receipt`);
-    check('Người khác không xem được ảnh hoá đơn của mình', stranger.status === 404, `status ${stranger.status}`);
+    // (Phiên Admin không dùng được cho API của app → 401; phiên app của người khác → 404.)
+    check('Người khác không xem được ảnh hoá đơn của mình', [401, 404].includes(stranger.status), `status ${stranger.status}`);
 
     // Đọc hoá đơn bằng AI: bộ kiểm này chạy không có khoá API, nên phải thấy đúng
     // câu từ chối rõ ràng chứ không phải lỗi 500 khó hiểu.
@@ -1672,7 +1694,9 @@ async function main() {
       check('Đổi mật khẩu cần đúng mật khẩu hiện tại', (await post('local3', '/api/me/password', { current: 'sai', next: 'matkhau-moi-1' })).status === 400);
       check('Đổi mật khẩu', (await post('local3', '/api/me/password', { current: reset.json.password, next: 'matkhau-moi-1' })).status === 200);
       check('Mật khẩu mới dùng được', (await post('local4', '/api/auth/login', { email: 'tester@ekko.vn', password: 'matkhau-moi-1' })).status === 200);
-      check('Tài khoản thường không vào được Admin', (await get('local4', '/api/admin/stats/users')).status === 403);
+      check('Tài khoản thường không vào được Admin', [401, 403].includes((await get('local4', '/api/admin/stats/users')).status)
+        && (await post('local4a', '/api/auth/login', { email: 'tester@ekko.vn', password: 'matkhau-moi-1' }, { portal: 'admin' })).status === 200
+        && (await get('local4a', '/api/admin/stats/users')).status === 403);
       check('Admin cấp quyền quản trị', (await post('admin', `/api/admin/members/${tester.id}/role`, { role: 'admin' })).status === 200
         && (await get('local4', '/api/admin/stats/users')).status === 200);
       const meAdmin = users.find((u) => u.role === 'admin' && u.email === 'admin@ekko.vn');
@@ -1949,6 +1973,85 @@ async function main() {
       check('Xoá bộ demo: xoá tài khoản + dữ liệu mẫu', drop.status === 200 && afterDrop.status === 401
         && !(await get('admin', '/api/admin/stats/companies')).json.some((c) => c.name === 'Demo – Khách A'),
         JSON.stringify({ d: drop.status, a: afterDrop.status, c: (await get('admin', '/api/admin/stats/companies')).json.filter((c) => c.name.includes('Demo')) }));
+
+      // Tệp đính kèm phản hồi, đánh giá Like / Dislike, hạn phản hồi 3 ngày, khoảng ngày.
+      const pdf = `data:application/pdf;base64,${Buffer.from('%PDF-1.4\n%demo\n').toString('base64')}`;
+      const up = await post('hrjar', '/api/admin/feed/files', { name: 'Thong bao.pdf', dataUrl: pdf });
+      const fake = await post('hrjar', '/api/admin/feed/files', { name: 'x.pdf', dataUrl: `data:application/pdf;base64,${Buffer.from('not a pdf').toString('base64')}` });
+      check('HR tải tệp PDF lên được; tệp giả mạo bị từ chối', up.status === 200 && up.json.file.mime === 'application/pdf' && fake.status === 400);
+      const fa1Mine = (await get('fa1', '/api/feed')).json.posts.find((x) => x.type === 'issue');
+      const withFile = await post('hrjar', '/api/admin/feed/reply', { postIds: [fa1Mine.id], text: 'Gửi bạn thông báo chính thức', fileIds: [up.json.file.id] });
+      const mineAfter = (await get('fa1', '/api/feed')).json.posts.find((x) => x.id === fa1Mine.id);
+      const lastReply = mineAfter.replies.at(-1);
+      const open = await call('fa1', 'GET', lastReply.files[0].url);
+      check('Người lao động thấy tệp trong phản hồi và mở được', withFile.status === 200 && lastReply.files.length === 1 && open.status === 200);
+      check('Người khác không mở được tệp của góp ý không phải của mình', (await call('fb1', 'GET', lastReply.files[0].url)).status === 404);
+      const otherFile = await post('admin', '/api/admin/feed/files', { name: 'a.pdf', dataUrl: pdf });
+      check('HR không gắn được tệp do người khác tải lên', (await post('hrjar', '/api/admin/feed/reply', { postIds: [fa1Mine.id], text: 'thử', fileIds: [otherFile.json.file.id] })).status === 400);
+      const rate = await post('fa1', `/api/feed/${fa1Mine.id}/rate`, { rating: 'like' });
+      const rateBad = await post('fa1', `/api/feed/${fa1Mine.id}/rate`, { rating: 'love' });
+      const noReplyPost = (await get('fa3', '/api/feed')).json.posts.find((x) => !x.replies.length);
+      const rateEarly = noReplyPost ? await post('fa3', `/api/feed/${noReplyPost.id}/rate`, { rating: 'like' }) : { status: 400 };
+      check('Đánh giá Like/Dislike chỉ khi đã có phản hồi; giá trị lạ bị từ chối', rate.status === 200 && rate.json.post.rating === 'like' && rateBad.status === 400 && rateEarly.status === 400);
+      const rep30 = (await get('hrjar', '/api/admin/feed/report')).json;
+      check('Báo cáo có hạn phản hồi 3 ngày, tỷ lệ quá hạn và mức hài lòng', rep30.reply.dueDays === 3 && typeof rep30.reply.overdueRate === 'number' && rep30.reply.likes >= 1 && rep30.sections.issue.reply);
+      const td = new Date().toISOString().slice(0, 10);
+      const repRange = (await get('hrjar', `/api/admin/feed/report?from=${td}&to=${td}`)).json;
+      const postsRange = (await get('hrjar', `/api/admin/feed/posts?from=${td}&to=${td}`)).json;
+      check('Xem theo khoảng ngày tự chọn', repRange.custom === true && repRange.from === td && repRange.to === td && repRange.days === 1 && postsRange.every((x) => x.createdAt.slice(0, 10) === td));
+      const hrPost = (await get('hrjar', '/api/admin/feed/posts')).json.find((x) => x.id === fa1Mine.id);
+      check('HR thấy đánh giá + tình trạng hạn phản hồi của từng góp ý', hrPost.rating === 'like' && ['on_time', 'late'].includes(hrPost.replyState) && hrPost.replyDue);
+
+      // Số lần gửi EkkoFeed mỗi ngày — Super admin đặt (mặc định / riêng công ty).
+      const fa3Before = (await get('fa3', '/api/feed')).json;
+      check('Mặc định 1 lần/ngày: đã gửi rồi thì hết lượt', fa3Before.dailyLimit === 1 && fa3Before.canPostToday === false);
+      check('HR không đổi được số lần gửi', (await put('hrjar', '/api/admin/feed/settings', { employer: 'CT-FEED', dailyLimit: 5 })).status === 403);
+      const setLim = await put('admin', '/api/admin/feed/settings', { employer: 'CT-FEED', dailyLimit: 3 });
+      const fa3After = (await get('fa3', '/api/feed')).json;
+      const limDraft = (await post('fa3', '/api/feed/preview', { text: 'Mong công ty lắp thêm quạt ở khu đóng gói', type: 'issue' })).json.draft;
+      const limSent = await post('fa3', `/api/feed/${limDraft.id}/submit`, {});
+      check('Đặt riêng 3 lần/ngày cho công ty: người lao động gửi tiếp được', setLim.json.dailyLimit === 3 && fa3After.dailyLimit === 3 && fa3After.canPostToday && limSent.status === 200
+        && (await get('admin', '/api/admin/feed/settings?employer=CT-FEED')).json.dailyLimit === 3);
+      check('Số lần gửi ngoài khoảng 1–20 bị từ chối', (await put('admin', '/api/admin/feed/settings', { dailyLimit: 0 })).status === 400);
+
+      // Bật / tắt chức năng toàn hệ thống (services/modules.js).
+      const mods = (await get('admin', '/api/admin/settings/modules')).json;
+      check('Danh sách chức năng bật/tắt có EkkoFeed, Chi tiêu, Tiết kiệm…, mặc định bật', ['feed', 'expenses', 'savings', 'learning', 'bot', 'team'].every((c) => mods.find((m) => m.code === c)?.enabled));
+      check('Chỉ quản trị Ekko bật/tắt được', (await put('hrjar', '/api/admin/settings/modules/feed', { enabled: false })).status === 403);
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: false });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: false });
+      const offWorld = (await get('fa1', '/api/me/world')).json;
+      check('Tắt EkkoFeed + Tiết kiệm: app nhận cờ tắt, API người dùng bị chặn 403',
+        offWorld.modules?.feed === false && offWorld.modules?.savings === false && offWorld.modules?.expenses === true
+        && (await get('fa1', '/api/feed')).status === 403 && (await get('fa1', '/api/savings')).status === 403 && (await get('fa1', '/api/expenses')).status === 200);
+      const hrMeta = (await get('hrjar', '/api/admin/feed/meta')).json;
+      check('EkkoFeed tắt: HR vẫn xem được báo cáo cũ, có cờ báo đang tắt', hrMeta.enabled === false && (await get('hrjar', '/api/admin/feed/report')).status === 200);
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: true });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: true });
+      check('Bật lại: API dùng lại được, dữ liệu cũ còn nguyên', (await get('fa1', '/api/feed')).status === 200 && (await get('fa1', '/api/feed')).json.posts.length >= 1);
+      await put('admin', '/api/admin/settings/modules/expenses', { enabled: false });
+      const botOff = (await post('fa1', '/api/bot/message', { text: 'cà phê 35k' })).json;
+      check('Tắt Ghi chép chi tiêu: chat với bot không lưu khoản chi', botOff.reply?.kind === 'module_off', JSON.stringify(botOff).slice(0, 160));
+      await put('admin', '/api/admin/settings/modules/expenses', { enabled: true });
+      check('Mã chức năng lạ bị từ chối', (await put('admin', '/api/admin/settings/modules/khongco', { enabled: false })).status === 404);
+
+      // Đặt riêng từng công ty: riêng công ty thắng mặc định hệ thống.
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: false, employer: 'CT-FEED' });
+      const aOff = (await get('fa1', '/api/me/world')).json.modules;
+      const bOn = (await get('fb1', '/api/me/world')).json.modules;
+      check('Tắt EkkoFeed riêng CT-FEED: chỉ công ty đó bị tắt, công ty khác vẫn dùng',
+        aOff.feed === false && bOn.feed === true && (await get('fa1', '/api/feed')).status === 403 && (await get('fb1', '/api/feed')).status === 200);
+      const listA = (await get('admin', '/api/admin/settings/modules?employer=CT-FEED')).json.find((m) => m.code === 'feed');
+      check('Danh sách theo công ty: có ghi đè + trạng thái mặc định', listA.override === false && listA.system === true && listA.enabled === false);
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: false });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: true, employer: 'CT-OTHER' });
+      check('Tắt Tiết kiệm cả hệ thống nhưng bật riêng CT-OTHER: CT-OTHER vẫn dùng, CT-FEED bị tắt',
+        (await get('fb1', '/api/savings')).status === 200 && (await get('fa1', '/api/savings')).status === 403);
+      await put('admin', '/api/admin/settings/modules/feed', { enabled: null, employer: 'CT-FEED' });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: null, employer: 'CT-OTHER' });
+      await put('admin', '/api/admin/settings/modules/savings', { enabled: true });
+      check('Bỏ ghi đè ("Mặc định"): quay về theo cài đặt chung', (await get('fa1', '/api/feed')).status === 200
+        && (await get('admin', '/api/admin/settings/modules?employer=CT-FEED')).json.find((m) => m.code === 'feed').override === null);
     }
   } finally {
     server.kill();

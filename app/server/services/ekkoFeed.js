@@ -27,9 +27,27 @@ import { recordActivity } from './progression.js';
 import { normalize } from './nlp.js';
 import { phrasesOf } from './botTopics.js';
 import { COMPANY_KEY, NO_EMPLOYER } from './companyScope.js';
+import { attachFiles, checkFileIds, filesOfReplies } from './feedFiles.js';
 import { hashPassword, tempPassword } from './localAuth.js';
 
 export const DAILY_LIMIT = 1;
+/** Hạn phản hồi: tự động 3 ngày sau khi người lao động gửi (chỉ Góp ý / Cần giải quyết). */
+export const REPLY_DUE_DAYS = 3;
+const DAY_MS = 86400000;
+const replyDueOf = (submittedAt) => new Date(new Date(submittedAt).getTime() + REPLY_DUE_DAYS * DAY_MS).toISOString();
+/**
+ * Tình trạng hạn phản hồi của một góp ý: on_time (trả lời trong hạn) · late (trả
+ * lời sau hạn) · overdue (quá hạn, chưa trả lời) · pending (chưa tới hạn).
+ * Chia sẻ không cần phản hồi → null.
+ */
+export function replyState(type, submittedAt, firstReplyAt, now = nowIso()) {
+  if (type !== 'issue' || !submittedAt) return null;
+  const due = replyDueOf(submittedAt);
+  if (firstReplyAt) return firstReplyAt <= due ? 'on_time' : 'late';
+  return now > due ? 'overdue' : 'pending';
+}
+const firstReplyOf = (postId) => get('SELECT MIN(created_at) at FROM feed_replies WHERE post_id = ?', postId)?.at || null;
+export const FEED_RATINGS = ['like', 'dislike'];
 import { blendMood, FEED_MOODS, moodOrNull, clamp1 } from './feedMood.js';
 
 export { blendMood, FEED_MOODS };
@@ -83,6 +101,24 @@ const fail = (message, status = 400) => ({ error: message, status });
 
 function companyOf(userId) {
   return get(`SELECT ${COMPANY_KEY} AS key, NULLIF(trim(employer), '') AS name FROM users WHERE id = ?`, userId) || { key: null, name: null };
+}
+
+/**
+ * Số lần một người được gửi (Chia sẻ + Góp ý cộng chung) mỗi ngày — Super admin đặt
+ * trong EkkoFeed → Quản lý: mặc định cho mọi công ty, hoặc riêng từng công ty.
+ */
+export function dailyLimitFor(employerKey) {
+  const own = Number(getSetting(`feed_daily_limit:${employerKey || NO_EMPLOYER}`));
+  const all_ = Number(getSetting('feed_daily_limit'));
+  if (Number.isInteger(own) && own >= 1) return own;
+  if (Number.isInteger(all_) && all_ >= 1) return all_;
+  return DAILY_LIMIT;
+}
+export function setDailyLimit(employerKey, n) {
+  const v = Number(n);
+  if (!Number.isInteger(v) || v < 1 || v > 20) return fail('Số lần gửi mỗi ngày phải từ 1 đến 20');
+  setSetting(employerKey ? `feed_daily_limit:${employerKey}` : 'feed_daily_limit', String(v));
+  return { ok: true, dailyLimit: v };
 }
 
 /** Ngưỡng ẩn danh của một công ty (Ekko chỉnh riêng được), mặc định 5 người. */
@@ -259,7 +295,8 @@ export function feedStatusFor(userId, day = dayKey()) {
     "SELECT 1 FROM activity_log WHERE user_id = ? AND kind = 'feed_post' AND xp > 0 AND day >= ? LIMIT 1", userId, weekStart(day),
   ));
   // Tài khoản người lao động của bộ demo cho khách (demoKit.js): gửi được nhiều hơn để thử đủ 2 loại.
-  const limit = get('SELECT 1 ok FROM demo_kits WHERE worker_user_id = ?', userId) ? DEMO_DAILY_LIMIT : DAILY_LIMIT;
+  const base = dailyLimitFor(companyOf(userId).key);
+  const limit = get('SELECT 1 ok FROM demo_kits WHERE worker_user_id = ?', userId) ? Math.max(base, DEMO_DAILY_LIMIT) : base;
   return { canPostToday: used < limit, dailyLimit: limit, weeklyXp: weekXpTaken ? 0 : WEEKLY_XP };
 }
 
@@ -271,7 +308,7 @@ export async function createDraft(userId, { text, anonymous = true, type, mood }
   const clean = String(text || '').trim().replace(/\s+\n/g, '\n');
   if (clean.length < MIN_TEXT) return fail(`Bạn viết thêm chút nữa nhé (ít nhất ${MIN_TEXT} ký tự)`);
   if (clean.length > MAX_TEXT) return fail(`Góp ý tối đa ${MAX_TEXT} ký tự`);
-  if (!feedStatusFor(userId, day).canPostToday) return fail('Hôm nay bạn đã gửi góp ý rồi. Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé.', 429);
+  if (!feedStatusFor(userId, day).canPostToday) return fail('Hôm nay bạn đã gửi đủ số lần cho phép — mai bạn gửi tiếp nhé.', 429);
 
   const callId = keyState() === 'ok' ? takeAiCall(userId, 'feed') : false;
   const pickedMood = moodOrNull(mood);
@@ -313,7 +350,7 @@ export function submitDraft(userId, draftId, { type, topic, anonymous, mood } = 
   const draft = get("SELECT * FROM feed_posts WHERE id = ? AND user_id = ? AND status = 'draft'", Number(draftId), userId);
   if (!draft) return fail('Không tìm thấy bản nháp — bạn bấm "Xem trước" lại giúp nhé', 404);
   const status = feedStatusFor(userId, day);
-  if (!status.canPostToday) return fail('Hôm nay bạn đã gửi góp ý rồi. Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé.', 429);
+  if (!status.canPostToday) return fail('Hôm nay bạn đã gửi đủ số lần cho phép — mai bạn gửi tiếp nhé.', 429);
   const finalType = FEED_TYPES[type] ? type : draft.type;
   const finalTopic = FEED_TOPICS[topic] ? topic : draft.topic;
   // mood: bỏ qua = giữ như lúc xem trước; '' / null = bỏ chọn.
@@ -333,8 +370,12 @@ export function submitDraft(userId, draftId, { type, topic, anonymous, mood } = 
 }
 
 function repliesOf(postId) {
-  return all('SELECT id, author_role, text, created_at, seen_at FROM feed_replies WHERE post_id = ? ORDER BY id', postId);
+  const rows = all('SELECT id, author_role, text, created_at, seen_at FROM feed_replies WHERE post_id = ? ORDER BY id', postId);
+  const files = filesOfReplies(rows.map((r) => r.id));
+  return rows.map((r) => ({ ...r, files: files[r.id] || [] }));
 }
+/** Tệp đính kèm kèm đường dẫn mở được: người lao động / quản trị đi hai route khác nhau. */
+const withUrl = (files, base) => files.map((f) => ({ ...f, url: `${base}/${f.id}` }));
 
 function myPostView(p) {
   const replies = repliesOf(p.id);
@@ -349,14 +390,29 @@ function myPostView(p) {
     mood: p.mood || null,
     // Người gửi không cần biết "chờ kiểm duyệt": với họ là đã gửi.
     status: p.status === 'review' ? 'sent' : p.status,
-    replies: replies.map((r) => ({ id: r.id, text: r.text, createdAt: r.created_at, fromCompany: r.author_role === 'hr' })),
+    replies: replies.map((r) => ({ id: r.id, text: r.text, createdAt: r.created_at, fromCompany: r.author_role === 'hr', files: withUrl(r.files, '/api/feed/files') })),
     unread: replies.filter((r) => !r.seen_at).length,
+    // Sau khi có phản hồi: người gửi chỉ đánh giá Like / Dislike, không nhắn qua lại.
+    rating: p.rating || null,
+    canRate: replies.length > 0,
+    replyDue: p.type === 'issue' ? replyDueOf(p.submitted_at || p.created_at) : null,
   };
 }
 
 export function myPosts(userId, day = dayKey()) {
   const posts = all("SELECT * FROM feed_posts WHERE user_id = ? AND status <> 'draft' ORDER BY id DESC LIMIT 50", userId).map(myPostView);
   return { ...feedStatusFor(userId, day), company: companyOf(userId).name, posts };
+}
+
+/** Người gửi đánh giá phản hồi của công ty cho góp ý của mình: like | dislike | null (bỏ). */
+export function ratePost(userId, postId, rating) {
+  const post = get("SELECT * FROM feed_posts WHERE id = ? AND user_id = ? AND status <> 'draft'", Number(postId), userId);
+  if (!post) return fail('Không tìm thấy góp ý', 404);
+  if (!get('SELECT 1 ok FROM feed_replies WHERE post_id = ?', post.id)) return fail('Góp ý này chưa có phản hồi để đánh giá');
+  const value = rating === null || rating === '' ? null : (FEED_RATINGS.includes(rating) ? rating : undefined);
+  if (value === undefined) return fail('Chỉ chọn Hài lòng hoặc Chưa hài lòng');
+  run('UPDATE feed_posts SET rating = ?, rated_at = ? WHERE id = ?', value, value ? nowIso() : null, post.id);
+  return { ok: true, post: myPostView(get('SELECT * FROM feed_posts WHERE id = ?', post.id)) };
 }
 
 export function markRepliesSeen(userId) {
@@ -413,9 +469,24 @@ const PRIORITY_ORDER = { urgent: 0, high: 1, medium: 2, low: 3 };
  * quyết, phân bố theo chủ đề / loại, cảm xúc. Từ khoá & nhóm vấn đề dưới ngưỡng
  * ẩn danh thì không hiện (chỉ đếm gộp).
  */
-export function feedReport(access, { employer = null, days = 30, today = dayKey(), viewerId = null } = {}) {
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+/**
+ * Kỳ xem báo cáo: 7 / 30 ngày gần nhất, hoặc một khoảng ngày tự chọn (from–to,
+ * tối đa 366 ngày). Kỳ so sánh ("kỳ trước") là khoảng cùng độ dài ngay trước đó.
+ */
+export function periodOf({ days = 30, from = null, to = null, today = dayKey() } = {}) {
+  if (DAY_RE.test(from || '') && DAY_RE.test(to || '') && from <= to) {
+    const span = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1;
+    if (span <= 366) return { from, to, span, custom: true };
+  }
   const span = Math.max(1, Math.min(365, Math.round(Number(days)) || 30));
-  const from = shiftDay(today, -(span - 1));
+  return { from: shiftDay(today, -(span - 1)), to: today, span, custom: false };
+}
+
+export function feedReport(access, { employer = null, days = 30, from: fromDay = null, to: toDay = null, today = dayKey(), viewerId = null } = {}) {
+  const period = periodOf({ days, from: fromDay, to: toDay, today });
+  const { from, span } = period;
+  const until = period.to;
   const prevFrom = shiftDay(from, -span);
   const scope = postScope(access, employer);
   const minGroup = minGroupFor(scope.key && scope.key !== NO_EMPLOYER ? scope.key : null);
@@ -423,10 +494,31 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
   const statuses = access.ekko ? [...VISIBLE_TO_HR, 'review'] : VISIBLE_TO_HR;
   const inStatus = `p.status IN (${statuses.map(() => '?').join(',')})`;
   const rows = (fromDay, toDay) => all(
-    `SELECT p.* FROM feed_posts p WHERE ${scope.sql} AND ${inStatus} AND p.day BETWEEN ? AND ?`,
+    `SELECT p.*, (SELECT MIN(r.created_at) FROM feed_replies r WHERE r.post_id = p.id) first_reply_at
+       FROM feed_posts p WHERE ${scope.sql} AND ${inStatus} AND p.day BETWEEN ? AND ?`,
     ...scope.params, ...statuses, fromDay, toDay,
   );
-  const posts = rows(from, today);
+  const posts = rows(from, until);
+  const now = nowIso();
+  for (const p of posts) p.reply_state = replyState(p.type, p.submitted_at || p.created_at, p.first_reply_at, now);
+  /**
+   * Hạn phản hồi (3 ngày sau khi gửi): tỷ lệ quá hạn = (trả lời trễ + quá hạn chưa
+   * trả lời) / số góp ý đã tới hạn hoặc đã được trả lời. Chưa tới hạn thì chưa tính.
+   */
+  const replyStats = (list) => {
+    const c = { on_time: 0, late: 0, overdue: 0, pending: 0 };
+    for (const p of list) if (p.reply_state) c[p.reply_state] += 1;
+    const due = c.on_time + c.late + c.overdue;
+    const rated = list.filter((p) => p.rating);
+    const likes = rated.filter((p) => p.rating === 'like').length;
+    return {
+      dueDays: REPLY_DUE_DAYS,
+      onTime: c.on_time, late: c.late, overdue: c.overdue, pending: c.pending,
+      overdueRate: due ? Math.round(((c.late + c.overdue) / due) * 100) / 100 : 0,
+      likes, dislikes: rated.length - likes,
+      satisfaction: rated.length ? Math.round((likes / rated.length) * 100) / 100 : null,
+    };
+  };
   const prev = rows(prevFrom, shiftDay(from, -1));
 
   const people = (list) => new Set(list.map((p) => p.user_id)).size;
@@ -506,6 +598,10 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
       priority,
       replied,
       postIds: g.posts.map((p) => p.id),
+      // Quá hạn phản hồi (3 ngày) mà chưa ai trả lời.
+      overdue: g.posts.filter((p) => !p.first_reply_at && now > replyDueOf(p.submitted_at || p.created_at)).length,
+      likes: g.posts.filter((p) => p.rating === 'like').length,
+      dislikes: g.posts.filter((p) => p.rating === 'dislike').length,
       // Chưa đọc: người đang xem chưa mở vấn đề này kể từ góp ý mới nhất.
       lastAt: g.posts.map((p) => p.submitted_at || p.created_at).sort().at(-1),
       unread: isUnread(seen, key, g.posts.map((p) => p.submitted_at || p.created_at).sort().at(-1)),
@@ -545,6 +641,7 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
       moods: moodCounts(list),
     };
     if (type === 'issue') {
+      out.reply = replyStats(list);
       out.totals.replied = list.length ? Math.round((list.filter((p) => ['replied', 'closed'].includes(p.status)).length / list.length) * 100) / 100 : 0;
     }
     return out;
@@ -552,7 +649,8 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
 
   return {
     employer: scope.key,
-    from, to: today, days: span, minGroup,
+    from, to: until, days: span, custom: period.custom, minGroup,
+    reply: replyStats(posts.filter((p) => p.type === 'issue')),
     totals: {
       posts: posts.length,
       people: people(posts),
@@ -640,8 +738,11 @@ export function issueDetail(access, key) {
       text: p.redacted_text,
       status: p.status,
       mood: p.mood || null,
+      rating: p.rating || null,
+      replyDue: p.type === 'issue' ? replyDueOf(p.submitted_at || p.created_at) : null,
+      replyState: replyState(p.type, p.submitted_at || p.created_at, firstReplyOf(p.id)),
       author: p.anonymous ? null : { name: p.author_name },
-      replies: repliesOf(p.id).map((r) => ({ text: r.text, createdAt: r.created_at, by: r.author_role })),
+      replies: repliesOf(p.id).map((r) => ({ text: r.text, createdAt: r.created_at, by: r.author_role, files: withUrl(r.files, '/api/admin/feed/files') })),
     })),
     events: state ? all(
       `SELECT e.action, e.detail, e.created_at, u.name FROM feed_issue_events e LEFT JOIN users u ON u.id = e.user_id
@@ -694,7 +795,7 @@ export function updateIssue(access, user, key, changes = {}) {
 }
 
 /** Danh sách góp ý cho quản trị — chỉ bản đã che; tên chỉ hiện khi người gửi chọn ghi tên. */
-export function feedPosts(access, { employer = null, status = '', topic = '', type = '', days = null, limit = 200 } = {}, viewerId = null) {
+export function feedPosts(access, { employer = null, status = '', topic = '', type = '', days = null, from = null, to = null, limit = 200 } = {}, viewerId = null) {
   const scope = postScope(access, employer);
   const statuses = access.ekko ? [...VISIBLE_TO_HR, 'review'] : VISIBLE_TO_HR;
   const want = status && statuses.includes(status) ? [status] : statuses;
@@ -703,8 +804,12 @@ export function feedPosts(access, { employer = null, status = '', topic = '', ty
               WHERE ${scope.sql} AND p.status IN (${want.map(() => '?').join(',')})`;
   if (topic && FEED_TOPICS[topic]) { sql += ' AND p.topic = ?'; params.push(topic); }
   if (type && FEED_TYPES[type]) { sql += ' AND p.type = ?'; params.push(type); }
-  // Cùng kỳ xem với báo cáo (7 / 30 / 90 ngày gần nhất).
-  if (Number(days) > 0) { sql += ' AND p.day >= ?'; params.push(shiftDay(dayKey(), -(Math.min(365, Math.round(Number(days))) - 1))); }
+  // Cùng kỳ xem với báo cáo (7 / 30 ngày gần nhất hoặc khoảng ngày tự chọn).
+  if (Number(days) > 0 || from || to) {
+    const period = periodOf({ days: days || 30, from, to });
+    sql += ' AND p.day BETWEEN ? AND ?';
+    params.push(period.from, period.to);
+  }
   sql += ' ORDER BY p.id DESC LIMIT ?';
   params.push(Math.min(500, Number(limit) || 200));
   if (viewerId) audit(viewerId, 'view_posts', scope.key);
@@ -725,7 +830,10 @@ export function feedPosts(access, { employer = null, status = '', topic = '', ty
     sensitive: Boolean(p.sensitive),
     author: p.anonymous ? null : { name: p.author_name, email: p.author_email },
     unread: isUnread(seen, `post:${p.id}`, p.submitted_at || p.created_at),
-    replies: repliesOf(p.id).map((r) => ({ text: r.text, createdAt: r.created_at, by: r.author_role })),
+    rating: p.rating || null,
+    replyDue: p.type === 'issue' ? replyDueOf(p.submitted_at || p.created_at) : null,
+    replyState: replyState(p.type, p.submitted_at || p.created_at, firstReplyOf(p.id)),
+    replies: repliesOf(p.id).map((r) => ({ text: r.text, createdAt: r.created_at, by: r.author_role, files: withUrl(r.files, '/api/admin/feed/files') })),
   }));
 }
 
@@ -777,9 +885,12 @@ function ownedPost(access, postId) {
 }
 
 /** Trả lời một hoặc nhiều góp ý (trả lời cả nhóm vấn đề = gửi riêng tới từng người). */
-export function replyPosts(access, user, postIds, text, issueKey = null) {
+export function replyPosts(access, user, postIds, text, issueKey = null, fileIds = []) {
   const clean = String(text || '').trim();
-  if (clean.length < 2) return fail('Bạn chưa nhập nội dung trả lời');
+  const files = checkFileIds(user.id, fileIds);
+  if (files.error) return files;
+  // Gửi riêng tệp đính kèm cũng được (vd quyết định, thông báo) — có tệp thì không bắt buộc chữ.
+  if (clean.length < 2 && !files.ids.length) return fail('Bạn chưa nhập nội dung trả lời');
   if (clean.length > 2000) return fail('Trả lời tối đa 2.000 ký tự');
   const ids = [...new Set([].concat(postIds || []).map(Number).filter(Boolean))];
   if (!ids.length) return fail('Chưa chọn góp ý nào để trả lời');
@@ -787,14 +898,15 @@ export function replyPosts(access, user, postIds, text, issueKey = null) {
   if (posts.some((p) => !p)) return fail('Có góp ý không tồn tại hoặc không thuộc công ty của bạn', 404);
   tx(() => {
     for (const p of posts) {
-      run('INSERT INTO feed_replies (post_id, author_id, author_role, text, created_at) VALUES (?,?,?,?,?)',
+      const reply = run('INSERT INTO feed_replies (post_id, author_id, author_role, text, created_at) VALUES (?,?,?,?,?)',
         p.id, user.id, access.ekko ? 'ekko' : 'hr', clean, nowIso());
+      attachFiles(Number(reply.lastInsertRowid), files.ids, p.employer_key);
       if (p.status !== 'closed') run("UPDATE feed_posts SET status = 'replied' WHERE id = ?", p.id);
     }
     audit(user.id, 'reply', ids.join(','));
     // Trả lời từ màn quản lý vấn đề: ghi vào lịch sử của vấn đề đó.
     const info = issueKey ? issueAllowed(access, issueKey) : null;
-    if (info) issueEvent(ensureIssue(issueKey, info.employerKey).id, user.id, 'reply', `Trả lời ${ids.length} người: ${clean.slice(0, 120)}`);
+    if (info) issueEvent(ensureIssue(issueKey, info.employerKey).id, user.id, 'reply', `Trả lời ${ids.length} người: ${clean.slice(0, 120)}${files.ids.length ? ` (+${files.ids.length} tệp)` : ''}`);
   });
   return { ok: true, replied: ids.length };
 }

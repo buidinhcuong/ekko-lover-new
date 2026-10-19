@@ -21,7 +21,7 @@ const employerIdOf = (claims) => {
 import { config } from './config.js';
 import { get, run } from './db.js';
 import { issue, verify } from './lib/token.js';
-import { forbidden, parseCookies, setCookie, unauthorized } from './lib/http.js';
+import { clearCookie, forbidden, parseCookies, setCookie, unauthorized } from './lib/http.js';
 import { nowIso } from './lib/time.js';
 import { seedDemoData } from './seed/index.js';
 import { evaluateBadges } from './services/progression.js';
@@ -90,7 +90,18 @@ export function upsertMember(claims) {
   return get('SELECT * FROM users WHERE id = ?', userId);
 }
 
-export function issueSession(res, user) {
+/**
+ * Phiên của app người lao động hay của Admin portal: Admin gửi header
+ * `x-ekko-portal: admin` (shared/client.js), và mọi đường dẫn /api/admin/… (kể cả
+ * mở tệp đính kèm bằng link) luôn là Admin.
+ */
+export function portalOf(req, pathname = String(req.url || '').split('?')[0]) {
+  if (String(req.headers['x-ekko-portal'] || '').toLowerCase() === 'admin') return 'admin';
+  return pathname.startsWith('/api/admin/') ? 'admin' : 'app';
+}
+const cookieOf = (portal) => (portal === 'admin' ? config.adminSessionCookie : config.sessionCookie);
+
+export function issueSession(res, user, portal = 'app') {
   // Ngoài id nội bộ, cookie mang luôn danh tính Ekko (uid, tên, email...) để
   // nhận ra người dùng theo mã Ekko — ổn định kể cả khi database được dựng lại
   // (bản demo trên Vercel), nơi id nội bộ có thể đã thuộc về người khác.
@@ -102,13 +113,35 @@ export function issueSession(res, user) {
     employer: user.employer,
     role: user.role,
   }, config.sessionSecret, config.sessionTtl);
-  setCookie(res, config.sessionCookie, token, { maxAge: config.sessionTtl });
+  setCookie(res, cookieOf(portal), token, { maxAge: config.sessionTtl });
   return token;
+}
+
+export function clearSession(res, portal = 'app') {
+  clearCookie(res, cookieOf(portal));
 }
 
 /** Resolves the current user from the session cookie, or null. */
 export function currentUser(req) {
-  const raw = parseCookies(req)[config.sessionCookie];
+  const cookies = parseCookies(req);
+  if (portalOf(req) === 'admin') {
+    const own = userFromToken(cookies[config.adminSessionCookie]);
+    if (own) return own;
+    // Phiên cũ (trước khi tách) nằm ở cookie chung: chỉ nhận nếu đó là quản trị
+    // Ekko / HR, để Admin không bao giờ "thấy" phiên của người lao động.
+    const legacy = legacyAdminUser(req);
+    return legacy;
+  }
+  return userFromToken(cookies[config.sessionCookie]);
+}
+
+/** Phiên ở cookie chung mà là quản trị Ekko / HR (phiên Admin đời cũ, trước khi tách). */
+export function legacyAdminUser(req) {
+  const legacy = userFromToken(parseCookies(req)[config.sessionCookie]);
+  return legacy && (legacy.role === 'admin' || get('SELECT 1 ok FROM employer_admins WHERE user_id = ?', legacy.id)) ? legacy : null;
+}
+
+function userFromToken(raw) {
   if (!raw) return null;
   let claims;
   try {

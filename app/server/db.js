@@ -661,6 +661,23 @@ CREATE TABLE IF NOT EXISTS feed_replies (
   seen_at     TEXT
 );
 CREATE INDEX IF NOT EXISTS feed_replies_post ON feed_replies(post_id);
+-- Tệp HR đính kèm phản hồi (services/feedFiles.js); một tệp gắn được vào nhiều
+-- phản hồi (trả lời cả nhóm = mỗi người một phản hồi, cùng tệp).
+CREATE TABLE IF NOT EXISTS feed_files (
+  id           INTEGER PRIMARY KEY,
+  employer_key TEXT,
+  uploader_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  name         TEXT NOT NULL,
+  mime         TEXT NOT NULL,
+  size         INTEGER NOT NULL,
+  path         TEXT NOT NULL,
+  created_at   TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS feed_reply_files (
+  reply_id INTEGER NOT NULL REFERENCES feed_replies(id) ON DELETE CASCADE,
+  file_id  INTEGER NOT NULL REFERENCES feed_files(id) ON DELETE CASCADE,
+  PRIMARY KEY (reply_id, file_id)
+);
 -- Quản trị doanh nghiệp (HR): vào được Admin portal nhưng chỉ trang EkkoFeed của công ty mình.
 CREATE TABLE IF NOT EXISTS employer_admins (
   user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -724,6 +741,9 @@ CREATE TABLE IF NOT EXISTS feed_audit (
 // EkkoFeed còn 2 loại (19/10): bản ghi theo 4 loại cũ đổi sang loại mới — chạy lại vô hại.
 // EkkoFeed: cảm xúc người gửi tự chọn (happy | neutral | sad | angry), có thể trống.
 addColumn('feed_posts', 'mood', 'TEXT');
+// Người gửi đánh giá phản hồi của công ty: like | dislike.
+addColumn('feed_posts', 'rating', 'TEXT');
+addColumn('feed_posts', 'rated_at', 'TEXT');
 // Điểm cảm xúc chỉ từ câu chữ / giọng điệu (chưa tính cảm xúc tự chọn) — để tính lại khi người gửi đổi cảm xúc.
 addColumn('feed_posts', 'tone_sentiment', 'REAL');
 db.exec(`UPDATE feed_posts SET type = CASE WHEN type = 'praise' THEN 'share' ELSE 'issue' END

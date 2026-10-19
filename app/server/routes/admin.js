@@ -27,6 +27,7 @@ import { adminUserSummary } from './session.js';
 import { conceptBoard, setActiveConcept } from '../services/concepts.js';
 import { TEAM_XP_SHARE_KEY, teamXpShare } from '../services/teams.js';
 import { resetPassword, signupSettings, updateSignupSettings } from '../services/localAuth.js';
+import { moduleList, setModule } from '../services/modules.js';
 
 export const adminRouter = new Router();
 
@@ -325,6 +326,18 @@ adminRouter.put('/api/admin/settings/learning-xp', ({ body }) => {
 });
 
 // ------------------------------------------------------- XP từ Dream Team
+// Bật / tắt chức năng trên toàn hệ thống (services/modules.js).
+// ?employer= / body.employer: đặt riêng cho một công ty; enabled = null là bỏ ghi đè.
+adminRouter.get('/api/admin/settings/modules', ({ url }) => moduleList(url.searchParams.get('employer') || null));
+adminRouter.put('/api/admin/settings/modules/:code', ({ params, body }) => {
+  const employer = body?.employer || null;
+  const enabled = body?.enabled === null && employer ? null : Boolean(body?.enabled);
+  const result = setModule(params.code, enabled, employer);
+  if (result.status === 404) throw notFound(result.error);
+  if (result.error) throw bad(result.error);
+  return result;
+});
+
 adminRouter.get('/api/admin/settings/team-xp', () => ({ percent: teamXpShare() }));
 
 adminRouter.put('/api/admin/settings/team-xp', ({ body }) => {

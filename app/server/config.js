@@ -30,6 +30,9 @@ export const config = {
   sessionSecret: persistentSecret('session_secret', process.env.EKKO_SESSION_SECRET),
 
   sessionCookie: 'ekko_gdtc_session',
+  // Admin portal (quản trị Ekko, HR doanh nghiệp) giữ phiên riêng: mở app người
+  // lao động và Admin trên cùng một trình duyệt không đăng xuất lẫn nhau.
+  adminSessionCookie: 'ekko_gdtc_admin',
   sessionTtl: 60 * 60 * 24 * 30,
 
   /** Where to bounce users who arrive without a valid SSO token. */

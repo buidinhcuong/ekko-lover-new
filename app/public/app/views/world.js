@@ -139,12 +139,16 @@ const NUDGE_CHANCE = 0.5;
 
 async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
   const { level, progress, streak } = ctx.world;
+  // Chức năng Super admin đã tắt (Admin → Chức năng): không gọi API của nó (server
+  // cũng chặn), dùng dữ liệu rỗng rồi ẩn hẳn phần tương ứng bên dưới.
+  const on = (code) => ctx.world.modules?.[code] !== false;
+  const when = (code, call, empty) => (on(code) ? call() : Promise.resolve(empty));
   const [budget, week, news, recap, savingsRecap, categories] = await Promise.all([
-    api.get('/api/budget'),
-    api.get('/api/expenses?range=week'),
-    api.get('/api/news'),
-    api.get('/api/budget/recap'),
-    api.get('/api/savings/recap'),
+    when('budget', () => api.get('/api/budget'), { items: [] }),
+    when('expenses', () => api.get('/api/expenses?range=week'), { expenses: [] }),
+    when('news', () => api.get('/api/news'), []),
+    when('budget', () => api.get('/api/budget/recap'), { hasData: false }),
+    when('savings', () => api.get('/api/savings/recap'), { hasData: false }),
     api.get('/api/categories'),
   ]);
 
@@ -152,12 +156,12 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
   // Home - 74), xuất ra `assets/icons/app-icons.svg`. Icon vẽ nét chứ không
   // phải emoji nên ăn màu theo `color` của tab — trắng trên nền thẻ xanh.
   const BUTTONS = [
-    { icon: 'books-02', label: t('Học tập'), route: '/explore' },
-    { icon: 'analytics-02', label: t('Mục tiêu'), route: '/goals' },
-    { icon: 'briefcase-dollar', label: t('Ngân sách'), route: '/budget' },
-    { icon: 'note', label: t('Ghi chép'), route: '/expenses' },
-    { icon: 'savings', label: t('Tiết kiệm'), route: '/savings' },
-  ];
+    { icon: 'books-02', label: t('Học tập'), route: '/explore', module: 'learning' },
+    { icon: 'analytics-02', label: t('Mục tiêu'), route: '/goals', module: 'goals' },
+    { icon: 'briefcase-dollar', label: t('Ngân sách'), route: '/budget', module: 'budget' },
+    { icon: 'note', label: t('Ghi chép'), route: '/expenses', module: 'expenses' },
+    { icon: 'savings', label: t('Tiết kiệm'), route: '/savings', module: 'savings' },
+  ].filter((b) => on(b.module));
 
   // 5 tab luôn hiện icon + tên, nằm trong thẻ xanh ngay trên hàng hồ sơ — khác
   // kiểu nút cũ phải chạm hai lần mới điều hướng. Một khoanh trắng (indicator)
@@ -250,7 +254,7 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
   // Đế dính của thẻ 5 tab là con TRỰC TIẾP của `.loverhome` chứ không gói chung
   // với thanh nav: `position: sticky` chỉ dính được trong phạm vi khối cha, gói
   // chung thì thẻ trôi đi ngay khi thanh nav cuộn khỏi màn hình.
-  const tabcard = el('div.loverhome__tabdock', {}, [el('div.loverhome__tabcard', {}, [tabsNode])]);
+  const tabcard = BUTTONS.length ? el('div.loverhome__tabdock', {}, [el('div.loverhome__tabcard', {}, [tabsNode])]) : null;
 
   // Chỉ tổng kết tháng đã kết thúc — không hiện trong lúc tháng vẫn đang
   // chạy, vì lúc đó "vượt ngân sách" chưa phải kết quả cuối cùng. Nút tắt đi
@@ -642,5 +646,17 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     ])
     : null;
 
-  return el('div.loverhome', {}, [head, streakNudge, feedNudge, resume, tabcard, feedBar, savingsRecapBanner, recapBanner, todaySection, budgetSection, chartSection, newsSection]);
+  return el('div.loverhome', {}, [
+    head,
+    on('team') ? streakNudge : null,
+    on('feed') ? feedNudge : null,
+    on('learning') ? resume : null,
+    tabcard,
+    on('feed') ? feedBar : null,
+    savingsRecapBanner, recapBanner,
+    on('expenses') ? todaySection : null,
+    on('budget') ? budgetSection : null,
+    on('expenses') ? chartSection : null,
+    newsSection,
+  ]);
 }

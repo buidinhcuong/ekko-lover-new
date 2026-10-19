@@ -9,7 +9,7 @@
  *   3. This service verifies it, upserts the member and sets its own session
  *      cookie, then 302s to `redirect`.
  */
-import { acceptSsoToken, currentUser, issueSession, mintDevSsoToken, upsertMember } from '../auth.js';
+import { acceptSsoToken, clearSession, currentUser, issueSession, legacyAdminUser, mintDevSsoToken, portalOf, upsertMember } from '../auth.js';
 import { config } from '../config.js';
 import { all, run } from '../db.js';
 import { bad, HttpError, Router, sendJson } from '../lib/http.js';
@@ -39,23 +39,24 @@ sessionRouter.get('/sso', ({ url, res }) => {
   if (!token) throw bad('Thiếu tham số token');
 
   const user = acceptSsoToken(token);
-  issueSession(res, user);
+  const redirect = safeRedirect(url.searchParams.get('redirect'));
+  issueSession(res, user, redirect.startsWith('/admin') ? 'admin' : 'app');
   if (config.devMode && seedDemoData(user.id)) {
     // Settle badges the sample data already satisfies, so the member's first
     // real action does not fire a celebration they did not earn.
     evaluateBadges(user.id, { autoClaim: true });
   }
 
-  res.writeHead(302, { location: safeRedirect(url.searchParams.get('redirect')) });
+  res.writeHead(302, { location: redirect });
   res.end();
   return undefined; // response already written
 });
 
 // --- đăng ký / đăng nhập bằng email (thử nghiệm nội bộ, services/localAuth.js) ---
 const clientIp = (req) => String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || '';
-const authResult = (res, result) => {
+const authResult = (req, res, result) => {
   if (result.error) throw new HttpError(result.status || 400, result.error);
-  issueSession(res, result.user);
+  issueSession(res, result.user, portalOf(req));
   return { ok: true, name: result.user.name, role: result.user.role };
 };
 
@@ -63,12 +64,12 @@ sessionRouter.get('/api/auth/config', () => publicAuthConfig());
 
 sessionRouter.post('/api/auth/register', ({ req, res, body }) => {
   if (!allowAttempt(clientIp(req))) throw new HttpError(429, 'Thử quá nhiều lần, đợi vài phút rồi thử lại');
-  return authResult(res, register(body || {}, upsertMember));
+  return authResult(req, res, register(body || {}, upsertMember));
 });
 
 sessionRouter.post('/api/auth/login', ({ req, res, body }) => {
   if (!allowAttempt(clientIp(req))) throw new HttpError(429, 'Thử quá nhiều lần, đợi vài phút rồi thử lại');
-  return authResult(res, login(body || {}));
+  return authResult(req, res, login(body || {}));
 });
 
 sessionRouter.post('/api/me/password', ({ user, body }) => {
@@ -77,8 +78,12 @@ sessionRouter.post('/api/me/password', ({ user, body }) => {
   return result;
 });
 
-sessionRouter.post('/api/session/logout', ({ res }) => {
-  clearCookie(res, config.sessionCookie);
+sessionRouter.post('/api/session/logout', ({ req, res }) => {
+  // Đăng xuất bên nào chỉ bên đó. Admin: xoá cả phiên Admin đời cũ ở cookie chung
+  // (nếu cookie chung đang là của quản trị / HR) — không đụng phiên người lao động.
+  const portal = portalOf(req);
+  clearSession(res, portal);
+  if (portal === 'admin' && legacyAdminUser(req)) clearCookie(res, config.sessionCookie);
   return { ok: true, returnUrl: config.appReturnUrl };
 });
 
@@ -185,7 +190,7 @@ sessionRouter.get('/dev/hr', ({ url, res }) => {
      ON CONFLICT(user_id) DO UPDATE SET employer_key = excluded.employer_key, employer_name = excluded.employer_name`,
     hr.id, employer, employer, nowIso(),
   );
-  issueSession(res, hr);
+  issueSession(res, hr, 'admin');
   res.writeHead(302, { location: '/admin/#/' });
   res.end();
   return undefined;

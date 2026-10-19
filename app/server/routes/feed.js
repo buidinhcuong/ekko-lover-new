@@ -11,9 +11,12 @@ import { forbidden, HttpError, Router } from '../lib/http.js';
 import { companyScope } from '../services/companyScope.js';
 import { programOverview } from '../services/overview.js';
 import { createDemoKit, demoKits, removeDemoKit } from '../services/demoKit.js';
+import { moduleOn } from '../services/modules.js';
+import { readFileSync } from 'node:fs';
+import { adminFile, saveFeedFile, workerFile } from '../services/feedFiles.js';
 import {
   createDraft, createHrAccount, FEED_MOODS, FEED_STATUS, ISSUE_STATUS, issueDetail, updateIssue, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
-  markRepliesSeen, markFeedSeen, feedAssignees, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
+  markRepliesSeen, markFeedSeen, ratePost, dailyLimitFor, setDailyLimit, feedAssignees, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
 } from '../services/ekkoFeed.js';
 
 const ok = (result) => {
@@ -34,13 +37,33 @@ feedRouter.get('/api/feed', ({ user }) => ({
 feedRouter.post('/api/feed/preview', async ({ user, body }) => ok(await createDraft(user.id, body || {})));
 feedRouter.post('/api/feed/:id/submit', ({ user, params, body }) => ok(submitDraft(user.id, params.id, body || {})));
 feedRouter.post('/api/feed/replies/seen', ({ user }) => markRepliesSeen(user.id));
+// Sau khi có phản hồi, người gửi chỉ đánh giá Like / Dislike (không nhắn qua lại).
+feedRouter.post('/api/feed/:id/rate', ({ user, params, body }) => ok(ratePost(user.id, params.id, body?.rating ?? null)));
+
+/** Gửi tệp đính kèm: riêng tư, không cho proxy / CDN giữ lại; PDF mở ngay trong trình duyệt. */
+function sendFile(res, found) {
+  if (!found) throw new HttpError(404, 'Không tìm thấy tệp');
+  const data = readFileSync(found.full);
+  res.writeHead(200, {
+    'content-type': found.row.mime,
+    'content-length': data.length,
+    'content-disposition': `inline; filename*=UTF-8''${encodeURIComponent(found.row.name)}`,
+    'cache-control': 'private, max-age=300',
+    'x-content-type-options': 'nosniff',
+  });
+  res.end(data);
+  return undefined;
+}
+feedRouter.get('/api/feed/files/:id', ({ user, params, res }) => sendFile(res, workerFile(user.id, params.id)));
 
 // --- quản trị Ekko + HR doanh nghiệp ------------------------------------------------
 export const feedAdminRouter = new Router();
 const ekkoOnly = (ctx) => { if (!ctx.feed.ekko) throw forbidden('Chỉ quản trị Ekko mới làm được việc này'); };
 
-feedAdminRouter.get('/api/admin/feed/meta', ({ feed }) => ({
+feedAdminRouter.get('/api/admin/feed/meta', ({ feed, url }) => ({
   ekko: feed.ekko,
+  // Super admin tắt EkkoFeed: người lao động không gửi được nữa, HR vẫn xem dữ liệu cũ.
+  enabled: moduleOn('feed', feed.ekko ? url.searchParams.get('employer') : feed.employerKey),
   employerKey: feed.employerKey,
   employerName: feed.employerName,
   types: labels(FEED_TYPES),
@@ -59,6 +82,8 @@ feedAdminRouter.get('/api/admin/feed/overview', ({ feed, url }) => (feed.ekko
 feedAdminRouter.get('/api/admin/feed/report', ({ feed, url, user }) => feedReport(feed, {
   employer: url.searchParams.get('employer'),
   days: url.searchParams.get('days') || 30,
+  from: url.searchParams.get('from'),
+  to: url.searchParams.get('to'),
   viewerId: user.id,
 }));
 // Chấm "chưa đọc" (như email) — riêng từng người quản trị.
@@ -72,10 +97,15 @@ feedAdminRouter.get('/api/admin/feed/posts', ({ feed, url, user }) => feedPosts(
   topic: url.searchParams.get('topic') || '',
   type: url.searchParams.get('type') || '',
   days: url.searchParams.get('days') || null,
+  from: url.searchParams.get('from'),
+  to: url.searchParams.get('to'),
   limit: url.searchParams.get('limit') || 200,
 }, user.id));
 
-feedAdminRouter.post('/api/admin/feed/reply', ({ feed, user, body }) => ok(replyPosts(feed, user, body?.postIds, body?.text, body?.issueKey || null)));
+feedAdminRouter.post('/api/admin/feed/reply', ({ feed, user, body }) => ok(replyPosts(feed, user, body?.postIds, body?.text, body?.issueKey || null, body?.fileIds || [])));
+// Tệp đính kèm phản hồi (PDF / JPG / PNG, tối đa 5 MB): tải lên trước, gửi kèm id.
+feedAdminRouter.post('/api/admin/feed/files', async ({ feed, user, body }) => ok(await saveFeedFile(user.id, feed.ekko ? (body?.employer || null) : feed.employerKey, body || {})));
+feedAdminRouter.get('/api/admin/feed/files/:id', ({ feed, params, res }) => sendFile(res, adminFile(feed, params.id)));
 
 // Quản lý từng vấn đề cần giải quyết (khoá = '<công ty>|<chủ đề>|<từ khoá>').
 feedAdminRouter.get('/api/admin/feed/issue', ({ feed, url }) => ok(issueDetail(feed, url.searchParams.get('key'))));
@@ -96,9 +126,12 @@ feedAdminRouter.delete('/api/admin/feed/demo-kits/:slug', (ctx) => { ekkoOnly(ct
 feedAdminRouter.get('/api/admin/feed/settings', (ctx) => {
   ekkoOnly(ctx);
   const employer = ctx.url.searchParams.get('employer') || null;
-  return { employer, minGroup: minGroupFor(employer) };
+  return { employer, minGroup: minGroupFor(employer), dailyLimit: dailyLimitFor(employer) };
 });
 feedAdminRouter.put('/api/admin/feed/settings', (ctx) => {
   ekkoOnly(ctx);
-  return ok(setMinGroup(ctx.body?.employer || null, ctx.body?.minGroup));
+  const employer = ctx.body?.employer || null;
+  if (ctx.body?.minGroup !== undefined) ok(setMinGroup(employer, ctx.body.minGroup));
+  if (ctx.body?.dailyLimit !== undefined) ok(setDailyLimit(employer, ctx.body.dailyLimit));
+  return { ok: true, minGroup: minGroupFor(employer), dailyLimit: dailyLimitFor(employer) };
 });

@@ -7,13 +7,14 @@
  *
  * Kỳ xem và công ty nằm trên hash: #/feed?days=30&employer=…
  */
-import { el, formatDay } from '/shared/client.js';
+import { el, formatDay, spriteIcon } from '/shared/client.js';
 import { moodFace } from '/shared/moods.js';
 import { downloadDemoAccess } from '../demoAccessPage.js';
 import { badge, companyPicker, confirmAction, hashParams, modal, table, textAreaField, textField, selectField } from '../ui.js';
 
 const PRIORITY = { urgent: ['Khẩn', 'error'], high: ['Cao', 'warning'], medium: ['Trung bình', 'brand'], low: ['Thấp', 'neutral'] };
-const PERIODS = [7, 30, 90];
+const PERIODS = [7, 30];
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const pct = (x) => `${Math.round((x || 0) * 100)}%`;
 const mood = (s) => (s <= -0.5 ? 'Rất tiêu cực' : s < -0.15 ? 'Tiêu cực' : s <= 0.15 ? 'Trung lập' : s < 0.5 ? 'Tích cực' : 'Rất tích cực');
@@ -29,6 +30,15 @@ const moodChip = (moods = []) => {
       : el('b', {}, '—'),
   ]);
 };
+// Hạn phản hồi (tự động 3 ngày sau khi gửi) + đánh giá của người gửi.
+const dueTag = (p) => {
+  if (p.type !== 'issue' || !p.replyDue) return null;
+  if (p.replyState === 'overdue') return el('span.duetag.is-late', {}, `Quá hạn phản hồi (${formatDay(p.replyDue.slice(0, 10))})`);
+  if (p.replyState === 'late') return el('span.duetag.is-warn', {}, 'Trả lời trễ hạn');
+  if (p.replyState === 'pending') return el('span.duetag', {}, `Hạn phản hồi ${formatDay(p.replyDue.slice(0, 10))}`);
+  return null;
+};
+const rateTag = (rating) => (rating ? el(`span.ratetag.is-${rating}`, {}, rating === 'like' ? 'Người gửi: Hài lòng' : 'Người gửi: Chưa hài lòng') : null);
 const stat = (label, value, hint) => el('div.stat', {}, [
   el('div.stat__label', {}, label), el('div.stat__value', {}, value), hint ? el('div.stat__hint', {}, hint) : null,
 ]);
@@ -36,11 +46,16 @@ const stat = (label, value, hint) => el('div.stat', {}, [
 export default async function feedPage(ctx) {
   const params = hashParams();
   const days = Number(params.get('days')) || 30;
+  // Kỳ xem: 7 / 30 ngày gần nhất, hoặc khoảng ngày tự chọn (?from=…&to=…).
+  const from = DAY_RE.test(params.get('from') || '') ? params.get('from') : '';
+  const to = DAY_RE.test(params.get('to') || '') ? params.get('to') : '';
+  const cur = from && to ? { from, to } : days;
+  const periodQ = (d) => (typeof d === 'object' ? `from=${d.from}&to=${d.to}` : `days=${d}`);
   const employer = params.get('employer') || '';
   // Ba tab con: Báo cáo chung · Phản hồi · Chia sẻ (giữ trên hash: #/feed?tab=reply|share).
   const tab = ['reply', 'share'].includes(params.get('tab')) ? params.get('tab') : 'report';
-  const meta = await ctx.api.get('/api/admin/feed/meta');
-  const q = (extra = '') => `days=${days}${meta.ekko && employer ? `&employer=${encodeURIComponent(employer)}` : ''}${extra}`;
+  const meta = await ctx.api.get(`/api/admin/feed/meta${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`);
+  const q = (extra = '') => `${periodQ(cur)}${meta.ekko && employer ? `&employer=${encodeURIComponent(employer)}` : ''}${extra}`;
   const [report, posts, { assignees }, picker] = await Promise.all([
     ctx.api.get(`/api/admin/feed/report?${q()}`),
     ctx.api.get(`/api/admin/feed/posts?${q()}`),
@@ -50,23 +65,66 @@ export default async function feedPage(ctx) {
   const topicLabel = Object.fromEntries(meta.topics.map((x) => [x.code, x.label]));
   const typeLabel = Object.fromEntries(meta.types.map((x) => [x.code, x.label]));
   const statusLabel = Object.fromEntries(meta.statuses.map((x) => [x.code, x.label]));
-  const go = (d, toTab = tab) => ctx.navigate(`/feed?days=${d}${meta.ekko && employer ? `&employer=${encodeURIComponent(employer)}` : ''}${toTab === 'report' ? '' : `&tab=${toTab}`}`);
-  const reload = () => go(days);
+  const go = (d, toTab = tab) => ctx.navigate(`/feed?${periodQ(d)}${meta.ekko && employer ? `&employer=${encodeURIComponent(employer)}` : ''}${toTab === 'report' ? '' : `&tab=${toTab}`}`);
+  const reload = () => go(cur);
+
+  // --- tệp đính kèm phản hồi (PDF / JPG / PNG ≤ 5 MB, tối đa 5 tệp) ---------------
+  const FILE_ACCEPT = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';
+  const fileLinks = (files = []) => (files.length ? el('div.replyfiles', {}, files.map((f) => el('a.replyfile', { href: f.url, target: '_blank', rel: 'noopener' }, [
+    el('span.replyfile__kind', {}, f.image ? 'Ảnh' : 'PDF'), f.name,
+  ]))) : null);
+  /** Nút "Đính kèm tệp": tải lên ngay khi chọn, hiện danh sách tệp (bỏ được), trả id khi gửi. */
+  const filePicker = () => {
+    const files = [];
+    let busy = 0;
+    const list = el('div.replyfiles');
+    const input = el('input', { type: 'file', accept: FILE_ACCEPT, multiple: true, hidden: true });
+    const paint = () => list.replaceChildren(...files.map((f) => el('span.replyfile.is-pending', {}, [
+      el('span.replyfile__kind', {}, f.image ? 'Ảnh' : 'PDF'), f.name,
+      el('button.replyfile__x', { type: 'button', 'aria-label': `Bỏ ${f.name}`, onclick: () => { files.splice(files.indexOf(f), 1); paint(); } }, '×'),
+    ])), ...(busy ? [el('span.cellmeta', { style: { display: 'inline' } }, `Đang tải ${busy} tệp…`)] : []));
+    input.addEventListener('change', async () => {
+      const picked = [...input.files];
+      input.value = '';
+      for (const file of picked) {
+        if (files.length + busy >= 5) { ctx.notify('Tối đa 5 tệp mỗi phản hồi', 'error'); break; }
+        if (!/^(application\/pdf|image\/jpeg|image\/png)$/.test(file.type)) { ctx.notify(`${file.name}: chỉ đính kèm PDF, JPG hoặc PNG`, 'error'); continue; }
+        if (file.size > 5 * 1024 * 1024) { ctx.notify(`${file.name}: quá 5 MB`, 'error'); continue; }
+        busy += 1; paint();
+        try {
+          const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+          const { file: saved } = await ctx.api.post('/api/admin/feed/files', { name: file.name, dataUrl, employer: meta.ekko ? employer || null : undefined });
+          files.push(saved);
+        } catch (err) { ctx.notify(`${file.name}: ${err.message}`, 'error'); }
+        busy -= 1; paint();
+      }
+    });
+    const button = el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: () => input.click(), title: 'PDF, JPG, PNG — tối đa 5 MB mỗi tệp' }, [spriteIcon('attachment-01-stroke', 16), ' Đính kèm tệp']);
+    return {
+      button, list, input,
+      ids: () => files.map((f) => f.id),
+      files: () => [...files],
+      busy: () => busy > 0,
+      clear: () => { files.length = 0; paint(); },
+    };
+  };
 
   // --- trả lời (một tin hoặc cả nhóm) --------------------------------------------
   const openReply = (postIds, title, issueKey = null, after = reload) => {
+    const attach = filePicker();
     const text = textAreaField({ label: 'Nội dung trả lời', rows: 6, placeholder: 'VD: Cảm ơn anh chị đã phản ánh. Từ tuần sau nhà ăn ca đêm tăng thêm 40 suất…' });
     modal({
       title,
       width: 640,
       saveLabel: postIds.length > 1 ? `Gửi tới ${postIds.length} người` : 'Gửi trả lời',
-      rows: [[text], [el('p.hint', { style: { margin: 0 } }, postIds.length > 1
+      rows: [[text], [el('div.replyattach', {}, [attach.button, attach.input, el('span.cellmeta', { style: { display: 'inline' } }, 'PDF, JPG, PNG · tối đa 5 MB/tệp'), attach.list])], [el('p.hint', { style: { margin: 0 } }, postIds.length > 1
         ? 'Mỗi người nhận riêng trong mục "Góp ý của tôi" của họ — không ai thấy người khác. Góp ý chuyển sang "Đã phản hồi".'
         : 'Người gửi nhận trong mục "Góp ý của tôi". Tin ẩn danh thì bạn vẫn không biết là ai.')]],
       onSave: async () => {
         try {
-          await ctx.api.post('/api/admin/feed/reply', { postIds, text: text.get(), issueKey });
-          ctx.notify('Đã gửi trả lời', 'success');
+          if (attach.busy()) { ctx.notify('Đợi tải xong tệp đính kèm nhé', 'error'); return false; }
+          await ctx.api.post('/api/admin/feed/reply', { postIds, text: text.get(), issueKey, fileIds: attach.ids() });
+          ctx.notify(attach.ids().length ? `Đã gửi trả lời kèm ${attach.ids().length} tệp` : 'Đã gửi trả lời', 'success');
           after();
         } catch (err) { ctx.notify(err.message, 'error'); return false; }
         return true;
@@ -76,18 +134,22 @@ export default async function feedPage(ctx) {
 
   // --- trả lời riêng từng người: mỗi góp ý một ô trả lời, gửi ngay -------------------
   const replyItem = (p, issueKey = null) => {
-    const replies = el('div', {}, p.replies.map((r) => el('div.feedreply-admin', {}, [el('b', {}, r.by === 'hr' ? 'Doanh nghiệp: ' : 'Ekko: '), r.text])));
+    const replyNode = (r) => el('div.feedreply-admin', {}, [el('b', {}, r.by === 'hr' ? 'Doanh nghiệp: ' : 'Ekko: '), r.text, fileLinks(r.files)]);
+    const replies = el('div', {}, p.replies.map(replyNode));
     const box = el('textarea', { rows: 2, placeholder: 'Trả lời riêng người này…' });
+    const attach = filePicker();
     const send = el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', {
       type: 'button',
       onclick: async () => {
         const text = box.value.trim();
-        if (text.length < 2) { ctx.notify('Bạn chưa nhập nội dung trả lời', 'error'); return; }
+        if (text.length < 2 && !attach.ids().length) { ctx.notify('Bạn chưa nhập nội dung trả lời', 'error'); return; }
+        if (attach.busy()) { ctx.notify('Đợi tải xong tệp đính kèm nhé', 'error'); return; }
         send.disabled = true;
         try {
-          await ctx.api.post('/api/admin/feed/reply', { postIds: [p.id], text, issueKey });
-          replies.append(el('div.feedreply-admin', {}, [el('b', {}, meta.ekko ? 'Ekko: ' : 'Doanh nghiệp: '), text]));
+          await ctx.api.post('/api/admin/feed/reply', { postIds: [p.id], text, issueKey, fileIds: attach.ids() });
+          replies.append(replyNode({ by: meta.ekko ? 'ekko' : 'hr', text, files: attach.files().map((f) => ({ ...f, url: `/api/admin/feed/files/${f.id}` })) }));
           box.value = '';
+          attach.clear();
           ctx.notify('Đã gửi trả lời riêng', 'success');
         } catch (err) { ctx.notify(err.message, 'error'); }
         send.disabled = false;
@@ -95,10 +157,12 @@ export default async function feedPage(ctx) {
     }, 'Gửi riêng');
     box.addEventListener('focus', () => { if (p.unread) markSeen([`post:${p.id}`]); });
     return el(`div.replyitem${p.unread ? '.is-unread' : ''}`, { dataset: { seenKey: `post:${p.id}` } }, [
-      el('div.cellmeta', {}, [p.unread ? el('span.unreaddot', { title: 'Chưa đọc' }) : null, moodTag(p.mood), `${formatDay(p.createdAt.slice(0, 10))} · ${p.author ? p.author.name : 'Ẩn danh'} · ${statusLabel[p.status] || p.status}${meta.ekko && p.company ? ` · ${p.company}` : ''}`]),
+      el('div.cellmeta', {}, [p.unread ? el('span.unreaddot', { title: 'Chưa đọc' }) : null, moodTag(p.mood), `${formatDay(p.createdAt.slice(0, 10))} · ${p.author ? p.author.name : 'Ẩn danh'} · ${statusLabel[p.status] || p.status}${meta.ekko && p.company ? ` · ${p.company}` : ''}`,
+        dueTag(p), rateTag(p.rating)]),
       el('div.replyitem__text', {}, p.text),
       replies,
-      el('div.replyitem__form', {}, [box, send]),
+      el('div.replyitem__form', {}, [box, el('div.replyitem__actions', {}, [attach.button, send])]),
+      attach.input, attach.list,
     ]);
   };
   /** Danh sách góp ý, mỗi cái một ô trả lời riêng (thay vì một câu cho cả nhóm). */
@@ -126,20 +190,53 @@ export default async function feedPage(ctx) {
     ]),
     el('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' } }, [
       picker,
-      el('div', { style: { display: 'flex', gap: '6px' } }, PERIODS.map((d) => el(
-        `button.ekko-btn.ekko-btn--sm.${d === report.days ? 'ekko-btn--primary' : 'ekko-btn--secondary'}`,
-        { type: 'button', onclick: () => go(d) }, `${d} ngày`,
-      ))),
+      periodPicker(),
     ]),
   ]);
 
+  /** 7 ngày · 30 ngày · Khoảng ngày (hai ô ngày + Xem). */
+  function periodPicker() {
+    const custom = Boolean(report.custom);
+    const fromIn = el('input.periodrange__date', { type: 'date', value: report.from, max: report.to, 'aria-label': 'Từ ngày' });
+    const toIn = el('input.periodrange__date', { type: 'date', value: report.to, 'aria-label': 'Đến ngày' });
+    const range = el('div.periodrange', { hidden: !custom }, [
+      fromIn, el('span', { 'aria-hidden': 'true' }, '–'), toIn,
+      el('button.ekko-btn.ekko-btn--primary.ekko-btn--sm', {
+        type: 'button',
+        onclick: () => {
+          if (!fromIn.value || !toIn.value || fromIn.value > toIn.value) { ctx.notify('Chọn ngày bắt đầu trước ngày kết thúc', 'error'); return; }
+          go({ from: fromIn.value, to: toIn.value });
+        },
+      }, 'Xem'),
+    ]);
+    return el('div.periodpicker', {}, [
+      el('div', { style: { display: 'flex', gap: '6px' } }, [
+        ...PERIODS.map((d) => el(`button.ekko-btn.ekko-btn--sm.${!custom && d === report.days ? 'ekko-btn--primary' : 'ekko-btn--secondary'}`, { type: 'button', onclick: () => go(d) }, `${d} ngày`)),
+        el(`button.ekko-btn.ekko-btn--sm.${custom ? 'ekko-btn--primary' : 'ekko-btn--secondary'}`, {
+          type: 'button', 'aria-expanded': String(custom || false),
+          onclick: (e) => { range.hidden = !range.hidden; e.currentTarget.setAttribute('aria-expanded', String(!range.hidden)); if (!range.hidden) fromIn.focus(); },
+        }, 'Khoảng ngày'),
+      ]),
+      range,
+    ]);
+  }
+
   const t = report.totals;
   const S = report.sections;
+  const R = report.reply || {};
   const stats = el('div.stat-grid', {}, [
     stat('Tổng số bài', String(t.posts), `${t.people} người gửi`),
     stat('Góp ý / Cần giải quyết', String(S.issue.totals.posts), `${S.issue.totals.people} người · đã phản hồi ${pct(S.issue.totals.replied)}`),
     stat('Chia sẻ', String(S.share.totals.posts), `${S.share.totals.people} người`),
     stat('Cảm xúc chung', mood(t.sentiment), `điểm ${t.sentiment.toLocaleString('vi-VN')} (−1 đến 1)`),
+    // Hạn phản hồi tự động 3 ngày sau khi gửi (chỉ Góp ý / Cần giải quyết).
+    el(`div.stat${R.overdueRate > 0.2 ? '.stat--warn' : ''}`, {}, [
+      el('div.stat__label', {}, `Phản hồi quá hạn (> ${R.dueDays || 3} ngày)`),
+      el('div.stat__value', {}, pct(R.overdueRate)),
+      el('div.stat__hint', {}, `${R.overdue || 0} đang quá hạn · ${R.late || 0} trả lời trễ · ${R.onTime || 0} đúng hạn`),
+    ]),
+    stat('Người gửi hài lòng', R.satisfaction === null || R.satisfaction === undefined ? '—' : pct(R.satisfaction),
+      `${R.likes || 0} hài lòng · ${R.dislikes || 0} chưa hài lòng`),
   ]);
 
   // --- đám mây từ khoá: chữ to theo số NGƯỜI nhắc ---------------------------------
@@ -263,6 +360,7 @@ export default async function feedPage(ctx) {
             i.unread ? el('span.unreaddot', { title: 'Chưa đọc', 'aria-label': 'Chưa đọc' }) : null,
             badge(issueLabel[i.status] || i.status, ISSUE_TONE[i.status]),
             badge(...PRIORITY[i.priority]),
+            i.overdue ? badge(`${i.overdue} quá hạn phản hồi`, 'error') : null,
             el('strong', {}, i.title),
           ]),
           el('div.cellmeta', {}, `${meta.ekko && i.company ? `${i.company} · ` : ''}${topicLabel[i.topic] || i.topic}${i.keyword ? ` · "${i.keyword}"` : ''} · ${i.people} người · ${i.posts} góp ý · ${mood(i.sentiment)} · đã trả lời ${i.replied}/${i.posts}`),
@@ -407,9 +505,9 @@ export default async function feedPage(ctx) {
 
   // Báo cáo chung: bản tóm gọn, xem chi tiết ở tab Chia sẻ.
   const shareRead = el('div.panel', {}, [
-    el('div.panel__head', {}, [el('h2', {}, 'Nhóm chia sẻ nổi bật'), el('button.linkbtn', { type: 'button', onclick: () => go(days, 'share') }, 'Xem tất cả ở tab Chia sẻ →')]),
+    el('div.panel__head', {}, [el('h2', {}, 'Nhóm chia sẻ nổi bật'), el('button.linkbtn', { type: 'button', onclick: () => go(cur, 'share') }, 'Xem tất cả ở tab Chia sẻ →')]),
     shareClusters.length
-      ? el('div.toplist', {}, shareClusters.slice(0, 6).map((c) => el('button.toprow.toprow--share', { type: 'button', onclick: () => go(days, 'share') }, [
+      ? el('div.toplist', {}, shareClusters.slice(0, 6).map((c) => el('button.toprow.toprow--share', { type: 'button', onclick: () => go(cur, 'share') }, [
         badge(topicLabel[c.topic] || c.topic, 'success'),
         el('span.toprow__title', {}, c.title),
         el('span.cellmeta', { style: { display: 'inline' } }, `${c.list.length} người`),
@@ -552,7 +650,7 @@ export default async function feedPage(ctx) {
     report.issues.length
       ? el('div.toplist', {}, report.issues.slice(0, 8).map((i) => el('button.toprow', {
         type: 'button',
-        onclick: () => { try { sessionStorage.setItem('ekkofeed.openIssue', i.key); } catch { /* chặn bộ nhớ: chỉ chuyển tab */ } go(days, 'reply'); },
+        onclick: () => { try { sessionStorage.setItem('ekkofeed.openIssue', i.key); } catch { /* chặn bộ nhớ: chỉ chuyển tab */ } go(cur, 'reply'); },
       }, [
         badge(issueLabel[i.status] || i.status, ISSUE_TONE[i.status]),
         el('span.toprow__title', {}, i.title),
@@ -568,7 +666,7 @@ export default async function feedPage(ctx) {
     ['reply', `Phản hồi${report.issues.filter((i) => i.status === 'open').length + loose.filter((p) => !p.replies.length).length ? ` (${report.issues.filter((i) => i.status === 'open').length + loose.filter((p) => !p.replies.length).length} cần xử lý)` : ''}`],
     ['share', `Chia sẻ (${shares.length})`],
   ].map(([code, label]) => el('button.subtab', {
-    type: 'button', role: 'tab', 'aria-selected': String(code === tab), onclick: () => go(days, code),
+    type: 'button', role: 'tab', 'aria-selected': String(code === tab), onclick: () => go(cur, code),
   }, label)));
 
   // Từ "Vấn đề nổi bật" bấm sang: mở luôn màn quản lý của vấn đề đó.
@@ -579,8 +677,16 @@ export default async function feedPage(ctx) {
   } catch { /* trình duyệt chặn bộ nhớ: bỏ qua */ }
   if (pending) setTimeout(() => openIssue(pending), 50);
 
+  const offNote = meta.enabled === false
+    ? el('div.panel', { style: { borderColor: 'var(--border-warning, #FEC84B)', background: '#FFFAEB', marginBottom: '12px' } }, [
+      el('strong', {}, 'EkkoFeed đang tạm tắt trên hệ thống'),
+      el('p.hint', { style: { margin: '4px 0 0' } }, meta.ekko
+        ? 'Người lao động không thấy và không gửi được góp ý mới. Bật lại ở mục Chức năng → Bật / tắt chức năng.'
+        : 'Người lao động tạm thời không gửi được góp ý mới. Dữ liệu cũ vẫn xem và trả lời được.'),
+    ])
+    : null;
   return el('div', {}, [
-    head, tabs,
+    head, offNote, tabs,
     ...(tab === 'report'
       ? [
         stats,
@@ -588,7 +694,8 @@ export default async function feedPage(ctx) {
           code: 'issue', title: 'Góp ý / Cần giải quyết', hint: 'điều chưa ổn, đề xuất, việc mong công ty giải quyết', sec: S.issue, right: topIssues,
           chips: [
             ['Bài', String(S.issue.totals.posts)], ['Người', String(S.issue.totals.people)],
-            ['Đã phản hồi', pct(S.issue.totals.replied)], ['Cảm xúc', mood(S.issue.totals.sentiment)],
+            ['Đã phản hồi', pct(S.issue.totals.replied)], ['Quá hạn phản hồi', pct(S.issue.reply?.overdueRate)],
+            ['Hài lòng', S.issue.reply?.satisfaction == null ? '—' : pct(S.issue.reply.satisfaction)], ['Cảm xúc', mood(S.issue.totals.sentiment)],
             ['Xu hướng', trendTxt(S.issue.totals.posts, S.issue.totals.prevPosts) || '—'],
           ],
         }),
@@ -688,20 +795,34 @@ async function managePanel(ctx, employer) {
   };
 
   const minGroup = el('input', { type: 'number', min: '1', max: '50', value: String(settings.minGroup), style: { width: '80px' } });
+  const dailyLimit = el('input', { type: 'number', min: '1', max: '20', value: String(settings.dailyLimit ?? 1), style: { width: '80px' } });
   const saveMin = async () => {
     try {
-      await ctx.api.put('/api/admin/feed/settings', { employer: employer && employer !== '__none__' ? employer : null, minGroup: Number(minGroup.value) });
-      ctx.notify('Đã lưu ngưỡng ẩn danh', 'success');
+      await ctx.api.put('/api/admin/feed/settings', {
+        employer: employer && employer !== '__none__' ? employer : null,
+        minGroup: Number(minGroup.value),
+        dailyLimit: Number(dailyLimit.value),
+      });
+      ctx.notify('Đã lưu cài đặt EkkoFeed', 'success');
       ctx.navigate(location.hash.slice(1));
     } catch (err) { ctx.notify(err.message, 'error'); }
   };
 
   return el('div.panel', { style: { marginTop: '16px' } }, [
     el('div.panel__head', {}, [el('h2', {}, 'Quản lý (chỉ quản trị Ekko)')]),
-    el('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' } }, [
-      el('span', {}, employer && employer !== '__none__' ? 'Ngưỡng ẩn danh của công ty đang chọn' : 'Ngưỡng ẩn danh mặc định (mọi công ty)'), minGroup, el('span', {}, 'người'),
-      el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { type: 'button', onclick: saveMin }, 'Lưu'),
-      el('span.hint', {}, 'Từ khoá / nhóm vấn đề chỉ hiện cho doanh nghiệp khi có từ ngần này người.'),
+    el('p.hint', { style: { margin: '0 0 8px' } }, employer && employer !== '__none__'
+      ? 'Cài đặt riêng cho công ty đang chọn ở trên (ghi đè mặc định).'
+      : 'Cài đặt mặc định cho mọi công ty. Chọn một công ty ở trên để đặt riêng cho công ty đó.'),
+    el('div.feedsettings', {}, [
+      el('label.feedsettings__row', {}, [
+        el('span', {}, [el('b', {}, 'Ngưỡng ẩn danh'), el('small.hint', {}, 'Từ khoá / nhóm vấn đề chỉ hiện cho doanh nghiệp khi có từ ngần này người.')]),
+        el('span.feedsettings__input', {}, [minGroup, 'người']),
+      ]),
+      el('label.feedsettings__row', {}, [
+        el('span', {}, [el('b', {}, 'Số lần gửi mỗi ngày'), el('small.hint', {}, 'Một người được gửi tối đa bao nhiêu lần mỗi ngày (Chia sẻ và Góp ý cộng chung). Chống gửi tràn lan.')]),
+        el('span.feedsettings__input', {}, [dailyLimit, 'lần / người / ngày']),
+      ]),
+      el('div', {}, el('button.ekko-btn.ekko-btn--primary.ekko-btn--sm', { type: 'button', onclick: saveMin }, 'Lưu cài đặt')),
     ]),
     el('div', { style: { display: 'flex', alignItems: 'center', marginBottom: '8px' } }, [
       el('h3', { style: { margin: 0, flex: '1' } }, `Tài khoản HR doanh nghiệp (${accounts.length})`),

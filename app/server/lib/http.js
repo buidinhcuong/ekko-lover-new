@@ -63,12 +63,12 @@ export class Router {
 
 const MAX_BODY = 2 * 1024 * 1024;
 
-export async function readJson(req) {
+export async function readJson(req, max = MAX_BODY) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY) throw bad('Du lieu gui len qua lon');
+    if (size > max) throw bad('Dữ liệu gửi lên quá lớn');
     chunks.push(chunk);
   }
   if (!chunks.length) return {};

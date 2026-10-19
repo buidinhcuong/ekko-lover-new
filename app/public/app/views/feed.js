@@ -4,7 +4,7 @@
  *  - Gửi góp ý: viết (hoặc nói) → "Xem trước" (đúng bản doanh nghiệp sẽ thấy:
  *    đã che SĐT, CCCD, tên người…; AI gợi ý loại & chủ đề) → "Gửi".
  *  - Góp ý của tôi: trạng thái + phản hồi của doanh nghiệp (chỉ mình thấy).
- * Mỗi ngày gửi được 1 góp ý; góp ý đầu tiên mỗi tuần +10 XP.
+ * Mỗi ngày gửi được tối đa `dailyLimit` lần (Super admin đặt); bài đầu tiên mỗi tuần +10 XP.
  */
 import { api, el, formatDay, guard, mount, singleFlight, spriteIcon, toast, uiIcon } from '/shared/client.js';
 import { moodFace } from '/shared/moods.js';
@@ -52,7 +52,7 @@ function composer(ctx, data, redraw) {
       uiIcon('tick-02', 20),
       el('div', {}, [
         el('b', {}, t('Hôm nay bạn đã gửi góp ý')),
-        el('p.muted', {}, t('Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé. Phản hồi của công ty sẽ hiện ở bên dưới.')),
+        el('p.muted', {}, t('Mỗi ngày gửi được {n} lần — mai bạn gửi tiếp nhé. Phản hồi của công ty sẽ hiện ở bên dưới.', { n: data.dailyLimit || 1 })),
       ]),
     ]);
   }
@@ -269,23 +269,89 @@ function myPosts(data) {
   return el('section.feedmine', {}, [
     el('h3.section-title', {}, [t('Góp ý của tôi'), el('span', {}, t('Chỉ bạn thấy'))]),
     data.posts.length
-      ? el('div.feedlist', {}, data.posts.map(postCard))
+      ? el('div.feedlist', {}, data.posts.map((p) => postCard(p)))
       : el('p.muted', {}, t('Bạn chưa gửi góp ý nào.')),
   ]);
 }
 
+// Ngón cái lên / xuống (bộ icon chưa có — vẽ nét cùng kiểu 24px stroke).
+const THUMB = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3Zm0 0 4.4-7.3A1.6 1.6 0 0 1 14.3 4l-.8 5h5.6a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17.7 20H7"/></svg>';
+const thumb = (down) => {
+  const span = el(`span.feedrate__icon${down ? '.is-down' : ''}`);
+  span.innerHTML = THUMB;
+  return span;
+};
+const timeOf = (iso) => `${formatDay(iso.slice(0, 10))} · ${new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+
+/** Tệp HR đính kèm: ảnh hiện thu nhỏ (chạm để mở lớn), PDF là thẻ tệp mở trong trình duyệt. */
+function attachments(files) {
+  if (!files?.length) return null;
+  return el('div.feedfiles', {}, files.map((f) => (f.image
+    ? el('a.feedfiles__img', { href: f.url, target: '_blank', rel: 'noopener', 'aria-label': t('Mở ảnh {name}', { name: f.name }) }, [
+      el('img', { src: f.url, alt: f.name, loading: 'lazy' }),
+    ])
+    : el('a.feedfiles__doc', { href: f.url, target: '_blank', rel: 'noopener' }, [
+      el('span.feedfiles__badge', { 'aria-hidden': 'true' }, 'PDF'),
+      el('span.feedfiles__name', {}, [el('b', {}, f.name), el('small', {}, `${Math.max(1, Math.round(f.size / 1024))} KB · ${t('Chạm để xem')}`)]),
+    ]))));
+}
+
+/**
+ * Một góp ý = một đoạn chat: bên phải là lời của bạn, bên trái là phản hồi của
+ * công ty (kèm tệp). Sau khi có phản hồi chỉ đánh giá Hài lòng / Chưa hài lòng —
+ * không nhắn qua lại.
+ */
 function postCard(p) {
   const [label, tone] = STATUS[p.status] || STATUS.sent;
+  const isShare = p.type === 'share';
+  const overdue = !isShare && !p.replies.length && p.replyDue && new Date(p.replyDue) < new Date();
+  const thread = el('div.feedthread', {}, [
+    el('div.feedbubble.is-me', {}, [
+      el('p', {}, p.redactedText || p.text),
+      el('small', {}, `${timeOf(p.createdAt)} · ${p.anonymous ? t('Ẩn danh') : t('Có ghi tên')}`),
+    ]),
+    ...(p.replies.length
+      ? p.replies.map((r) => el('div.feedbubble.is-company', {}, [
+        el('b.feedbubble__who', {}, r.fromCompany ? t('Công ty phản hồi') : t('Ekko phản hồi')),
+        r.text ? el('p', {}, r.text) : null,
+        attachments(r.files),
+        el('small', {}, timeOf(r.createdAt)),
+      ]))
+      : [el(`div.feedsys${overdue ? '.is-late' : ''}`, {}, isShare
+        ? t('Chia sẻ đã tới công ty — không cần phản hồi')
+        : overdue
+          ? t('Đã quá hạn phản hồi ({date}) — góp ý được đánh dấu quá hạn để công ty ưu tiên', { date: formatDay(p.replyDue.slice(0, 10)) })
+          : t('Công ty sẽ phản hồi trước {date}', { date: formatDay(p.replyDue.slice(0, 10)) }))]),
+  ]);
+
+  let rating = p.rating;
+  const rateRow = p.canRate ? (() => {
+    const row = el('div.feedrate');
+    const btn = (value, text, down) => el('button.feedrate__btn', {
+      type: 'button', 'aria-pressed': String(rating === value),
+      onclick: async () => {
+        const next = rating === value ? null : value;
+        const result = await guard(() => api.post(`/api/feed/${p.id}/rate`, { rating: next }), t('Chưa lưu được đánh giá'));
+        if (!result) return;
+        rating = next;
+        draw();
+        if (next) toast(next === 'like' ? t('Cảm ơn bạn đã đánh giá!') : t('Cảm ơn bạn — công ty sẽ thấy phản hồi chưa làm bạn hài lòng'), 'success');
+      },
+    }, [thumb(down), text]);
+    const draw = () => row.replaceChildren(
+      el('span.feedrate__q', {}, rating ? t('Bạn đã đánh giá phản hồi này') : t('Phản hồi này có giúp bạn không?')),
+      el('div.feedrate__btns', {}, [btn('like', t('Hài lòng'), false), btn('dislike', t('Chưa hài lòng'), true)]),
+    );
+    draw();
+    return row;
+  })() : null;
+
   return el(`div.card.feedpost${p.unread ? '.is-new' : ''}`, {}, [
     el('div.feedpost__head', {}, [
-      el('span.feedpost__badges', {}, [el(`span.feedstatus.is-${tone}`, {}, t(label)), p.mood ? moodFace(p.mood, 20) : null]),
-      el('small.muted', {}, `${formatDay(p.createdAt.slice(0, 10))} · ${p.anonymous ? t('Ẩn danh') : t('Có ghi tên')}`),
+      el('span.feedpost__badges', {}, [el(`span.feedstatus.is-${tone}`, {}, t(isShare ? 'Đã gửi' : label)), p.mood ? moodFace(p.mood, 20) : null]),
+      el('small.muted', {}, isShare ? t('Chia sẻ') : t('Góp ý / Cần giải quyết')),
     ]),
-    el('p.feedpost__text', {}, p.text),
-    ...p.replies.map((r) => el('div.feedreply', {}, [
-      el('b', {}, r.fromCompany ? t('Công ty phản hồi') : t('Ekko phản hồi')),
-      el('p', {}, r.text),
-      el('small.muted', {}, formatDay(r.createdAt.slice(0, 10))),
-    ])),
+    thread,
+    rateRow,
   ]);
 }

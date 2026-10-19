@@ -5,11 +5,13 @@ import { categoriesPanel } from './categories.js';
 
 export default async function features(ctx) {
   const employer = hashParams().get('employer') || '';
-  const [rows, learning, ai, teamXp, picker] = await Promise.all([
+  const [modules, rows, learning, ai, teamXp, picker, modulePicker] = await Promise.all([
+    ctx.api.get(`/api/admin/settings/modules${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
     ctx.api.get('/api/admin/features'),
     ctx.api.get('/api/admin/settings/learning-xp'),
     ctx.api.get(`/api/admin/settings/ai${employer ? `?employer=${encodeURIComponent(employer)}` : ''}`),
     ctx.api.get('/api/admin/settings/team-xp'),
+    companyPicker(ctx, '/features'),
     companyPicker(ctx, '/features'),
   ]);
   ai.picker = picker;
@@ -18,16 +20,18 @@ export default async function features(ctx) {
     el('div.page-head', {}, [
       el('div', {}, [
         el('h1', {}, 'Chức năng'),
-        el('p', {}, 'Bốn chức năng người học dùng hằng ngày. Mã chức năng gắn với logic trong app nên không nên đổi; tên, mô tả và điểm thưởng thì sửa thoải mái.'),
+        el('p', {}, 'Bật / tắt từng chức năng cho toàn hệ thống, cùng điểm thưởng XP của các chức năng dùng hằng ngày.'),
       ]),
     ]),
+
+    modulesPanel(ctx, modules, { employer, picker: modulePicker }),
 
     learningXpPanel(ctx, learning),
     teamXpPanel(ctx, teamXp),
     aiPanel(ctx, ai),
 
     table(
-      [{ label: 'Chức năng' }, { label: 'Mã' }, { label: 'Đường dẫn' }, { label: 'XP mỗi ngày', align: 'right' }, { label: 'Trạng thái' }, { label: '' }],
+      [{ label: 'Chức năng' }, { label: 'Mã' }, { label: 'Đường dẫn' }, { label: 'XP mỗi ngày', align: 'right' }, { label: 'Cộng XP' }, { label: '' }],
       rows,
       (row) => el('tr', {}, [
         el('td', {}, [
@@ -38,7 +42,9 @@ export default async function features(ctx) {
         el('td', {}, [el('code', { style: { fontSize: 'var(--font-size-text-xs)' } }, row.code)]),
         el('td', {}, [el('span.cellmeta', {}, row.route)]),
         el('td.num', {}, String(row.xp_per_day)),
-        el('td', {}, [statusToggle(ctx, { entity: 'features', id: row.id, field: 'is_enabled', value: row.is_enabled, on: 'Hiện trong app', off: 'Đã ẩn', name: row.name })]),
+        // Cột này chỉ quyết định có cộng XP / streak khi dùng chức năng hay không;
+        // ẩn hẳn chức năng khỏi app thì dùng bảng "Bật / tắt chức năng" ở trên.
+        el('td', {}, [statusToggle(ctx, { entity: 'features', id: row.id, field: 'is_enabled', value: row.is_enabled, on: 'Đang cộng XP', off: 'Không cộng XP', name: `cộng XP ${row.name}` })]),
         el('td', {}, [el('div.actions', {}, [
           el('button.ekko-btn.ekko-btn--secondary.ekko-btn--sm', { onclick: () => edit(ctx, row) }, 'Sửa'),
         ])]),
@@ -49,6 +55,87 @@ export default async function features(ctx) {
       el('div.panel__head', {}, [el('h2', {}, 'Cách tính streak')]),
       el('p.hint', {}, 'Mở một chức năng lên xem thì KHÔNG được gì. Chỉ khi người học thực sự làm một việc — lưu ngân sách, đặt hoặc nạp mục tiêu, ghi một khoản chi — lần đầu trong ngày mới cộng +1 streak và trả số XP ở cột "XP mỗi ngày". Các lần sau trong cùng ngày không cộng thêm. Bỏ lỡ một ngày là mất chuỗi: streak về 0 và lần hoạt động sau bắt đầu lại từ 1 (không có đóng băng).'),
     ]),
+  ]);
+}
+
+/**
+ * Bật / tắt chức năng cho toàn hệ thống (server/services/modules.js): tắt là app
+ * ẩn hẳn chức năng đó và server chặn API của nó; dữ liệu cũ giữ nguyên.
+ */
+function modulesPanel(ctx, modules, { employer, picker }) {
+  const company = employer && employer !== '__none__' ? employer : null;
+  const companyName = company ? (picker.selectedOptions[0]?.textContent || company).replace(/\s*\(\d+ người\)$/, '') : null;
+  const count = el('span.cellmeta', { style: { display: 'inline' } });
+  const paintCount = () => { count.textContent = `${modules.filter((m) => m.enabled).length}/${modules.length} đang bật${company ? ' với công ty này' : ''}`; };
+  paintCount();
+
+  const save = async (m, enabled) => {
+    const r = await ctx.api.put(`/api/admin/settings/modules/${m.code}`, company ? { enabled, employer: company } : { enabled });
+    Object.assign(m, r.modules.find((x) => x.code === m.code));
+    paintCount();
+  };
+
+  // Mặc định cả hệ thống: một công tắc mỗi chức năng.
+  const systemCard = (m) => {
+    const input = el('input', { type: 'checkbox', role: 'switch', checked: m.enabled ? true : null, 'aria-label': `Bật / tắt ${m.name}` });
+    const state = el('span.modulecard__state', {}, m.enabled ? 'Đang bật' : 'Đã tắt');
+    const node = el(`label.modulecard${m.enabled ? '' : '.is-off'}`, {}, [
+      el('span.modulecard__text', {}, [el('b', {}, m.name), el('small', {}, m.description)]),
+      el('span.modulecard__toggle', {}, [el('span.ekko-switch', {}, [input, el('span.ekko-switch__track'), el('span.ekko-switch__thumb')]), state]),
+    ]);
+    input.addEventListener('change', async () => {
+      input.disabled = true;
+      try {
+        await save(m, input.checked);
+        ctx.notify(`${m.enabled ? 'Đã bật' : 'Đã tắt'}: ${m.name} — mặc định cho mọi công ty (trừ công ty đặt riêng)`, 'success');
+      } catch (err) { ctx.notify(err.message, 'error'); }
+      input.checked = m.enabled;
+      input.disabled = false;
+      state.textContent = m.enabled ? 'Đang bật' : 'Đã tắt';
+      node.classList.toggle('is-off', !m.enabled);
+    });
+    return node;
+  };
+
+  // Riêng một công ty: Theo mặc định · Bật · Tắt.
+  const companyCard = (m) => {
+    const node = el('div.modulecard.modulecard--company');
+    const draw = () => {
+      node.classList.toggle('is-off', !m.enabled);
+      const choice = m.override === null ? 'default' : m.override ? 'on' : 'off';
+      const opt = (code, label) => el('button.segment__btn', {
+        type: 'button', 'aria-pressed': String(choice === code),
+        onclick: async () => {
+          if (choice === code) return;
+          try {
+            await save(m, code === 'default' ? null : code === 'on');
+            ctx.notify(`${m.name}: ${code === 'default' ? 'theo mặc định hệ thống' : code === 'on' ? 'bật riêng' : 'tắt riêng'} cho ${companyName}`, 'success');
+          } catch (err) { ctx.notify(err.message, 'error'); }
+          draw();
+        },
+      }, label);
+      node.replaceChildren(
+        el('span.modulecard__text', {}, [
+          el('b', {}, m.name),
+          el('small', {}, m.override === null
+            ? `Theo mặc định hệ thống: ${m.system ? 'đang bật' : 'đang tắt'}`
+            : `Đặt riêng cho công ty này: ${m.override ? 'bật' : 'tắt'} (mặc định hệ thống: ${m.system ? 'bật' : 'tắt'})`),
+        ]),
+        el('div.segment.modulecard__segment', { role: 'group', 'aria-label': `${m.name} với ${companyName}` }, [
+          opt('default', 'Mặc định'), opt('on', 'Bật'), opt('off', 'Tắt'),
+        ]),
+      );
+    };
+    draw();
+    return node;
+  };
+
+  return el('div.panel', { style: { marginBottom: '16px' } }, [
+    el('div.panel__head', {}, [el('h2', {}, 'Bật / tắt chức năng'), el('div', { style: { display: 'flex', gap: '10px', alignItems: 'center' } }, [count, picker])]),
+    el('p.hint', { style: { margin: '0 0 12px' } }, company
+      ? `Đang đặt riêng cho ${companyName}. "Mặc định" = theo cài đặt chung của hệ thống; "Bật" / "Tắt" = riêng công ty này, thắng cài đặt chung. Áp dụng ngay cho người lao động của công ty.`
+      : 'Cài đặt chung cho cả hệ thống — áp dụng ngay cho mọi công ty, trừ công ty đã đặt riêng (chọn công ty ở góc phải để đặt riêng). Tắt một chức năng thì app ẩn hẳn chức năng đó và chặn mọi thao tác tới nó; dữ liệu cũ giữ nguyên, bật lại là thấy như trước.'),
+    el('div.modulegrid', {}, modules.map(company ? companyCard : systemCard)),
   ]);
 }
 
