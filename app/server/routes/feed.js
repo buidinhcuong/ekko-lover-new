@@ -8,6 +8,8 @@
  */
 import { upsertMember } from '../auth.js';
 import { forbidden, HttpError, Router } from '../lib/http.js';
+import { companyScope } from '../services/companyScope.js';
+import { programOverview } from '../services/overview.js';
 import {
   createDraft, createHrAccount, FEED_STATUS, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
   markRepliesSeen, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
@@ -43,6 +45,12 @@ feedAdminRouter.get('/api/admin/feed/meta', ({ feed }) => ({
   topics: labels(FEED_TOPICS),
   statuses: Object.entries(FEED_STATUS).filter(([code]) => feed.ekko || code !== 'review').map(([code, label]) => ({ code, label })),
 }));
+
+// Bảng điều khiển Giáo dục tài chính: Ekko chọn công ty tuỳ ý; HR luôn bị khoá vào
+// công ty mình (bỏ qua ?employer), từ khoá Ekko bot theo ngưỡng ẩn danh của công ty.
+feedAdminRouter.get('/api/admin/feed/overview', ({ feed, url }) => (feed.ekko
+  ? programOverview(companyScope(url.searchParams.get('employer')))
+  : programOverview(companyScope(feed.employerKey), { minKeywordUsers: minGroupFor(feed.employerKey) })));
 
 feedAdminRouter.get('/api/admin/feed/report', ({ feed, url }) => feedReport(feed, {
   employer: url.searchParams.get('employer'),

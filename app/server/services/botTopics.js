@@ -14,7 +14,7 @@ import { all } from '../db.js';
 import { dayKey } from '../lib/time.js';
 import { normalize } from './nlp.js';
 
-const MIN_USERS = 2;
+const MIN_USERS = 2;   // mặc định; HR doanh nghiệp xem thì dùng ngưỡng ẩn danh của công ty
 
 /** Loại câu trả lời của bot cho thấy tin trước đó KHÔNG phải câu hỏi tài chính. */
 const NOT_QUESTION = new Set([
@@ -102,7 +102,8 @@ export function phrasesOf(text, limit = 5) {
   return out.slice(0, limit);
 }
 
-export function botKeywordReport({ days = 30, today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] } } = {}) {
+export function botKeywordReport({ days = 30, today = dayKey(), scope = { employer: null, where: () => '1 = 1', params: [] }, minUsers = MIN_USERS } = {}) {
+  const minGroup = Number.isInteger(minUsers) && minUsers >= 1 ? minUsers : MIN_USERS;
   const from = shiftDay(today, -(days - 1));
   // Mỗi tin của người dùng ghép với câu bot trả lời ngay sau (cùng người, id kế tiếp).
   const rows = all(
@@ -181,7 +182,7 @@ export function botKeywordReport({ days = 30, today = dayKey(), scope = { employ
       users: p.users.size,
       words: key.split(' ').length,
     }))
-    .filter((p) => p.users >= MIN_USERS)
+    .filter((p) => p.users >= minGroup)
     .sort((a, b) => b.messages - a.messages || b.words - a.words);
   // Một chữ nằm trong cụm 2 chữ đã chọn với số lần gần bằng thì bỏ (tránh "tiết" + "kiệm" + "tiết kiệm").
   const keywords = [];
@@ -210,7 +211,7 @@ export function botKeywordReport({ days = 30, today = dayKey(), scope = { employ
   }
 
   return {
-    days, from, to: today, minUsers: MIN_USERS,
+    days, from, to: today, minUsers: minGroup,
     totals: {
       messages: rows.length,
       questions: questions.length,

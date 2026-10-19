@@ -1826,6 +1826,12 @@ async function main() {
       check('HR đăng nhập được, whoami báo quyền EkkoFeed của công ty mình', hrLogin.status === 200 && hrWho.feed?.employerKey === 'CT-FEED' && hrWho.feed.ekko === false);
       const hrReport = (await get('hrjar', '/api/admin/feed/report?employer=CT-OTHER')).json;
       check('HR chỉ thấy công ty mình (đổi tham số công ty cũng không thấy công ty khác)', hrReport.employer === 'CT-FEED' && hrReport.totals.posts === 2);
+      const hrDash = (await get('hrjar', '/api/admin/feed/overview?employer=CT-OTHER')).json;
+      const ekkoDash = (await get('admin', '/api/admin/stats/overview?employer=CT-FEED')).json;
+      check('HR xem Bảng điều khiển Giáo dục tài chính, luôn khoá vào công ty mình',
+        hrDash.employer === 'CT-FEED' && hrDash.users.total === ekkoDash.users.total && hrDash.users.total >= 2
+        && hrDash.botTopics.minUsers === 1 && Array.isArray(hrDash.dailyActive), JSON.stringify({ hr: hrDash.users, ekko: ekkoDash.users }));
+      check('HR không gọi được API Bảng điều khiển của quản trị Ekko', (await get('hrjar', '/api/admin/stats/overview')).status === 403);
       check('HR không vào được các trang quản trị khác', (await get('hrjar', '/api/admin/stats/users')).status === 403
         && (await get('hrjar', '/api/admin/feed/hr-accounts')).status === 403);
       const hrPosts = (await get('hrjar', '/api/admin/feed/posts')).json;

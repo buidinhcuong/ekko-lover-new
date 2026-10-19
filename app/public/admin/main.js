@@ -82,6 +82,8 @@ let mainNode = null;
 const ctx = {
   api,
   get meta() { return meta; },
+  /** HR doanh nghiệp: { employerKey, employerName }; quản trị Ekko: null. */
+  get hr() { return hrInfo; },
   navigate(route) {
     if (location.hash.slice(1) === route) render();
     else location.hash = route;
@@ -94,9 +96,15 @@ const ctx = {
   uploader: (body) => api.post('/api/admin/upload', body),
 };
 
-// HR doanh nghiệp (EkkoFeed): chỉ thấy đúng trang EkkoFeed của công ty mình.
-const HR_NAV = [{ group: 'Doanh nghiệp' }, { route: '/feed', icon: 'bubble-chat', label: 'EkkoFeed' }];
+// HR doanh nghiệp: chỉ thấy Bảng điều khiển + EkkoFeed, luôn khoá vào công ty của mình.
+const HR_NAV = [
+  { group: 'Doanh nghiệp' },
+  { route: '/', icon: 'analytics-01', label: 'Bảng điều khiển' },
+  { route: '/feed', icon: 'bubble-chat', label: 'EkkoFeed' },
+];
+const HR_PAGES = { '/': dashboard, '/feed': feedPage };
 let hrMode = false;
+let hrInfo = null;
 
 function renderNav(active) {
   mount(sideNav, (hrMode ? HR_NAV : NAV).map((item) => (item.group
@@ -111,7 +119,7 @@ async function render() {
   closeDrawer();
   const hash = location.hash.slice(1) || '/';
   const [path] = hash.split('?');
-  const page = hrMode ? feedPage : (PAGES[path] || PAGES['/']);
+  const page = hrMode ? (HR_PAGES[path] || HR_PAGES['/']) : (PAGES[path] || PAGES['/']);
 
   renderNav(path);
   mount(mainNode, el('div.empty-state', {}, 'Đang tải…'));
@@ -136,6 +144,7 @@ async function boot() {
   }
 
   hrMode = Boolean(session.authenticated && session.role !== 'admin' && session.feed);
+  hrInfo = hrMode ? session.feed : null;
   if (!session.authenticated || (session.role !== 'admin' && !hrMode)) {
     mountRoot(el('div', { style: { display: 'grid', placeContent: 'center', minHeight: '100dvh', gap: '16px', textAlign: 'center' } }, [
       el('img', { src: '/assets/logo/Ekko_Primary_Logo_PaydayBlue.svg', alt: 'Ekko', style: { height: '32px' } }),
@@ -150,7 +159,7 @@ async function boot() {
 
   // HR không gọi được API quản trị chung — chỉ API EkkoFeed.
   meta = hrMode ? {} : await api.get('/api/admin/meta/options');
-  if (hrMode && !location.hash.startsWith('#/feed')) location.hash = '/feed';
+  if (hrMode && !HR_PAGES[(location.hash.slice(1) || '/').split('?')[0]]) location.hash = '/';
 
   sideNav = el('div', { style: { display: 'contents' } });
   mainNode = el('main.main');

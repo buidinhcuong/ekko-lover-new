@@ -105,7 +105,7 @@ Mỗi người **tối đa 1 góp ý mỗi ngày** để tránh gửi rác. (Huy
 | Vai trò | Thấy gì |
 |---|---|
 | Quản trị Ekko (admin hiện tại) | Mọi công ty; hàng chờ kiểm duyệt nội dung nhạy cảm; tạo / thu hồi tài khoản quản trị doanh nghiệp |
-| **Quản trị doanh nghiệp (vai trò mới)** | Đăng nhập thẳng Admin portal. Chỉ thấy **công ty mình** (khoá theo `employer_id`): báo cáo EkkoFeed, nhóm vấn đề, trả lời. Không thấy danh tính người gửi ẩn danh (chỉ thấy tên ở tin người gửi tự ghi tên), không thấy công ty khác, không thấy các trang cài đặt của Ekko |
+| **Quản trị doanh nghiệp (vai trò mới)** | Đăng nhập thẳng Admin portal. Chỉ thấy **công ty mình** (khoá theo `employer_id`): **Bảng điều khiển Giáo dục tài chính** (từ khoá Ekko bot theo ngưỡng ẩn danh của công ty) + báo cáo EkkoFeed, nhóm vấn đề, trả lời. Không thấy danh tính người gửi ẩn danh (chỉ thấy tên ở tin người gửi tự ghi tên), không thấy công ty khác, không thấy các trang cài đặt của Ekko |
 
 **✅ Đã chốt (19/10):** ai có tài khoản thì truy cập. HR doanh nghiệp tự đăng nhập
 xem báo cáo công ty mình — không qua Ekko gửi báo cáo.
