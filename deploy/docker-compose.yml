@@ -10,6 +10,8 @@ services:
       HOST: 0.0.0.0
       PORT: 4321
       EKKO_DATA_DIR: /data
+      # Mã phiên bản hiện ở /healthz (image không có .git): EKKO_VERSION=$(git describe --tags) docker compose up -d --build
+      EKKO_VERSION: ${EKKO_VERSION:-}
     ports:
       - "127.0.0.1:4321:4321" # chỉ mở cho Nginx/reverse proxy trên cùng máy
     volumes:

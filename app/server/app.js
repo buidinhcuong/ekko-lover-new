@@ -26,10 +26,12 @@ const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
 // Phiên bản code server đang chạy — hiện ở /healthz để biết deploy xong đã khởi
 // động lại server chưa (chỉ `git pull` mà không restart thì file giao diện mới
 // nhưng server vẫn chạy code cũ). Docker không có .git thì đặt EKKO_VERSION.
+// Đang ở đúng một mốc phát hành thì ra tên mốc (vd v2026.10.15); sau mốc vài
+// commit thì ra dạng v2026.10.15-3-gabc1234; chưa có mốc nào thì ra mã commit.
 const VERSION = (() => {
   if (process.env.EKKO_VERSION) return process.env.EKKO_VERSION;
   try {
-    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+    return execFileSync('git', ['describe', '--tags', '--always'], {
       cwd: dirname(fileURLToPath(import.meta.url)), stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000,
     }).toString().trim();
   } catch { return 'unknown'; }

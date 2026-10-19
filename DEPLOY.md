@@ -262,6 +262,63 @@ cd /opt/ekko-gdtc && git pull && pm2 restart all
 
 Kiểm tra: mở `https://<tên-miền>/healthz` — `version` phải trùng mã commit mới nhất trên GitHub (VD `0e5db67`), `startedAt` là giờ vừa khởi động lại. Docker không có thư mục `.git` nên `version` là `unknown` — đặt `EKKO_VERSION=$(git rev-parse --short HEAD)` khi build nếu muốn thấy mã.
 
+### Phát hành theo mốc, thử tính năng mới và quay lại bản cũ
+
+**Quy ước trên GitHub:**
+
+| | Dùng cho |
+|---|---|
+| Nhánh `main` | Chỉ chứa bản **đang chạy thật** hoặc sắp deploy. Không thử nghiệm trên `main`. |
+| Nhánh `tinh-nang/<tên>` | Mỗi tính năng mới một nhánh riêng. Ổn thì gộp vào `main`; không ổn thì bỏ nhánh, bản thật không bị ảnh hưởng. |
+| Mốc (tag) `vNĂM.THÁNG.NGÀY` | Đánh dấu đúng bản đã deploy, vd `v2026.10.15`. Nhiều lần trong ngày thì thêm `-2`, `-3`. Muốn quay lại bản nào thì deploy đúng mốc đó. |
+
+Xem các mốc đã có: `git fetch --tags && git tag --sort=-creatordate`.
+
+**Mỗi lần deploy (theo mốc):**
+
+```bash
+# 1. Sao lưu database TRƯỚC khi deploy (lệnh đầy đủ ở mục 9) — để quay lại được cả dữ liệu
+sqlite3 /var/lib/ekko-gdtc/gdtc.sqlite ".backup '/backup/gdtc-truoc-v2026.10.15-$(date +%F-%H%M).sqlite'"
+
+# 2. Lấy đúng mốc cần deploy
+cd /opt/ekko-gdtc && git fetch --tags && git checkout v2026.10.15
+
+# 3. Khởi động lại
+sudo systemctl restart ekko-gdtc                                         # Cách B (systemd)
+cd deploy && EKKO_VERSION=$(git describe --tags) docker compose up -d --build   # Cách A (Docker)
+```
+
+Kiểm tra `/healthz`: `version` là mốc / mã commit vừa deploy, `startedAt` là giờ vừa khởi động.
+
+**Quay lại bản cũ khi bản mới có lỗi:**
+
+1. Deploy lại mốc trước đó — làm y hệt 3 bước trên với mốc cũ (vd `git checkout v2026.10.15`). Mất vài phút.
+2. Chỉ khi bản mới đã **làm hỏng dữ liệu**: dừng app rồi khôi phục tệp sao lưu ở bước 1 (cách khôi phục ở mục 9). Lưu ý dữ liệu người dùng phát sinh sau lúc sao lưu sẽ mất — nên chỉ khôi phục khi thật cần.
+
+Database chỉ được **thêm** cột / bảng khi có tính năng mới, nên chạy code cũ trên database mới vẫn được (code cũ bỏ qua phần mới) — thường chỉ cần bước 1.
+
+**Môi trường thử (staging) — chạy nhánh thử trên server thật trước khi lên chính thức:**
+
+Cùng server, khác thư mục, khác cổng, **database riêng** (không đụng dữ liệu thật):
+
+```bash
+# Lần đầu
+sudo git clone https://github.com/anhnv-cmd/ekkolover.git /opt/ekko-gdtc-staging
+sudo mkdir -p /var/lib/ekko-gdtc-staging
+# (tuỳ chọn) dùng bản sao dữ liệu thật để thử cho sát:
+sqlite3 /var/lib/ekko-gdtc/gdtc.sqlite ".backup '/var/lib/ekko-gdtc-staging/gdtc.sqlite'"
+sudo cp /etc/ekko-gdtc.env /etc/ekko-gdtc-staging.env   # sửa: PORT=4322, EKKO_SESSION_SECRET khác, EKKO_LOCAL_AUTH=1
+sudo cp deploy/ekko-gdtc.service /etc/systemd/system/ekko-gdtc-staging.service
+#   sửa trong file: WorkingDirectory=/opt/ekko-gdtc-staging/app,
+#   EnvironmentFile=/etc/ekko-gdtc-staging.env, EKKO_DATA_DIR=/var/lib/ekko-gdtc-staging
+sudo systemctl daemon-reload && sudo systemctl enable --now ekko-gdtc-staging
+
+# Mỗi lần thử một nhánh
+cd /opt/ekko-gdtc-staging && git fetch && git checkout tinh-nang/<tên> && git pull && sudo systemctl restart ekko-gdtc-staging
+```
+
+Thêm một tên miền phụ (vd `staging-gdtc.ekko.com.vn`) trỏ Nginx tới cổng 4322 như mục 6. Docker: chép thư mục `deploy/` thành `deploy-staging/`, đổi `container_name`, cổng `127.0.0.1:4322:4321` và tên volume, rồi `docker compose -p ekko-staging up -d --build`.
+
 ## 11. Xử lý sự cố
 
 | Hiện tượng | Kiểm tra |
