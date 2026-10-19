@@ -3259,7 +3259,9 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .feedreply { padding: var(--spacing-10) var(--spacing-12); border-radius: var(--radius-12); background: var(--bg-brand-50); display: grid; gap: 2px; }
 .feedreply p { margin: 0; white-space: pre-wrap; }
 /* Ô chọn loại góp ý: gọn, một dòng. */
-.feedtypefield { max-width: 260px; }
+/* Loại + Cảm xúc nằm cạnh nhau trên một hàng. */
+.feedtyperow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--spacing-10); align-items: end; }
+.feedtypefield { min-width: 0; }
 /* Ô chọn loại (tự vẽ, khớp ô nhập của app thay cho menu hệ thống). */
 .feedpick { position: relative; }
 .feedpick__button {
@@ -3306,3 +3308,12 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .feedbar__text small { font-size: var(--font-size-text-xs); line-height: var(--line-height-text-xs); opacity: .88; }
 .feedbar__go { flex: none; display: grid; place-items: center; opacity: .9; }
 .feedbar:active { transform: scale(.99); }
+
+/* Ô chọn cảm xúc gọn: chỉ hiện mặt cảm xúc + mũi tên. */
+.feedpick--compact .feedpick__button { width: auto; min-width: 76px; padding: 0 var(--spacing-10) 0 var(--spacing-12); }
+.feedpick--compact .feedpick__label { display: none; }
+.feedpick--compact .feedpick__list { left: auto; right: 0; min-width: 210px; }
+.feedpick__value { display: flex; align-items: center; gap: var(--spacing-8); }
+.feedpick__icon { flex: none; display: grid; place-items: center; width: 28px; }
+.feedpick__none { width: 22px; height: 22px; border-radius: 50%; border: 1.5px dashed var(--border-primary); }
+.feedpost__badges { display: inline-flex; align-items: center; gap: var(--spacing-6, 6px); }

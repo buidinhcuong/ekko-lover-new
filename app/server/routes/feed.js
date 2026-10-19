@@ -12,7 +12,7 @@ import { companyScope } from '../services/companyScope.js';
 import { programOverview } from '../services/overview.js';
 import { createDemoKit, demoKits, removeDemoKit } from '../services/demoKit.js';
 import {
-  createDraft, createHrAccount, FEED_STATUS, ISSUE_STATUS, issueDetail, updateIssue, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
+  createDraft, createHrAccount, FEED_MOODS, FEED_STATUS, ISSUE_STATUS, issueDetail, updateIssue, FEED_TOPICS, FEED_TYPES, feedPosts, feedReport, hrAccounts,
   markRepliesSeen, markFeedSeen, feedAssignees, minGroupFor, myPosts, removeHrAccount, replyPosts, setMinGroup, setPostStatus, submitDraft,
 } from '../services/ekkoFeed.js';
 
@@ -29,6 +29,7 @@ feedRouter.get('/api/feed', ({ user }) => ({
   ...myPosts(user.id),
   types: labels(FEED_TYPES),
   topics: labels(FEED_TOPICS),
+  moods: labels(FEED_MOODS),
 }));
 feedRouter.post('/api/feed/preview', async ({ user, body }) => ok(await createDraft(user.id, body || {})));
 feedRouter.post('/api/feed/:id/submit', ({ user, params, body }) => ok(submitDraft(user.id, params.id, body || {})));
@@ -44,6 +45,7 @@ feedAdminRouter.get('/api/admin/feed/meta', ({ feed }) => ({
   employerName: feed.employerName,
   types: labels(FEED_TYPES),
   topics: labels(FEED_TOPICS),
+  moods: labels(FEED_MOODS),
   statuses: Object.entries(FEED_STATUS).filter(([code]) => feed.ekko || code !== 'review').map(([code, label]) => ({ code, label })),
   issueStatuses: Object.entries(ISSUE_STATUS).map(([code, label]) => ({ code, label })),
 }));

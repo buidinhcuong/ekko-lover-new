@@ -30,6 +30,17 @@ import { COMPANY_KEY, NO_EMPLOYER } from './companyScope.js';
 import { hashPassword, tempPassword } from './localAuth.js';
 
 export const DAILY_LIMIT = 1;
+/**
+ * Cảm xúc người gửi tự chọn (tuỳ chọn). Khi có, điểm cảm xúc của bài lấy theo lựa
+ * chọn này (người gửi tự nói thì đúng hơn máy đoán từ câu chữ).
+ */
+export const FEED_MOODS = {
+  happy: { label: 'Vui', sentiment: 0.6 },
+  neutral: { label: 'Bình thường', sentiment: 0 },
+  sad: { label: 'Buồn', sentiment: -0.5 },
+  angry: { label: 'Phẫn nộ', sentiment: -0.9 },
+};
+const moodOrNull = (m) => (FEED_MOODS[m] ? m : null);
 const DEMO_DAILY_LIMIT = 10;
 export const WEEKLY_XP = 10;
 export const DEFAULT_MIN_GROUP = 5;
@@ -259,7 +270,7 @@ export function feedStatusFor(userId, day = dayKey()) {
  * Bước "Xem trước": phân loại + che thông tin, lưu thành bản nháp. Người dùng xem
  * đúng nội dung doanh nghiệp sẽ thấy rồi mới bấm gửi.
  */
-export async function createDraft(userId, { text, anonymous = true, type } = {}, day = dayKey()) {
+export async function createDraft(userId, { text, anonymous = true, type, mood } = {}, day = dayKey()) {
   const clean = String(text || '').trim().replace(/\s+\n/g, '\n');
   if (clean.length < MIN_TEXT) return fail(`Bạn viết thêm chút nữa nhé (ít nhất ${MIN_TEXT} ký tự)`);
   if (clean.length > MAX_TEXT) return fail(`Góp ý tối đa ${MAX_TEXT} ký tự`);
@@ -272,11 +283,11 @@ export async function createDraft(userId, { text, anonymous = true, type } = {},
   run("DELETE FROM feed_posts WHERE user_id = ? AND status = 'draft'", userId);
   const info = run(
     `INSERT INTO feed_posts (user_id, employer_key, employer_name, type, topic, text, redacted_text, summary, keywords,
-                             sentiment, urgency, anonymous, sensitive, source, status, day, created_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'draft', ?, ?)`,
+                             sentiment, urgency, anonymous, sensitive, source, status, day, created_at, mood)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'draft', ?, ?, ?)`,
     userId, company.key, company.name, FEED_TYPES[type] ? type : DEFAULT_TYPE, analysis.topic, clean, redact(clean, analysis.names),
-    analysis.summary, JSON.stringify(analysis.keywords), analysis.sentiment, analysis.urgency,
-    anonymous ? 1 : 0, analysis.sensitive ? 1 : 0, analysis.source, day, nowIso(),
+    analysis.summary, JSON.stringify(analysis.keywords), moodOrNull(mood) ? FEED_MOODS[mood].sentiment : analysis.sentiment, analysis.urgency,
+    anonymous ? 1 : 0, analysis.sensitive ? 1 : 0, analysis.source, day, nowIso(), moodOrNull(mood),
   );
   return { draft: draftView(get('SELECT * FROM feed_posts WHERE id = ?', Number(info.lastInsertRowid))) };
 }
@@ -287,6 +298,7 @@ function draftView(p) {
     type: p.type,
     topic: p.topic,
     anonymous: Boolean(p.anonymous),
+    mood: p.mood || null,
     redactedText: p.redacted_text,
     keywords: JSON.parse(p.keywords || '[]'),
     hasCompany: Boolean(p.employer_key),
@@ -295,17 +307,20 @@ function draftView(p) {
 }
 
 /** Bấm "Gửi": chốt loại / chủ đề / ẩn danh người dùng chọn, cộng XP tuần nếu có. */
-export function submitDraft(userId, draftId, { type, topic, anonymous } = {}, day = dayKey()) {
+export function submitDraft(userId, draftId, { type, topic, anonymous, mood } = {}, day = dayKey()) {
   const draft = get("SELECT * FROM feed_posts WHERE id = ? AND user_id = ? AND status = 'draft'", Number(draftId), userId);
   if (!draft) return fail('Không tìm thấy bản nháp — bạn bấm "Xem trước" lại giúp nhé', 404);
   const status = feedStatusFor(userId, day);
   if (!status.canPostToday) return fail('Hôm nay bạn đã gửi góp ý rồi. Mỗi ngày gửi được 1 góp ý — mai bạn gửi tiếp nhé.', 429);
   const finalType = FEED_TYPES[type] ? type : draft.type;
   const finalTopic = FEED_TOPICS[topic] ? topic : draft.topic;
+  // mood: bỏ qua = giữ như lúc xem trước; '' / null = bỏ chọn.
+  const finalMood = mood === undefined ? draft.mood : moodOrNull(mood);
   return tx(() => {
     run(
-      'UPDATE feed_posts SET type = ?, topic = ?, anonymous = ?, status = ?, day = ?, submitted_at = ? WHERE id = ?',
+      'UPDATE feed_posts SET type = ?, topic = ?, anonymous = ?, mood = ?, sentiment = ?, status = ?, day = ?, submitted_at = ? WHERE id = ?',
       finalType, finalTopic, anonymous === undefined ? draft.anonymous : (anonymous ? 1 : 0),
+      finalMood, finalMood && finalMood !== draft.mood ? FEED_MOODS[finalMood].sentiment : draft.sentiment,
       draft.sensitive ? 'review' : 'sent', day, nowIso(), draft.id,
     );
     const rewards = recordActivity(userId, { kind: 'feed_post', ref: String(draft.id), xp: status.weeklyXp, countsForStreak: false, day });
@@ -327,6 +342,7 @@ function myPostView(p) {
     text: p.text,
     redactedText: p.redacted_text,
     anonymous: Boolean(p.anonymous),
+    mood: p.mood || null,
     // Người gửi không cần biết "chờ kiểm duyệt": với họ là đã gửi.
     status: p.status === 'review' ? 'sent' : p.status,
     replies: replies.map((r) => ({ id: r.id, text: r.text, createdAt: r.created_at, fromCompany: r.author_role === 'hr' })),
@@ -501,6 +517,7 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
     const list = from_.filter((p) => p[field] === code);
     return { code, label: labels[code].label || labels[code], posts: list.length, people: people(list) };
   }).filter((x) => x.posts > 0).sort((a, b) => b.people - a.people || b.posts - a.posts);
+  const moodCounts = (list) => Object.keys(FEED_MOODS).map((code) => ({ code, label: FEED_MOODS[code].label, posts: list.filter((p) => p.mood === code).length }));
   const avg = (list) => (list.length ? Math.round((list.reduce((n, p) => n + (p.sentiment || 0), 0) / list.length) * 100) / 100 : 0);
 
   /**
@@ -520,6 +537,8 @@ export function feedReport(access, { employer = null, days = 30, today = dayKey(
       },
       keywords: cloudOf(list, prevList),
       byTopic: tally('topic', FEED_TOPICS, list),
+      // Cảm xúc người gửi tự chọn (bài không chọn thì không tính).
+      moods: moodCounts(list),
     };
     if (type === 'issue') {
       out.totals.replied = list.length ? Math.round((list.filter((p) => ['replied', 'closed'].includes(p.status)).length / list.length) * 100) / 100 : 0;
@@ -616,6 +635,7 @@ export function issueDetail(access, key) {
       type: p.type,
       text: p.redacted_text,
       status: p.status,
+      mood: p.mood || null,
       author: p.anonymous ? null : { name: p.author_name },
       replies: repliesOf(p.id).map((r) => ({ text: r.text, createdAt: r.created_at, by: r.author_role })),
     })),
@@ -695,6 +715,7 @@ export function feedPosts(access, { employer = null, status = '', topic = '', ty
     summary: p.summary,
     keywords: JSON.parse(p.keywords || '[]'),
     sentiment: p.sentiment,
+    mood: p.mood || null,
     urgency: p.urgency,
     status: p.status,
     sensitive: Boolean(p.sensitive),
@@ -921,13 +942,15 @@ export function seedFeedDemo(employerName, today = dayKey(), prefix = 'demo-feed
         // Vài chia sẻ có ghi tên, cảm xúc dao động nhẹ cho giống thật.
         const named = type === 'share' && k % 4 === 1 ? 0 : 1;
         const mood = Math.max(-1, Math.min(1, sentiment + ((k % 3) - 1) * 0.15));
+        // Khoảng 2/3 người gửi tự chọn cảm xúc.
+        const face = k % 3 === 2 ? null : mood > 0.3 ? 'happy' : mood < -0.6 ? 'angry' : mood < -0.15 ? 'sad' : 'neutral';
         const day = shiftDay(today, -(i % 20));
         run(
           `INSERT INTO feed_posts (user_id, employer_key, employer_name, type, topic, text, redacted_text, summary, keywords,
-                                   sentiment, urgency, anonymous, status, source, day, created_at, submitted_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'sent','ai',?,?,?)`,
+                                   sentiment, urgency, anonymous, status, source, day, created_at, submitted_at, mood)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'sent','ai',?,?,?,?)`,
           Number(user.lastInsertRowid), employerName, employerName, type, topic, body, body, summary, JSON.stringify(keywords),
-          Math.round(mood * 100) / 100, urgency, named, day, `${day}T03:00:00.000Z`, `${day}T03:00:00.000Z`,
+          Math.round(mood * 100) / 100, urgency, named, day, `${day}T03:00:00.000Z`, `${day}T03:00:00.000Z`, face,
         );
       }
     }

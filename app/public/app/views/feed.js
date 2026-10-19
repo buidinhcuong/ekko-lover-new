@@ -7,6 +7,7 @@
  * Mỗi ngày gửi được 1 góp ý; góp ý đầu tiên mỗi tuần +10 XP.
  */
 import { api, el, formatDay, guard, mount, singleFlight, spriteIcon, toast, uiIcon } from '/shared/client.js';
+import { moodFace } from '/shared/moods.js';
 import { t } from '../i18n.js';
 import { celebrateRewards } from '../ui.js';
 
@@ -68,18 +69,23 @@ function composer(ctx, data, redraw) {
 
   // Hai loại, người gửi tự chọn: Chia sẻ · Góp ý / Cần giải quyết.
   let type = null;
+  let mood = null;
   const typePicker = typeSelect(data.types, null, (v) => { type = v; });
+  const moodPicker = moodSelect(data.moods || [], null, (v) => { mood = v; });
 
   const preview = singleFlight(async () => {
     if (!type) return toast(t('Bạn chọn loại: Chia sẻ hay Góp ý / Cần giải quyết nhé'), 'error');
     if (text.value.trim().length < 10) return toast(t('Bạn viết thêm chút nữa nhé (ít nhất 10 ký tự)'), 'error');
-    const result = await guard(() => api.post('/api/feed/preview', { text: text.value, anonymous: anonymous.checked, type }), t('Chưa xem trước được, thử lại nhé'));
+    const result = await guard(() => api.post('/api/feed/preview', { text: text.value, anonymous: anonymous.checked, type, mood }), t('Chưa xem trước được, thử lại nhé'));
     if (!result) return;
     mount(box, review(ctx, data, result.draft, anonymous.checked, () => mount(box, form), redraw));
   });
 
   const form = el('div.card.feedform', {}, [
-    el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typePicker]),
+    el('div.feedtyperow', {}, [
+      el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typePicker]),
+      el('div.field.feedmoodfield', {}, [el('span', {}, t('Cảm xúc')), moodPicker]),
+    ]),
     el('label.field', {}, [el('span', {}, t('Bạn muốn công ty biết điều gì?')), text, counter]),
     el('div.feedchecks', {}, [
       checkRow(anonymous, t('Gửi ẩn danh'), t('Công ty không thấy tên, email hay mã nhân viên của bạn. Bỏ chọn nếu muốn công ty liên hệ lại với bạn.')),
@@ -136,7 +142,13 @@ const TYPE_HINT = {
   issue: 'Điều chưa ổn, đề xuất, việc cần giải quyết',
 };
 let pickerSeq = 0;
-function typeSelect(types, current, onPick) {
+const typeSelect = (types, current, onPick) => pickSelect(types, current, onPick, { placeholder: t('Chọn loại…'), hints: TYPE_HINT });
+/** Ô chọn cảm xúc gọn (tuỳ chọn): Vui · Bình thường · Buồn · Phẫn nộ, có thể bỏ chọn. */
+const moodSelect = (moods, current, onPick) => pickSelect(
+  [...moods, { code: '', label: 'Không chọn' }], current || '', (v) => onPick(v || null),
+  { placeholder: t('Cảm xúc'), icon: (code) => moodFace(code, 24), compact: true, emptyCode: '' },
+);
+function pickSelect(types, current, onPick, { placeholder, hints = {}, icon = null, compact = false, emptyCode = null } = {}) {
   let value = current;
   let active = -1;
   const id = `feedpick-${(pickerSeq += 1)}`;
@@ -151,15 +163,20 @@ function typeSelect(types, current, onPick) {
     onclick: () => choose(i),
     onmousemove: () => highlight(i),
   }, [
-    el('span.feedpick__text', {}, [el('b', {}, t(item.label)), TYPE_HINT[item.code] ? el('small', {}, t(TYPE_HINT[item.code])) : null]),
+    icon ? el('span.feedpick__icon', {}, icon(item.code) || el('span.feedpick__none', { 'aria-hidden': 'true' })) : null,
+    el('span.feedpick__text', {}, [el('b', {}, t(item.label)), hints[item.code] ? el('small', {}, t(hints[item.code])) : null]),
     uiIcon('tick-02', 18),
   ]));
   const list = el('ul.feedpick__list', { role: 'listbox', id, tabindex: '-1', hidden: true }, options);
-  const root = el('div.feedpick', {}, [button, list]);
+  const root = el(`div.feedpick${compact ? '.feedpick--compact' : ''}`, {}, [button, list]);
 
   const paint = () => {
-    const item = types.find((x) => x.code === value);
-    label.textContent = item ? t(item.label) : t('Chọn loại…');
+    const item = types.find((x) => x.code === value && x.code !== emptyCode);
+    const face = item && icon ? icon(item.code) : null;
+    // Ô gọn (cảm xúc) chưa chọn: một vòng tròn nét đứt thay cho chữ — nhãn đã nằm ngay trên.
+    const empty = compact && icon ? el('span.feedpick__none', { 'aria-hidden': 'true' }) : placeholder;
+    label.replaceChildren(...(face ? [face, el('span.feedpick__label', {}, t(item.label))] : [item ? t(item.label) : empty]));
+    button.setAttribute('aria-label', `${placeholder}: ${item ? t(item.label) : t('chưa chọn')}`);
     root.classList.toggle('is-empty', !item);
     options.forEach((o, i) => {
       o.setAttribute('aria-selected', String(types[i].code === value));
@@ -206,6 +223,7 @@ function typeSelect(types, current, onPick) {
 function review(ctx, data, draft, anonymousChecked, back, redraw) {
   let type = draft.type;
   let topic = draft.topic;
+  let mood = draft.mood || null;
   const chips = (items, current, onPick) => {
     const row = el('div.chips');
     const paint = (value) => [...row.children].forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.code === value)));
@@ -218,7 +236,7 @@ function review(ctx, data, draft, anonymousChecked, back, redraw) {
   const anonymous = el('input', { type: 'checkbox', checked: anonymousChecked });
 
   const send = singleFlight(async () => {
-    const result = await guard(() => api.post(`/api/feed/${draft.id}/submit`, { type, topic, anonymous: anonymous.checked }), t('Chưa gửi được, thử lại nhé'));
+    const result = await guard(() => api.post(`/api/feed/${draft.id}/submit`, { type, topic, mood, anonymous: anonymous.checked }), t('Chưa gửi được, thử lại nhé'));
     if (!result) return;
     toast(t('Đã gửi góp ý tới công ty'), 'success');
     if (result.rewards?.xp) await celebrateRewards(result.rewards, { title: t('Cảm ơn bạn đã lên tiếng!') });
@@ -230,7 +248,10 @@ function review(ctx, data, draft, anonymousChecked, back, redraw) {
     el('h3', {}, t('Xem trước — công ty sẽ thấy')),
     el('blockquote.feedquote', {}, draft.redactedText),
     el('small.muted', {}, t('Số điện thoại, CCCD, số tài khoản và tên người được nhắc tới đã được che.')),
-    el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typeSelect(data.types, type, (v) => { type = v; })]),
+    el('div.feedtyperow', {}, [
+      el('div.field.feedtypefield', {}, [el('span', {}, t('Loại')), typeSelect(data.types, type, (v) => { type = v; })]),
+      el('div.field.feedmoodfield', {}, [el('span', {}, t('Cảm xúc')), moodSelect(data.moods || [], mood, (v) => { mood = v; })]),
+    ]),
     el('div.field', {}, [el('span', {}, t('Chủ đề (tự gợi ý — chạm để đổi)')), chips(data.topics, topic, (v) => { topic = v; })]),
     checkRow(anonymous, t('Gửi ẩn danh'), draft.hasCompany
       ? t('Bỏ chọn thì {company} thấy tên bạn.', { company: draft.companyName })
@@ -257,7 +278,7 @@ function postCard(p) {
   const [label, tone] = STATUS[p.status] || STATUS.sent;
   return el(`div.card.feedpost${p.unread ? '.is-new' : ''}`, {}, [
     el('div.feedpost__head', {}, [
-      el(`span.feedstatus.is-${tone}`, {}, t(label)),
+      el('span.feedpost__badges', {}, [el(`span.feedstatus.is-${tone}`, {}, t(label)), p.mood ? moodFace(p.mood, 20) : null]),
       el('small.muted', {}, `${formatDay(p.createdAt.slice(0, 10))} · ${p.anonymous ? t('Ẩn danh') : t('Có ghi tên')}`),
     ]),
     el('p.feedpost__text', {}, p.text),

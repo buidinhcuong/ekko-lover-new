@@ -1917,9 +1917,16 @@ async function main() {
       const kd2 = (await post('kitw', '/api/feed/preview', { text: 'Cảm ơn công ty đã tổ chức du lịch hè rất vui', type: 'share' })).json.draft;
       const ks2 = await post('kitw', `/api/feed/${kd2.id}/submit`, {});
       check('Người lao động demo gửi được nhiều hơn 1 góp ý / ngày (thử đủ 2 loại)', ks1.status === 200 && ks2.status === 200);
+      const km = (await post('kitw', '/api/feed/preview', { text: 'Ca đêm bị trừ lương vô lý, rất bức xúc', type: 'issue', mood: 'angry' })).json.draft;
+      const kmSent = await post('kitw', `/api/feed/${km.id}/submit`, { mood: 'angry' });
+      const kmBad = (await post('kitw', '/api/feed/preview', { text: 'Thử cảm xúc không hợp lệ xem sao nhé', type: 'share', mood: 'lol' })).json.draft;
+      check('Cảm xúc người gửi tự chọn: lưu lại, điểm cảm xúc theo lựa chọn; mã lạ bị bỏ qua',
+        kmSent.json.post.mood === 'angry' && km.mood === 'angry' && kmBad.mood === null, JSON.stringify(kmSent.json.post).slice(0, 160));
       await post('kith', '/api/auth/login', { email: kit.json.hr.email, password: kit.json.hr.password });
       const kitReport = (await get('kith', '/api/admin/feed/report')).json;
       const kitPosts = (await get('kith', '/api/admin/feed/posts')).json;
+      check('Báo cáo có phân bố cảm xúc người gửi theo từng phần', kitReport.sections.issue.moods.find((m) => m.code === 'angry').posts >= 1
+        && kitReport.sections.share.moods.some((m) => m.code === 'happy' && m.posts > 0));
       check('HR demo chỉ thấy công ty demo, có sẵn dữ liệu mẫu + góp ý vừa gửi',
         kitReport.issues.length >= 3 && kitPosts.every((x) => x.company === 'Demo – Khách A') && kitPosts.some((x) => x.text.includes('xe máy')));
       const kitAgain = await post('admin', '/api/admin/feed/demo-kits', { company: 'Demo – Khách A' });

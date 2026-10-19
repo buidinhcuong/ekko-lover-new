@@ -713,3 +713,8 @@ img.thumb { width: 40px; height: 40px; object-fit: contain; border-radius: var(-
 .demokit { display: grid; gap: 6px; }
 .demokit__acc { display: grid; grid-template-columns: 150px 1fr auto; gap: 8px; align-items: center; margin-top: 8px; }
 .demokit__acc code { font: 600 13px/1.4 ui-monospace, Menlo, monospace; padding: 6px 8px; border-radius: 6px; background: var(--bg-secondary); border: 1px solid var(--border-secondary); overflow-wrap: anywhere; }
+
+/* EkkoFeed: cảm xúc người gửi tự chọn. */
+.moodtag { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
+.moodcounts { display: flex; gap: 10px; align-items: center; }
+.moodcounts span { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }

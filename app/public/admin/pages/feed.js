@@ -8,6 +8,7 @@
  * Kỳ xem và công ty nằm trên hash: #/feed?days=30&employer=…
  */
 import { el, formatDay } from '/shared/client.js';
+import { moodFace } from '/shared/moods.js';
 import { downloadDemoAccess } from '../demoAccessPage.js';
 import { badge, companyPicker, confirmAction, hashParams, modal, table, textAreaField, textField, selectField } from '../ui.js';
 
@@ -16,6 +17,18 @@ const PERIODS = [7, 30, 90];
 
 const pct = (x) => `${Math.round((x || 0) * 100)}%`;
 const mood = (s) => (s <= -0.5 ? 'Rất tiêu cực' : s < -0.15 ? 'Tiêu cực' : s <= 0.15 ? 'Trung lập' : s < 0.5 ? 'Tích cực' : 'Rất tích cực');
+// Cảm xúc người gửi tự chọn (Vui · Bình thường · Buồn · Phẫn nộ).
+const MOOD_LABEL = { happy: 'Vui', neutral: 'Bình thường', sad: 'Buồn', angry: 'Phẫn nộ' };
+const moodTag = (code) => (MOOD_LABEL[code] ? el('span.moodtag', { title: `Người gửi chọn: ${MOOD_LABEL[code]}` }, moodFace(code, 16)) : null);
+const moodChip = (moods = []) => {
+  const total = moods.reduce((n, m) => n + m.posts, 0);
+  return el('span.feedchip.feedchip--moods', { title: 'Cảm xúc người gửi tự chọn (bài không chọn không tính)' }, [
+    el('small', {}, 'Cảm xúc người gửi'),
+    total
+      ? el('b.moodcounts', {}, moods.filter((m) => m.posts).map((m) => el('span', { title: `${m.label}: ${m.posts}` }, [moodFace(m.code, 18), String(m.posts)])))
+      : el('b', {}, '—'),
+  ]);
+};
 const stat = (label, value, hint) => el('div.stat', {}, [
   el('div.stat__label', {}, label), el('div.stat__value', {}, value), hint ? el('div.stat__hint', {}, hint) : null,
 ]);
@@ -82,7 +95,7 @@ export default async function feedPage(ctx) {
     }, 'Gửi riêng');
     box.addEventListener('focus', () => { if (p.unread) markSeen([`post:${p.id}`]); });
     return el(`div.replyitem${p.unread ? '.is-unread' : ''}`, { dataset: { seenKey: `post:${p.id}` } }, [
-      el('div.cellmeta', {}, [p.unread ? el('span.unreaddot', { title: 'Chưa đọc' }) : null, `${formatDay(p.createdAt.slice(0, 10))} · ${p.author ? p.author.name : 'Ẩn danh'} · ${statusLabel[p.status] || p.status}${meta.ekko && p.company ? ` · ${p.company}` : ''}`]),
+      el('div.cellmeta', {}, [p.unread ? el('span.unreaddot', { title: 'Chưa đọc' }) : null, moodTag(p.mood), `${formatDay(p.createdAt.slice(0, 10))} · ${p.author ? p.author.name : 'Ẩn danh'} · ${statusLabel[p.status] || p.status}${meta.ekko && p.company ? ` · ${p.company}` : ''}`]),
       el('div.replyitem__text', {}, p.text),
       replies,
       el('div.replyitem__form', {}, [box, send]),
@@ -260,9 +273,9 @@ export default async function feedPage(ctx) {
           items.length ? el('div.issue__texts', {}, [
             ...uniqueTexts(items).slice(0, 3).map(({ p, same }) => el(`figure.issuequote${p.unread && !i.unread ? '.is-unread' : ''}`, {}, [
               el('blockquote', {}, `“${p.text}”`),
-              el('figcaption', {}, same > 1
+              el('figcaption', {}, [moodTag(p.mood), same > 1
                 ? `${same} người viết giống nhau · mới nhất ${formatDay(p.createdAt.slice(0, 10))}`
-                : `${p.author ? p.author.name : 'Ẩn danh'} · ${formatDay(p.createdAt.slice(0, 10))}${p.replies.length ? ' · đã trả lời' : ''}`),
+                : `${p.author ? p.author.name : 'Ẩn danh'} · ${formatDay(p.createdAt.slice(0, 10))}${p.replies.length ? ' · đã trả lời' : ''}`]),
             ])),
             uniqueTexts(items).length > 3 ? el('button.linkbtn', { type: 'button', onclick: () => openIssue(i.key) }, `+ ${uniqueTexts(items).length - 3} nội dung khác — xem tất cả ${items.length} góp ý`) : null,
           ]) : (i.quotes.length ? el('ul.issue__quotes', {}, i.quotes.map((x) => el('li', {}, x))) : null),
@@ -380,7 +393,7 @@ export default async function feedPage(ctx) {
     ['pos', 'neu', 'neg'].filter((k) => m[k]).map((k) => el(`i.is-${k}`, { style: { flexGrow: String(m[k]) } })));
   const quoteCard = (p) => el(`figure.sharequote.is-${moodOf(p.sentiment)}`, {}, [
     el('blockquote', {}, `“${p.text}”`),
-    el('figcaption', {}, `${p.author ? p.author.name : 'Ẩn danh'} · ${formatDay(p.createdAt.slice(0, 10))}`),
+    el('figcaption', {}, [moodTag(p.mood), `${p.author ? p.author.name : 'Ẩn danh'} · ${formatDay(p.createdAt.slice(0, 10))}`]),
   ]);
   const insightCard = (label, value, hint, tone = '') => el(`div.shareinsight${tone}`, {}, [
     el('small', {}, label), el('b', {}, value), hint ? el('span', {}, hint) : null,
@@ -508,7 +521,10 @@ export default async function feedPage(ctx) {
       el('h2', {}, title),
       el('span.cellmeta', {}, hint),
     ]),
-    el('div.feedsection__chips', {}, chips.map(([label, value]) => el('span.feedchip', {}, [el('small', {}, label), el('b', {}, value)]))),
+    el('div.feedsection__chips', {}, [
+      ...chips.map(([label, value]) => el('span.feedchip', {}, [el('small', {}, label), el('b', {}, value)])),
+      moodChip(sec.moods),
+    ]),
     el('div.split', {}, [cloudPanel(sec.keywords, code === 'share' ? '.wordcloud--share' : ''), right]),
     el('div.panel', { style: { marginTop: '16px' } }, [el('div.panel__head', {}, [el('h2', {}, 'Theo chủ đề')]), topicRows(sec.byTopic)]),
   ]);
