@@ -1,4 +1,4 @@
-# EkkoFeed — Đề xuất tính năng (bản nháp 1, 19/10/2026)
+# EkkoFeed — Đề xuất tính năng (bản nháp 2, 19/10/2026)
 
 > Nhánh: `tinh-nang/ekkofeed`. Đây là bản nháp để thống nhất trước khi làm —
 > các mục **❓ Cần chốt** ở cuối là những chỗ cần anh/chị quyết.
@@ -20,9 +20,9 @@ Giá trị cho từng bên:
 
 ## 2. Nguyên tắc cốt lõi — phải đúng ngay từ đầu
 
-1. **Ẩn danh là mặc định.** Doanh nghiệp **không bao giờ** thấy tên, mã nhân
-   viên hay email của người gửi. Người dùng có thể *chủ động* chọn "ghi tên tôi"
-   cho từng góp ý (vd. muốn được liên hệ lại).
+1. **Người gửi tự chọn ẩn danh hay ghi tên** cho từng góp ý (✅ đã chốt 19/10).
+   Mặc định là ẩn danh: doanh nghiệp **không** thấy tên, mã nhân viên hay email.
+   Bỏ chọn "Ẩn danh" thì doanh nghiệp thấy tên người gửi (vd. muốn được liên hệ lại).
 2. **Không lộ danh tính qua số liệu nhỏ.** Báo cáo cho doanh nghiệp chỉ hiện một
    nhóm / từ khoá khi có **từ 5 người trở lên** (ngưỡng chỉnh được). Dưới ngưỡng
    thì gộp vào "Khác" — tránh trường hợp "phòng chỉ có 2 người, đoán ra ngay ai".
@@ -50,12 +50,10 @@ Một mục mới **"EkkoFeed"** (gợi ý: tab hoặc ô thứ 6 ở màn chủ
 - Trước khi gửi: hiện lại nội dung **đúng như doanh nghiệp sẽ thấy** (đã che số
   điện thoại, tên người…) để người dùng yên tâm.
 
-**3.2 Bảng tin công ty (Feed)** — các vấn đề *chung* mà đồng nghiệp đã nêu
-(đã gom nhóm, đủ ngưỡng ẩn danh), kèm phản hồi của doanh nghiệp:
-
-- Thẻ vấn đề: "Nhà ăn ca đêm hết suất sớm · 23 người cùng nêu · Doanh nghiệp đã phản hồi ✓".
-- Nút **"Tôi cũng gặp"** (+1) — không cần viết lại, giúp doanh nghiệp thấy độ lớn.
-- Không hiện nguyên văn tin của từng người.
+**3.2 Không có bảng tin chung** (✅ đã chốt 19/10) — góp ý là chuyện **riêng**:
+mỗi người chỉ thấy góp ý của mình và phản hồi doanh nghiệp gửi cho mình. Không ai
+thấy góp ý hay phản hồi của đồng nghiệp. Độ lớn của một vấn đề do hệ thống tự đếm
+khi gom nhóm (mục 5), không cần người khác bấm +1.
 
 **3.3 Góp ý của tôi** — danh sách tin mình đã gửi và **trạng thái**:
 Đã gửi → Đã tiếp nhận → Đang xử lý → Đã phản hồi → Đã đóng. Có phản hồi thì
@@ -84,10 +82,11 @@ hiện dòng nhắc vàng ở màn chủ (giống lời nhắc streak).
 
 **4.2 Trả lời người lao động:**
 
-- **Trả lời theo nhóm vấn đề** (cách chính): một phản hồi gửi tới **tất cả**
-  những ai đã nêu vấn đề đó + hiện trên Feed công ty. Đổi trạng thái nhóm.
-- **Trả lời riêng** một tin (chỉ khi cần): người gửi nhận trong "Góp ý của tôi" —
-  doanh nghiệp vẫn không biết là ai.
+- **Trả lời theo nhóm vấn đề** (cách chính): viết một lần, hệ thống gửi **riêng
+  tới từng người** đã nêu vấn đề đó (mỗi người thấy trong "Góp ý của tôi", không
+  ai thấy người khác). Đổi trạng thái nhóm.
+- **Trả lời riêng** một tin: người gửi nhận trong "Góp ý của tôi". Tin ẩn danh
+  thì doanh nghiệp vẫn không biết là ai; tin ghi tên thì thấy tên người gửi.
 - Mẫu câu trả lời gợi ý bằng AI (doanh nghiệp sửa rồi mới gửi).
 
 **4.3 Phân quyền:**
@@ -95,7 +94,7 @@ hiện dòng nhắc vàng ở màn chủ (giống lời nhắc streak).
 | Vai trò | Thấy gì |
 |---|---|
 | Quản trị Ekko (admin hiện tại) | Mọi công ty; hàng chờ kiểm duyệt nội dung nhạy cảm; tạo / thu hồi tài khoản quản trị doanh nghiệp |
-| **Quản trị doanh nghiệp (vai trò mới)** | Đăng nhập thẳng Admin portal. Chỉ thấy **công ty mình** (khoá theo `employer_id`): báo cáo EkkoFeed, nhóm vấn đề, trả lời. Không thấy danh tính người gửi, không thấy công ty khác, không thấy các trang cài đặt của Ekko |
+| **Quản trị doanh nghiệp (vai trò mới)** | Đăng nhập thẳng Admin portal. Chỉ thấy **công ty mình** (khoá theo `employer_id`): báo cáo EkkoFeed, nhóm vấn đề, trả lời. Không thấy danh tính người gửi ẩn danh (chỉ thấy tên ở tin người gửi tự ghi tên), không thấy công ty khác, không thấy các trang cài đặt của Ekko |
 
 **✅ Đã chốt (19/10):** ai có tài khoản thì truy cập. HR doanh nghiệp tự đăng nhập
 xem báo cáo công ty mình — không qua Ekko gửi báo cáo.
@@ -169,7 +168,6 @@ Tích hợp ngoài (hệ thống HR của doanh nghiệp): cùng API báo cáo, 
 |---|---|
 | `feed_posts` | user_id, employer_key, type, topic, text (gốc, chỉ Ekko xem), redacted_text, summary, keywords (JSON), sentiment, urgency, anonymous, status, issue_id, created_at |
 | `feed_issues` | employer_key, title, topic, status, priority, owner, people, posts, opened_at, resolved_at |
-| `feed_votes` | issue_id, user_id ("Tôi cũng gặp") |
 | `feed_replies` | issue_id hoặc post_id, nội dung, người trả lời (vai trò), created_at |
 | `employer_admins` | user_id, employer_key — quản trị doanh nghiệp |
 
@@ -178,7 +176,7 @@ Tích hợp ngoài (hệ thống HR của doanh nghiệp): cùng API báo cáo, 
 | Giai đoạn | Nội dung | Ước lượng |
 |---|---|---|
 | **MVP (thử nội bộ)** | Gửi góp ý (ẩn danh, loại, chủ đề AI gợi ý, che SĐT/CCCD) · "Góp ý của tôi" + trạng thái · Admin: danh sách, lọc công ty, **đám mây từ khoá + nhóm theo chủ đề**, trả lời từng tin · API báo cáo · **tài khoản quản trị doanh nghiệp** (chỉ thấy công ty mình) | ~1–1,5 tuần |
-| **GĐ 2** | Gom nhóm vấn đề bằng AI + trả lời theo nhóm · Feed công ty + "Tôi cũng gặp" · ưu tiên / xu hướng · kiểm duyệt nội dung nhạy cảm | ~1–2 tuần |
+| **GĐ 2** | Gom nhóm vấn đề bằng AI + trả lời theo nhóm · ưu tiên / xu hướng · kiểm duyệt nội dung nhạy cảm | ~1–2 tuần |
 | **GĐ 3** | API key cho hệ thống HR · thông báo đẩy khi có phản hồi · báo cáo xuất PDF hằng tháng | tuỳ đối tác |
 
 Làm trên nhánh `tinh-nang/ekkofeed`, thử ở môi trường staging với 1 doanh nghiệp
@@ -188,9 +186,13 @@ thí điểm trước khi gộp vào `main`.
 
 1. ~~Ai được xem báo cáo?~~ **✅ Đã chốt:** ai có tài khoản thì truy cập — HR doanh
    nghiệp có tài khoản quản trị doanh nghiệp, tự đăng nhập, chỉ thấy công ty mình.
-2. **Ẩn danh:** luôn ẩn danh với doanh nghiệp, hay cho người dùng chọn ghi tên? Ekko có được xem danh tính (để xử lý trường hợp nguy hiểm) không?
+2. ~~Ẩn danh hay ghi tên?~~ **✅ Đã chốt:** người gửi tự chọn cho từng góp ý (mặc định ẩn danh).
+   **Còn mở:** với tin ẩn danh, **Ekko** có được xem danh tính trong trường hợp nguy
+   hiểm (đe doạ, tự hại, quấy rối) không? Đề xuất: hệ thống vẫn lưu người gửi (để gửi
+   phản hồi về đúng người), chỉ quản trị Ekko mở được khi có cảnh báo nguy hiểm, mỗi
+   lần mở ghi nhật ký; doanh nghiệp tuyệt đối không mở được.
 3. **Ngưỡng ẩn danh** cho báo cáo: 5 người có hợp lý với quy mô các công ty đang onboard không (công ty nhỏ 20–30 người có thể cần 3)?
-4. **Feed công ty** có hiện cho mọi nhân viên trong công ty thấy các vấn đề chung không, hay chỉ người gửi thấy phản hồi của mình?
-5. **Ai trả lời:** HR doanh nghiệp tự trả lời, hay Ekko trả lời thay theo nội dung doanh nghiệp cung cấp?
+4. ~~Bảng tin công ty?~~ **✅ Đã chốt:** không có — góp ý là chuyện riêng, chỉ người gửi thấy góp ý và phản hồi của mình.
+5. ~~Ai trả lời?~~ **✅ Theo điểm 1:** HR doanh nghiệp có tài khoản tự trả lời.
 6. **Pháp lý:** cần pháp chế Ekko duyệt điều khoản thu thập & chia sẻ ý kiến người lao động (Nghị định 13/2023 về dữ liệu cá nhân), và cam kết không trả đũa trong hợp đồng với doanh nghiệp.
 7. **Có thưởng XP** cho việc góp ý không, hay để tách hẳn khỏi phần trò chơi cho nghiêm túc?
