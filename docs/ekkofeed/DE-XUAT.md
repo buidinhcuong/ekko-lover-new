@@ -94,8 +94,17 @@ hiện dòng nhắc vàng ở màn chủ (giống lời nhắc streak).
 
 | Vai trò | Thấy gì |
 |---|---|
-| Quản trị Ekko (admin hiện tại) | Mọi công ty; hàng chờ kiểm duyệt nội dung nhạy cảm |
-| **Quản trị doanh nghiệp (vai trò mới)** | Chỉ công ty mình: báo cáo, nhóm vấn đề, trả lời. Không thấy danh tính |
+| Quản trị Ekko (admin hiện tại) | Mọi công ty; hàng chờ kiểm duyệt nội dung nhạy cảm; tạo / thu hồi tài khoản quản trị doanh nghiệp |
+| **Quản trị doanh nghiệp (vai trò mới)** | Đăng nhập thẳng Admin portal. Chỉ thấy **công ty mình** (khoá theo `employer_id`): báo cáo EkkoFeed, nhóm vấn đề, trả lời. Không thấy danh tính người gửi, không thấy công ty khác, không thấy các trang cài đặt của Ekko |
+
+**✅ Đã chốt (19/10):** ai có tài khoản thì truy cập. HR doanh nghiệp tự đăng nhập
+xem báo cáo công ty mình — không qua Ekko gửi báo cáo.
+
+Cấp tài khoản: quản trị Ekko vào **Admin → Doanh nghiệp → Thêm quản trị**, nhập
+email HR + chọn công ty → hệ thống tạo tài khoản và mật khẩu tạm (hiện một lần,
+như "Đặt lại mật khẩu" hiện nay). HR đổi mật khẩu ở lần đăng nhập đầu. Một công
+ty có thể có nhiều quản trị; thu hồi bất cứ lúc nào. Mọi lần xem báo cáo / trả
+lời đều ghi nhật ký (ai, lúc nào) để kiểm tra khi cần.
 
 ## 5. Gom nhóm & từ khoá — cách làm
 
@@ -168,17 +177,17 @@ Tích hợp ngoài (hệ thống HR của doanh nghiệp): cùng API báo cáo, 
 
 | Giai đoạn | Nội dung | Ước lượng |
 |---|---|---|
-| **MVP (thử nội bộ)** | Gửi góp ý (ẩn danh, loại, chủ đề AI gợi ý, che SĐT/CCCD) · "Góp ý của tôi" + trạng thái · Admin: danh sách, lọc công ty, **đám mây từ khoá + nhóm theo chủ đề**, trả lời từng tin · API báo cáo | ~1 tuần |
+| **MVP (thử nội bộ)** | Gửi góp ý (ẩn danh, loại, chủ đề AI gợi ý, che SĐT/CCCD) · "Góp ý của tôi" + trạng thái · Admin: danh sách, lọc công ty, **đám mây từ khoá + nhóm theo chủ đề**, trả lời từng tin · API báo cáo · **tài khoản quản trị doanh nghiệp** (chỉ thấy công ty mình) | ~1–1,5 tuần |
 | **GĐ 2** | Gom nhóm vấn đề bằng AI + trả lời theo nhóm · Feed công ty + "Tôi cũng gặp" · ưu tiên / xu hướng · kiểm duyệt nội dung nhạy cảm | ~1–2 tuần |
-| **GĐ 3** | Vai trò quản trị doanh nghiệp · API key cho hệ thống HR · thông báo đẩy khi có phản hồi · báo cáo xuất PDF hằng tháng | tuỳ đối tác |
+| **GĐ 3** | API key cho hệ thống HR · thông báo đẩy khi có phản hồi · báo cáo xuất PDF hằng tháng | tuỳ đối tác |
 
 Làm trên nhánh `tinh-nang/ekkofeed`, thử ở môi trường staging với 1 doanh nghiệp
 thí điểm trước khi gộp vào `main`.
 
 ## 9. ❓ Cần chốt
 
-1. **Ai được xem báo cáo?** Chỉ Ekko (rồi Ekko gửi báo cáo cho doanh nghiệp), hay
-   cho **HR doanh nghiệp đăng nhập** Admin xem trực tiếp công ty mình (cần vai trò mới)?
+1. ~~Ai được xem báo cáo?~~ **✅ Đã chốt:** ai có tài khoản thì truy cập — HR doanh
+   nghiệp có tài khoản quản trị doanh nghiệp, tự đăng nhập, chỉ thấy công ty mình.
 2. **Ẩn danh:** luôn ẩn danh với doanh nghiệp, hay cho người dùng chọn ghi tên? Ekko có được xem danh tính (để xử lý trường hợp nguy hiểm) không?
 3. **Ngưỡng ẩn danh** cho báo cáo: 5 người có hợp lý với quy mô các công ty đang onboard không (công ty nhỏ 20–30 người có thể cần 3)?
 4. **Feed công ty** có hiện cho mọi nhân viên trong công ty thấy các vấn đề chung không, hay chỉ người gửi thấy phản hồi của mình?
