@@ -1511,6 +1511,16 @@ async function main() {
       && (await get('learner', '/api/expenses?range=week')).json.totals.count > 0
       && (await get('learner', '/api/budget')).json.items.length > 0);
 
+    // Biểu đồ chi tiêu màn chủ: xem tuần trước / tháng trước / khoảng ngày tuỳ chọn.
+    const wk = (await get('learner', '/api/expenses?range=week')).json;
+    const prevFrom = new Date(Date.parse(`${wk.from}T00:00:00Z`) - 7 * 86400000).toISOString().slice(0, 10);
+    const prevTo = new Date(Date.parse(`${wk.from}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
+    const prevWeek = await get('learner', `/api/expenses?from=${prevFrom}&to=${prevTo}`);
+    check('Xem chi tiêu theo khoảng ngày (tuần trước)', prevWeek.status === 200 && prevWeek.json.range === 'custom' && prevWeek.json.from === prevFrom
+      && prevWeek.json.expenses.every((e) => e.spent_on >= prevFrom && e.spent_on <= prevTo));
+    check('Khoảng ngày sai / quá 1 năm bị từ chối', (await get('learner', `/api/expenses?from=${prevTo}&to=${prevFrom}`)).status === 400
+      && (await get('learner', '/api/expenses?from=2024-01-01&to=2026-01-01')).status === 400);
+
     await get('newbie', '/dev/persona?as=new');
     const newbie = (await get('newbie', '/api/me')).json;
     check('Người dùng mới: heo cấp 1, 0 XP, chưa học, chưa xem onboarding',

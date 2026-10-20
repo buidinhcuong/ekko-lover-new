@@ -8,7 +8,7 @@ import { APP_SPRITE, api, dataIcon, el, guard, mount, screenScale, spriteIcon, t
 import { confirmSheet, swipeRow } from '../ui.js';
 import { t } from '../i18n.js';
 import { openNewsDetail } from './news.js';
-import { dayCardHead, dayTotalFoot, openEditExpense } from './expenses.js';
+import { dayCardHead, dayTotalFoot, monthWeeks, openEditExpense } from './expenses.js';
 import simpleHome from './home-simple.js';
 import { profileCard } from './badges.js';
 
@@ -376,33 +376,14 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     else map.set(code, { code, name: e.category_name || t('Khác'), color: e.category_color || 'var(--bg-grey-500)', amount: e.amount });
   };
 
-  const weekBars = (data) => {
-    const dayCats = new Map();
-    for (const e of data.expenses) {
-      if (!dayCats.has(e.spent_on)) dayCats.set(e.spent_on, new Map());
-      addCategoryAmount(dayCats.get(e.spent_on), e);
-    }
-    return LOVER_DAYS.map((label, i) => ({ label, title: label, cats: dayCats.get(addDaysKey(data.from, i)) || new Map() }));
-  };
 
-  // 6 tháng dương lịch quanh tháng hiện tại, cũ→mới trái sang phải — tháng
-  // hiện tại nằm GIỮA dải (3 tháng trước + tháng này + 2 tháng sau) thay vì
-  // dồn hẳn về cột cuối cùng, để nhìn quen mắt như biểu đồ "đang ở đâu trong
-  // năm" chứ không phải "lịch sử tính đến hôm nay". Mỗi cột là một tháng
-  // thật (Tháng 9, 8, 7…), không còn là chặng 7-ngày vô danh nữa.
-  const monthBars = async () => {
-    const months = Array.from({ length: 6 }, (_, i) => addMonthsKey(ctx.world.today.slice(0, 7), i - 3));
-    const payloads = await Promise.all(months.map((m) => api.get(`/api/expenses?month=${m}`)));
-    return payloads.map((data, i) => {
-      const cats = new Map();
-      for (const e of data.expenses) addCategoryAmount(cats, e);
-      const monthNum = Number(months[i].slice(5, 7));
-      return { label: `T${monthNum}`, title: t('Tháng {n}', { n: monthNum }), cats };
-    });
-  };
-
+  // Kỳ của biểu đồ: Tuần / Tháng (lùi ‹ tới › từng kỳ) hoặc Tuỳ chọn (khoảng ngày).
   let chartRange = 'week';
+  let chartOffset = 0;
+  let customRange = null;
   const chartBody = el('div.loverhome__chartbody');
+  const chartNav = el('div.loverhome__chartnav');
+  const chartSum = el('div.loverhome__chartsum');
 
   const renderChartData = (rawPoints) => {
     // Mỗi cột chỉ tách MÀU của mục chi nhiều nhất trong ngày/tháng đó; mọi mục
@@ -502,24 +483,156 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
     ]));
   };
 
-  const loadChart = async () => renderChartData(chartRange === 'week' ? weekBars(week) : await monthBars());
+  // --- kỳ xem: tính ngày bắt đầu / kết thúc + cách chia cột ------------------------
+  const todayKey = ctx.world.today;
+  const dayNum = (key) => Date.parse(`${key}T00:00:00Z`) / 86400000;
+  const spanDays = (from, to) => dayNum(to) - dayNum(from) + 1;
+  const mondayOf = (key) => addDaysKey(key, -((new Date(`${key}T00:00:00Z`).getUTCDay() + 6) % 7));
+  const endOfMonthKey = (month) => addDaysKey(`${addMonthsKey(month, 1)}-01`, -1);
+  const ddmm = (key) => `${key.slice(8, 10)}/${key.slice(5, 7)}`;
+  const periodOf = () => {
+    if (chartRange === 'week') {
+      const from = addDaysKey(mondayOf(todayKey), chartOffset * 7);
+      return { from, to: addDaysKey(from, 6) };
+    }
+    if (chartRange === 'month') {
+      const month = addMonthsKey(todayKey.slice(0, 7), chartOffset);
+      return { from: `${month}-01`, to: endOfMonthKey(month), month };
+    }
+    return customRange;
+  };
+  // Kỳ liền trước cùng độ dài — để so sánh "nhiều / ít hơn kỳ trước".
+  const previousOf = (p) => {
+    if (chartRange === 'month') { const m = addMonthsKey(p.month, -1); return { from: `${m}-01`, to: endOfMonthKey(m) }; }
+    const n = spanDays(p.from, p.to);
+    return { from: addDaysKey(p.from, -n), to: addDaysKey(p.from, -1) };
+  };
+  const titleOf = (p) => {
+    if (chartRange === 'week') {
+      if (chartOffset === 0) return t('Tuần này');
+      if (chartOffset === -1) return t('Tuần trước');
+      return `${ddmm(p.from)} – ${ddmm(p.to)}`;
+    }
+    if (chartRange === 'month') {
+      if (chartOffset === 0) return t('Tháng này');
+      if (chartOffset === -1) return t('Tháng trước');
+      return t('Tháng {n}', { n: `${Number(p.month.slice(5, 7))}/${p.month.slice(0, 4)}` });
+    }
+    return `${ddmm(p.from)}/${p.from.slice(0, 4)} – ${ddmm(p.to)}/${p.to.slice(0, 4)}`;
+  };
+  // Chia cột: tuần → 7 ngày; tháng → từng tuần trong tháng; tuỳ chọn → ngày (≤ 14
+  // ngày), tuần (≤ 13 tuần) hoặc tháng.
+  const barsOf = (p, data) => {
+    const byDay = new Map();
+    for (const e of data.expenses) {
+      if (!byDay.has(e.spent_on)) byDay.set(e.spent_on, []);
+      byDay.get(e.spent_on).push(e);
+    }
+    const bucket = (from, to, label, title) => {
+      const cats = new Map();
+      for (let k = from; k <= to; k = addDaysKey(k, 1)) (byDay.get(k) || []).forEach((e) => addCategoryAmount(cats, e));
+      return { label, title, cats };
+    };
+    const n = spanDays(p.from, p.to);
+    if (chartRange === 'week') return LOVER_DAYS.map((label, i) => bucket(addDaysKey(p.from, i), addDaysKey(p.from, i), label, `${label} ${ddmm(addDaysKey(p.from, i))}`));
+    if (chartRange === 'custom' && n <= 14) return Array.from({ length: n }, (_, i) => { const k = addDaysKey(p.from, i); return bucket(k, k, ddmm(k), ddmm(k)); });
+    if (chartRange === 'custom' && n > 91) {
+      const out = [];
+      for (let m = p.from.slice(0, 7); m <= p.to.slice(0, 7); m = addMonthsKey(m, 1)) {
+        const f = `${m}-01` < p.from ? p.from : `${m}-01`;
+        const e = endOfMonthKey(m) > p.to ? p.to : endOfMonthKey(m);
+        out.push(bucket(f, e, `T${Number(m.slice(5, 7))}`, t('Tháng {n}', { n: `${Number(m.slice(5, 7))}/${m.slice(0, 4)}` })));
+      }
+      return out;
+    }
+    // Tháng: Tuần 1, Tuần 2… của tháng (mỗi tuần từ ngày – đến ngày).
+    if (chartRange === 'month') return monthWeeks(p.from, p.to).map((w) => bucket(w.from, w.to, t('Tuần {n}', { n: w.n }), `${t('Tuần {n}', { n: w.n })} (${ddmm(w.from)} – ${ddmm(w.to)})`));
+    // Tuỳ chọn dài: từng tuần (thứ Hai – Chủ nhật), cắt theo đầu / cuối kỳ.
+    const out = [];
+    for (let f = p.from; f <= p.to;) {
+      const e0 = addDaysKey(mondayOf(f), 6);
+      const e = e0 > p.to ? p.to : e0;
+      out.push(bucket(f, e, `${Number(f.slice(8, 10))}–${Number(e.slice(8, 10))}`, `${ddmm(f)} – ${ddmm(e)}`));
+      f = addDaysKey(e, 1);
+    }
+    return out;
+  };
+
+  const sumOf = (data) => data.expenses.reduce((n, e) => n + e.amount, 0);
+  const fetchRange = (r) => api.get(`/api/expenses?from=${r.from}&to=${r.to}`);
+  let chartSeq = 0;
+  const loadChart = async () => {
+    const seq = (chartSeq += 1);
+    const p = periodOf();
+    drawNav(p);
+    chartBody.classList.add('is-loading');
+    // Tuần này: dùng lại dữ liệu đã tải ở trên, khỏi gọi thêm API.
+    const [data, prev] = await Promise.all([
+      chartRange === 'week' && chartOffset === 0 ? Promise.resolve(week) : fetchRange(p),
+      fetchRange(previousOf(p)).catch(() => null),
+    ]).catch(() => [null, null]);
+    if (seq !== chartSeq) return; // người dùng đã bấm sang kỳ khác
+    chartBody.classList.remove('is-loading');
+    if (!data) { mount(chartBody, el('p.muted', {}, t('Không tải được biểu đồ'))); return; }
+    const total = sumOf(data);
+    const before = prev ? sumOf(prev) : null;
+    const diff = before ? Math.round(((total - before) / before) * 100) : null;
+    chartSum.replaceChildren(...[
+      el('span', {}, [t('Tổng chi'), ' ', el('b', {}, vnd(total))]),
+      diff === null || total === 0 ? null : el(`span.loverhome__chartdiff${diff > 0 ? '.is-up' : diff < 0 ? '.is-down' : ''}`, {},
+        diff === 0 ? t('bằng kỳ trước') : diff > 0 ? t('nhiều hơn {n}% so với kỳ trước', { n: diff }) : t('ít hơn {n}% so với kỳ trước', { n: -diff })),
+    ].filter(Boolean));
+    renderChartData(barsOf(p, data));
+  };
+
+  // Hàng điều hướng: ‹ kỳ trước · tên kỳ · kỳ sau ›; Tuỳ chọn thì hai ô ngày.
+  const fromIn = el('input.loverhome__chartdate', { type: 'date', max: todayKey, 'aria-label': t('Từ ngày') });
+  const toIn = el('input.loverhome__chartdate', { type: 'date', max: todayKey, 'aria-label': t('Đến ngày') });
+  const applyCustom = () => {
+    if (!fromIn.value || !toIn.value || fromIn.value > toIn.value) { toast(t('Chọn ngày bắt đầu trước ngày kết thúc'), 'error'); return; }
+    if (spanDays(fromIn.value, toIn.value) > 366) { toast(t('Chỉ xem được tối đa 1 năm một lần'), 'error'); return; }
+    customRange = { from: fromIn.value, to: toIn.value };
+    loadChart();
+  };
+  function drawNav(p) {
+    if (chartRange === 'custom') {
+      fromIn.value = p.from; toIn.value = p.to;
+      chartNav.replaceChildren(el('div.loverhome__chartrange', {}, [
+        fromIn, el('span', { 'aria-hidden': 'true' }, '–'), toIn,
+        el('button.loverhome__chartgo', { type: 'button', onclick: applyCustom }, t('Xem')),
+      ]));
+      return;
+    }
+    const step = (d) => { chartOffset += d; loadChart(); };
+    chartNav.replaceChildren(
+      el('button.loverhome__chartstep', { type: 'button', 'aria-label': chartRange === 'week' ? t('Tuần trước') : t('Tháng trước'), onclick: () => step(-1) }, '‹'),
+      el('div.loverhome__chartperiod', {}, [el('b', {}, titleOf(p)), el('small', {}, `${ddmm(p.from)} – ${ddmm(p.to)}/${p.to.slice(0, 4)}`)]),
+      el('button.loverhome__chartstep', {
+        type: 'button', 'aria-label': chartRange === 'week' ? t('Tuần sau') : t('Tháng sau'),
+        disabled: chartOffset >= 0, onclick: () => step(1),
+      }, '›'),
+    );
+  }
 
   const periodPick = el('div.periodpick.loverhome__periodpick', {}, [
     { key: 'week', label: t('Tuần') },
     { key: 'month', label: t('Tháng') },
+    { key: 'custom', label: t('Tuỳ chọn') },
   ].map((opt) => el('button', {
     type: 'button',
     'aria-pressed': String(chartRange === opt.key),
     onclick: (e) => {
       if (chartRange === opt.key) return;
       chartRange = opt.key;
+      chartOffset = 0;
+      // Tuỳ chọn mở sẵn 30 ngày gần nhất; người dùng đổi hai ô ngày rồi bấm Xem.
+      if (opt.key === 'custom' && !customRange) customRange = { from: addDaysKey(todayKey, -29), to: todayKey };
       [...periodPick.children].forEach((btn) => btn.setAttribute('aria-pressed', String(btn === e.currentTarget)));
       loadChart();
     },
   }, opt.label)));
 
-  // Lượt xem đầu (Tuần) dùng lại dữ liệu đã tải ở trên, khỏi gọi thêm API.
-  renderChartData(weekBars(week));
+  loadChart();
 
   // Ghi chép chi tiêu HÔM NAY — lấy luôn từ dữ liệu tuần đã tải ở trên (khỏi
   // gọi thêm API), lọc theo đúng ngày hôm nay. Đặt phía TRÊN biểu đồ vì đây là
@@ -559,7 +672,7 @@ async function loverHomeBody(ctx, rerender, { showNudge = false } = {}) {
       el('div.loverhome__sectiontitle', { dataset: { tone: 'chart' } }, [uiIcon('chart-increase', 20), t('Chi tiêu')]),
       periodPick,
     ]),
-    el('div.loverhome__section', {}, [chartBody]),
+    el('div.loverhome__section', {}, [chartNav, chartSum, chartBody]),
   ]);
 
   // Chỉ trả về đúng nội dung — shell (`screen__body--flush.loverhome-shell`,
