@@ -5,10 +5,8 @@ import { getLang, t } from '../i18n.js';
 import { micIcon, openVoiceNote } from '../voice.js';
 import { readReceipt, shrinkImage } from '../receiptLocal.js';
 
-const LOVER_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 // Nhãn đầy đủ chỉ dùng cho dòng highlight "ngày chi nhiều nhất" — trong biểu
 // đồ vẫn giữ chữ tắt T2..CN cho gọn, không đủ chỗ ghi hết "Thứ Hai".
-const FULL_DAY_LABEL = { T2: 'Thứ 2', T3: 'Thứ 3', T4: 'Thứ 4', T5: 'Thứ 5', T6: 'Thứ 6', T7: 'Thứ 7', CN: 'Chủ Nhật' };
 
 /** Cộng ngày trên chuỗi YYYY-MM-DD, không lệ thuộc múi giờ thiết bị. */
 function addDaysKey(key, n) {
@@ -84,7 +82,7 @@ async function body(ctx, month, rerender) {
   let sections;
   if (isCurrent) {
     sections = [
-      centralPanel(ctx, monthData, weekData, income),
+      centralPanel(ctx, monthData, income),
       weekSection(ctx, weekData, categories, rerender),
     ];
   } else if (monthData.totals.total === 0) {
@@ -278,16 +276,38 @@ function compareGroupsCard(month, monthData, currentMonth, currentMonthData) {
 }
 
 /**
- * Bảng dữ liệu trung tâm: tổng chi tháng này (trái) đối lên biểu đồ so sánh 7
- * ngày của tuần hiện tại (phải), highlight ngày chi nhiều nhất, rồi progress
+ * Các tuần của một tháng (thứ Hai – Chủ nhật, cắt theo đầu / cuối tháng): Tuần 1
+ * từ ngày 1 tới Chủ nhật đầu tiên, Tuần 2…, tuần cuối tới hết tháng.
+ * Dùng chung cho biểu đồ ở màn Ghi chép và biểu đồ "Tháng" ở màn chủ.
+ */
+export function monthWeeks(from, to) {
+  const out = [];
+  for (let start = from, n = 1; start <= to; n += 1) {
+    const dow = (new Date(`${start}T00:00:00Z`).getUTCDay() + 6) % 7; // 0 = thứ Hai
+    const end0 = addDaysKey(start, 6 - dow);
+    const end = end0 > to ? to : end0;
+    out.push({ n, from: start, to: end });
+    start = addDaysKey(end, 1);
+  }
+  return out;
+}
+const ddmm = (key) => `${key.slice(8, 10)}/${key.slice(5, 7)}`;
+
+/**
+ * Bảng dữ liệu trung tâm: tổng chi tháng này (trái) đối lên biểu đồ chi theo
+ * từng tuần của tháng (phải: Tuần 1, Tuần 2… — mỗi tuần từ ngày – đến ngày),
+ * highlight tuần chi nhiều nhất, rồi progress
  * bar chi tháng chia theo nhóm level 1 — bấm vào mới lộ level 2 (màn riêng).
  */
-function centralPanel(ctx, monthData, weekData, income) {
-  const days = LOVER_DAYS.map((label, i) => {
-    const day = addDaysKey(weekData.from, i);
-    const total = weekData.expenses.filter((e) => e.spent_on === day).reduce((sum, e) => sum + e.amount, 0);
-    return { day, label, total };
-  });
+function centralPanel(ctx, monthData, income) {
+  // Mỗi điểm là một tuần của tháng (khớp con số "Tổng chi tiêu trong tháng" bên trái).
+  const days = monthWeeks(monthData.from, monthData.to).map((w) => ({
+    day: w.from,
+    label: t('Tuần {n}', { n: w.n }),
+    short: String(w.n),
+    title: `${t('Tuần {n}', { n: w.n })} (${ddmm(w.from)} – ${ddmm(w.to)})`,
+    total: monthData.expenses.filter((e) => e.spent_on >= w.from && e.spent_on <= w.to).reduce((sum, e) => sum + e.amount, 0),
+  }));
   const maxTotal = Math.max(1, ...days.map((d) => d.total));
   const busiest = days.reduce((a, b) => (b.total > a.total ? b : a), days[0]);
 
@@ -312,7 +332,7 @@ function centralPanel(ctx, monthData, weekData, income) {
       lineChart(days, maxTotal, busiest),
     ]),
     busiest.total > 0 ? el('div.expcentral__highlight', {}, [
-      uiIcon('fire', 16), t('Ngày chi tiêu nhiều nhất: {day}: {amount}', { day: FULL_DAY_LABEL[busiest.label] || busiest.label, amount: vnd(busiest.total) }),
+      uiIcon('fire', 16), t('Tuần chi tiêu nhiều nhất: {week}: {amount}', { week: busiest.title, amount: vnd(busiest.total) }),
     ]) : null,
     groups.length ? el('button.expcentral__groups', { onclick: () => ctx.navigate('/expenses/groups') }, [
       el('div.expcentral__groupshead', {}, [t('Chi tháng này theo nhóm'), el('small', {}, `${t('Xem chi tiết')} →`)]),
@@ -379,7 +399,7 @@ function lineChart(days, maxTotal, busiest) {
   let hideTimer = null;
   const showTip = (p) => {
     clearTimeout(hideTimer);
-    tip.textContent = `${p.label}: ${vnd(p.total)}`;
+    tip.textContent = `${p.title || p.label}: ${vnd(p.total)}`;
     tip.style.left = `${(p.x / W) * 100}%`;
     tip.style.top = `${(p.y / H) * 100}%`;
     tip.classList.add('is-visible');
@@ -388,7 +408,7 @@ function lineChart(days, maxTotal, busiest) {
 
   const hits = el('div.expcentral__linehits', {}, points.map((p) => el('button', {
     style: { left: `${(p.x / W) * 100}%` },
-    'aria-label': `${p.label}: ${vnd(p.total)}`,
+    'aria-label': `${p.title || p.label}: ${vnd(p.total)}`,
     onclick: (e) => { e.stopPropagation(); showTip(p); },
   })));
 
@@ -396,7 +416,10 @@ function lineChart(days, maxTotal, busiest) {
     svg,
     hits,
     tip,
-    el('div.expcentral__linelabels', {}, days.map((d) => el('span', {}, d.label))),
+    // Nhãn gọn hai dòng ("Tuần" / số) để 5–6 tuần vẫn vừa khung nhỏ.
+    el('div.expcentral__linelabels', {}, days.map((d) => el('span', {}, d.short
+      ? [el('small', {}, t('Tuần')), el('b', {}, d.short)]
+      : d.label))),
   ]);
 }
 

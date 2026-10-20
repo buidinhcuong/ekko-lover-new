@@ -441,8 +441,17 @@ export const EXPENSE_RANGES = { today: 'Hôm nay', week: 'Tuần này', month: '
  * of day keys. Ranges cover the whole period, not just up to today, so an entry
  * back-dated or post-dated inside the period still shows up.
  */
-export function resolveRange({ range, month } = {}) {
+export function resolveRange({ range, month, from, to } = {}) {
   const today = dayKey();
+
+  // Khoảng ngày tự chọn (biểu đồ chi tiêu ở màn chủ: tuần trước, tháng trước,
+  // hoặc tuỳ chọn) — tối đa 366 ngày.
+  if (from || to) {
+    if (!DAY_RE.test(from || '') || !DAY_RE.test(to || '') || from > to) throw bad('Khoảng ngày không hợp lệ (YYYY-MM-DD, từ ≤ đến)');
+    const days = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000) + 1;
+    if (days > 366) throw bad('Chỉ xem được tối đa 366 ngày một lần');
+    return { range: 'custom', from, to, month: to.slice(0, 7) };
+  }
 
   if (month) {
     if (!MONTH_RE.test(month)) throw bad('Tháng phải có dạng YYYY-MM');
@@ -514,7 +523,10 @@ export function expensePayload(userId, spec = resolveRange()) {
 
 featureRouter.get('/api/expenses', ({ user, url }) => {
   materializeDueRecurring(user.id);
-  const spec = resolveRange({ range: url.searchParams.get('range'), month: url.searchParams.get('month') });
+  const spec = resolveRange({
+    range: url.searchParams.get('range'), month: url.searchParams.get('month'),
+    from: url.searchParams.get('from'), to: url.searchParams.get('to'),
+  });
   return expensePayload(user.id, spec);
 });
 
