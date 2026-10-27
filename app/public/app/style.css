@@ -3389,3 +3389,10 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .exphistory__status:empty { display: none; }
 .exphistory__more { display: block; width: 100%; height: 44px; margin-top: 12px; border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); font-weight: var(--font-weight-semibold); color: var(--text-brand-500); cursor: pointer; }
 .exphistory__more[hidden] { display: none; }
+/* Nút "Chọn khoảng ngày" ở đầu mục: cùng kiểu link chữ xanh như "Xem tất cả →"
+   của các mục khác, không đóng khung, để khớp tiêu đề bên cạnh. */
+.expweek__head { align-items: center; }
+.expweek__head .exphistory__pick { height: auto; padding: 0; border: 0; border-radius: 0; background: none; color: var(--text-brand-500); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); }
+.expweek__head .exphistory__pick[aria-expanded="true"] { background: none; color: var(--text-brand-500); text-decoration: underline; text-underline-offset: 3px; }
+.expweek__head .exphistory__pick .ekko-icon { color: var(--text-brand-500); }
+.expweek__head .exphistory__pick:focus-visible { box-shadow: none; outline: 2px solid var(--border-brand); outline-offset: 3px; border-radius: 4px; }
