@@ -44,12 +44,10 @@ async function body(ctx, month, rerender) {
   const currentMonth = ctx.world.today.slice(0, 7);
   const isCurrent = month === currentMonth;
 
-  // Xem tháng hiện tại thì cần dữ liệu tuần (biểu đồ 7 ngày + sổ chi tuần này);
-  // xem một tháng khác thì thay vào đó cần dữ liệu THÁNG HIỆN TẠI để so sánh —
-  // hai thứ này không dùng cùng lúc nên chỉ gọi đúng cái đang cần.
-  const [monthData, weekData, categories, income, currentMonthData, recurring] = await Promise.all([
+  // Xem tháng hiện tại: sổ chi tự tải 5 ngày gần nhất (historySection); xem một
+  // tháng khác thì cần thêm dữ liệu THÁNG HIỆN TẠI để so sánh.
+  const [monthData, categories, income, currentMonthData, recurring] = await Promise.all([
     api.get(`/api/expenses?month=${month}`),
-    isCurrent ? api.get('/api/expenses?range=week') : Promise.resolve(null),
     api.get('/api/categories'),
     isCurrent ? api.get(`/api/expenses/income?month=${month}`) : Promise.resolve(null),
     isCurrent ? Promise.resolve(null) : api.get(`/api/expenses?month=${currentMonth}`),
@@ -83,7 +81,7 @@ async function body(ctx, month, rerender) {
   if (isCurrent) {
     sections = [
       centralPanel(ctx, monthData, income),
-      historySection(ctx, weekData, categories, rerender),
+      historySection(ctx, categories, rerender),
     ];
   } else if (monthData.totals.total === 0) {
     sections = [emptyMonthPanel(month)];
@@ -436,157 +434,143 @@ function groupByLevel1(byCategory) {
 }
 
 /**
- * Sổ chi tiêu theo tuần, kéo xuống là tải tiếp các tuần cũ hơn (4 tuần mỗi lần),
- * hoặc chọn một ngày để nhảy thẳng tới đó. Mỗi tuần một đầu mục (dính trên cùng
- * khi cuộn) có tổng tiền; ngày có chi hiện thẻ đầy đủ, chuỗi ngày không chi gộp
- * thành một dòng gọn cho đỡ dài. Tuần này vẫn luôn có hôm nay (dù chưa ghi gì).
+ * Sổ chi tiêu: mặc định chỉ 5 ngày gần nhất (hôm nay + 4 ngày trước). Muốn xem
+ * thêm thì bấm "Xem thêm" (lùi thêm 7 ngày mỗi lần), hoặc chọn một khoảng ngày
+ * (từ – đến) để xem trọn khoảng đó kèm tổng. Ngày có chi hiện thẻ đầy đủ; chuỗi
+ * ngày không chi gộp thành một dòng gọn cho đỡ dài.
  */
-const CHUNK_WEEKS = 4;
-function historySection(ctx, weekData, categories, rerender) {
+const DEFAULT_DAYS = 5;
+const MORE_DAYS = 7;
+const MAX_RANGE_DAYS = 366;
+function historySection(ctx, categories, rerender) {
   const today = ctx.world.today;
-  const mondayOf = (key) => addDaysKey(key, -((new Date(`${key}T00:00:00Z`).getUTCDay() + 6) % 7));
-  const thisMonday = mondayOf(today);
-  let earliest = weekData.earliest || null;
-  let anchor = null;          // ngày người dùng chọn để xem (null = từ hôm nay)
-  let nextTo = null;          // tải tiếp: các tuần kết thúc trước ngày này
-  let loading = false;
-  let done = false;
+  const spanOf = (from, to) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000) + 1;
+  let earliest = null;
+  let shownFrom = null;   // ngày cũ nhất đang hiện (chế độ mặc định)
+  let range = null;       // { from, to } khi người dùng chọn khoảng ngày
+  let busy = false;
 
   const list = el('div.exphistory');
+  const summary = el('div.exphistory__summary');
   const status = el('div.exphistory__status');
-  const more = el('button.exphistory__more', { type: 'button', onclick: () => loadMore() }, t('Xem thêm các tuần trước'));
-  const sentinel = el('div.exphistory__sentinel', { 'aria-hidden': 'true' });
+  const more = el('button.exphistory__more', { type: 'button', onclick: () => showMore() });
 
-  // Tuần bị cắt ở ngày được chọn thì ghi đúng khoảng đang hiện (tổng cũng chỉ tính khoảng đó).
-  const weekTitle = (monday, last) => {
-    if (monday === thisMonday) return t('Tuần này');
-    if (monday === addDaysKey(thisMonday, -7) && last === addDaysKey(monday, 6)) return t('Tuần trước');
-    return t('Tuần {from} – {to}', { from: ddmm(monday), to: ddmm(last) });
-  };
-
-  /** Một tuần: đầu mục + thẻ ngày có chi + dòng gộp các ngày trống. */
-  const weekBlock = (monday, byDay) => {
-    // Tuần này dừng ở hôm nay; tuần chứa ngày được chọn bắt đầu đúng từ ngày đó.
-    let last = monday === thisMonday ? today : addDaysKey(monday, 6);
-    if (anchor && anchor >= monday && anchor < last) last = anchor;
-    const days = [];
-    for (let d = last; d >= monday; d = addDaysKey(d, -1)) days.push(d);
-    const items = days.flatMap((d) => byDay.get(d) || []);
-    const total = items.reduce((n, e) => n + e.amount, 0);
-    const kids = [];
+  /** Vẽ các ngày [from … to] (mới → cũ): thẻ ngày có chi, gộp chuỗi ngày trống. */
+  const daysBlock = (from, to, byDay) => {
+    const out = [];
     let gap = [];
     const flushGap = () => {
       if (!gap.length) return;
-      kids.push(el('div.exphistory__gap', {}, gap.length === 1
+      out.push(el('div.exphistory__gap', {}, gap.length === 1
         ? t('{day}: không ghi khoản chi nào', { day: ddmm(gap[0]) })
         : t('{from} – {to}: {n} ngày không ghi khoản chi nào', { from: ddmm(gap[gap.length - 1]), to: ddmm(gap[0]), n: gap.length })));
       gap = [];
     };
-    for (const d of days) {
+    for (let d = to; d >= from; d = addDaysKey(d, -1)) {
       const dayList = byDay.get(d) || [];
-      // Hôm nay và ngày đang được chọn luôn có thẻ riêng, dù trống.
-      if (dayList.length || d === today || d === anchor) {
-        flushGap();
-        const card = dayCard(ctx, d, dayList, categories, rerender);
-        card.dataset.day = d;
-        if (d === anchor) card.classList.add('is-picked');
-        kids.push(card);
-      } else gap.push(d);
+      // Hôm nay luôn có thẻ riêng (dù chưa ghi gì) — chỗ quen để ghi khoản mới.
+      if (dayList.length || d === today) { flushGap(); out.push(dayCard(ctx, d, dayList, categories, rerender)); } else gap.push(d);
     }
     flushGap();
-    return el('section.exphistory__week', {}, [
-      el('div.exphistory__weekhead', {}, [
-        el('b', {}, weekTitle(monday, last)),
-        el('span', {}, items.length ? `-${vnd(total)} · ${t('{count} khoản', { count: items.length })}` : t('Không có khoản chi')),
-      ]),
-      ...(items.length || monday === thisMonday || (anchor && anchor >= monday && anchor <= addDaysKey(monday, 6))
-        ? kids
-        : []),
-    ]);
+    return out;
   };
 
-  const paintStatus = () => {
-    more.hidden = done || loading;
-    status.replaceChildren(loading
+  const fetchDays = (from, to) => guard(() => api.get(`/api/expenses?from=${from}&to=${to}`), t('Không tải được ghi chép'));
+
+  const paint = () => {
+    const noOlder = !earliest || (range ? true : shownFrom <= earliest);
+    more.hidden = Boolean(range) || noOlder || busy;
+    more.textContent = t('Xem thêm {n} ngày trước', { n: MORE_DAYS });
+    status.replaceChildren(busy
       ? el('span.muted', {}, t('Đang tải…'))
-      : done ? el('span.muted', {}, earliest ? t('Đã hết ghi chép — khoản chi đầu tiên ngày {day}', { day: formatDay(earliest) }) : t('Chưa có ghi chép nào trước đó')) : '');
+      : !range && noOlder && earliest ? el('span.muted', {}, t('Đã hết ghi chép — khoản chi đầu tiên ngày {day}', { day: formatDay(earliest) })) : '');
   };
 
-  const render = (data, toKey) => {
-    const byDay = new Map(groupByDay(data.expenses));
-    const fromMonday = mondayOf(data.from);
-    for (let monday = mondayOf(toKey); monday >= fromMonday; monday = addDaysKey(monday, -7)) {
-      // Tuần nằm hẳn trước khoản chi đầu tiên: không có gì để xem, bỏ qua.
-      if (earliest && addDaysKey(monday, 6) < earliest && monday !== thisMonday) continue;
-      list.append(weekBlock(monday, byDay));
-    }
-  };
+  async function showDefault() {
+    range = null;
+    paintTools();
+    busy = true; paint();
+    shownFrom = addDaysKey(today, -(DEFAULT_DAYS - 1));
+    const data = await fetchDays(shownFrom, today);
+    busy = false;
+    if (!data) { paint(); return; }
+    earliest = data.earliest;
+    summary.replaceChildren();
+    list.replaceChildren(...daysBlock(shownFrom, today, new Map(groupByDay(data.expenses))));
+    paint();
+  }
 
-  async function loadMore() {
-    if (loading || done) return;
-    loading = true; paintStatus();
-    const to = nextTo;
-    const from = addDaysKey(mondayOf(to), -7 * (CHUNK_WEEKS - 1));
-    const data = await guard(() => api.get(`/api/expenses?from=${from}&to=${to}`), t('Không tải được ghi chép'));
-    loading = false;
-    if (!data) { paintStatus(); return; }
+  async function showMore() {
+    if (busy || range) return;
+    const to = addDaysKey(shownFrom, -1);
+    const from = addDaysKey(shownFrom, -MORE_DAYS);
+    busy = true; paint();
+    const data = await fetchDays(from, to);
+    busy = false;
+    if (!data) { paint(); return; }
     earliest = data.earliest || earliest;
-    render(data, to);
-    nextTo = addDaysKey(from, -1);
-    done = !earliest || nextTo < earliest;
-    paintStatus();
+    shownFrom = from;
+    list.append(...daysBlock(from, to, new Map(groupByDay(data.expenses))));
+    paint();
   }
 
-  /** Bắt đầu lại từ một ngày (null = hôm nay). Tuần này dùng luôn dữ liệu đã có. */
-  async function startAt(day) {
-    anchor = day;
-    list.replaceChildren();
-    done = false;
-    paintChip();
-    if (!day) {
-      render(weekData, today);
-      nextTo = addDaysKey(thisMonday, -1);
-      done = !earliest || nextTo < earliest;
-      paintStatus();
-      return;
-    }
-    nextTo = day;
-    await loadMore();
-    const card = list.querySelector(`[data-day="${day}"]`);
-    card?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  async function showRange(from, to) {
+    range = { from, to };
+    paintTools();
+    busy = true; paint();
+    const data = await fetchDays(from, to);
+    busy = false;
+    if (!data) { paint(); return; }
+    earliest = data.earliest || earliest;
+    const total = data.expenses.reduce((n, e) => n + e.amount, 0);
+    summary.replaceChildren(
+      el('span', {}, t('{from} – {to} · {n} ngày', { from: formatDay(from), to: formatDay(to), n: spanOf(from, to) })),
+      el('b', {}, data.expenses.length ? `-${vnd(total)} · ${t('{count} khoản', { count: data.expenses.length })}` : t('Không có khoản chi')),
+    );
+    list.replaceChildren(...daysBlock(from, to, new Map(groupByDay(data.expenses))));
+    paint();
   }
 
-  // Chọn ngày: ô ngày gốc của máy (lịch quen tay), giới hạn tới hôm nay.
-  const picker = el('input.exphistory__date', {
-    type: 'date', max: today, 'aria-label': t('Chọn ngày để xem'),
-    onchange: (e) => { if (e.target.value) startAt(e.target.value > today ? today : e.target.value); },
-  });
-  const chip = el('div.exphistory__chip');
-  function paintChip() {
-    chip.replaceChildren(...(anchor ? [
-      el('span', {}, t('Đang xem từ ngày {day}', { day: formatDay(anchor) })),
-      el('button', { type: 'button', onclick: () => { picker.value = ''; startAt(null); } }, t('Về hôm nay')),
-    ] : []));
-    chip.hidden = !anchor;
-  }
+  // Chọn khoảng ngày: hai ô ngày của máy + Xem; đang xem khoảng thì có "Về 5 ngày gần nhất".
+  const fromIn = el('input.exphistory__date', { type: 'date', max: today, 'aria-label': t('Từ ngày') });
+  const toIn = el('input.exphistory__date', { type: 'date', max: today, 'aria-label': t('Đến ngày') });
+  const rangeBox = el('div.exphistory__range', { hidden: true }, [
+    fromIn, el('span', { 'aria-hidden': 'true' }, '–'), toIn,
+    el('button.exphistory__go', {
+      type: 'button',
+      onclick: () => {
+        const from = fromIn.value;
+        const to = toIn.value > today ? today : toIn.value;
+        if (!from || !to || from > to) { toast(t('Chọn ngày bắt đầu trước ngày kết thúc'), 'error'); return; }
+        if (spanOf(from, to) > MAX_RANGE_DAYS) { toast(t('Chỉ xem được tối đa 1 năm một lần'), 'error'); return; }
+        showRange(from, to);
+      },
+    }, t('Xem')),
+  ]);
+  const toggle = el('button.exphistory__pick', {
+    type: 'button', 'aria-expanded': 'false',
+    onclick: () => {
+      rangeBox.hidden = !rangeBox.hidden;
+      toggle.setAttribute('aria-expanded', String(!rangeBox.hidden));
+      if (!rangeBox.hidden) {
+        if (!fromIn.value) { fromIn.value = addDaysKey(today, -6); toIn.value = today; }
+        fromIn.focus();
+      }
+    },
+  }, [spriteIcon('calendar-03-stroke', 18), t('Chọn khoảng ngày')]);
+  const reset = el('button.exphistory__reset', { type: 'button', hidden: true, onclick: () => { rangeBox.hidden = true; toggle.setAttribute('aria-expanded', 'false'); showDefault(); } }, t('Về {n} ngày gần nhất', { n: DEFAULT_DAYS }));
+  function paintTools() { reset.hidden = !range; }
 
-  // Cuộn gần cuối danh sách thì tự tải tiếp.
-  const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
-    if (entries.some((e) => e.isIntersecting)) loadMore();
-  }, { rootMargin: '0px 0px 400px 0px' }) : null;
-  queueMicrotask(() => observer?.observe(sentinel));
-
-  startAt(null);
+  showDefault();
   return el('div', {}, [
     el('div.expweek__head', {}, [
       el('h2', {}, t('Ghi chép chi tiêu')),
       el('button.loverhome__link', { onclick: () => ctx.navigate('/expenses/report') }, `${t('Báo cáo chi tiết')} →`),
     ]),
-    el('div.exphistory__tools', {}, [
-      el('label.exphistory__pick', {}, [spriteIcon('calendar-03-stroke', 18), el('span', {}, t('Xem ngày')), picker]),
-      chip,
-    ]),
-    list, sentinel, status, more,
+    el('div.exphistory__tools', {}, [toggle, reset]),
+    rangeBox,
+    summary,
+    list, status, more,
   ]);
 }
 
