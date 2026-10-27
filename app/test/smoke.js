@@ -1518,6 +1518,7 @@ async function main() {
     const prevWeek = await get('learner', `/api/expenses?from=${prevFrom}&to=${prevTo}`);
     check('Xem chi tiêu theo khoảng ngày (tuần trước)', prevWeek.status === 200 && prevWeek.json.range === 'custom' && prevWeek.json.from === prevFrom
       && prevWeek.json.expenses.every((e) => e.spent_on >= prevFrom && e.spent_on <= prevTo));
+    check('Sổ chi biết ngày có khoản chi sớm nhất (để dừng tải tiếp)', typeof prevWeek.json.earliest === 'string' && prevWeek.json.earliest <= wk.from);
     check('Khoảng ngày sai / quá 1 năm bị từ chối', (await get('learner', `/api/expenses?from=${prevTo}&to=${prevFrom}`)).status === 400
       && (await get('learner', '/api/expenses?from=2024-01-01&to=2026-01-01')).status === 400);
 
