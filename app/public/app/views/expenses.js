@@ -563,11 +563,9 @@ function historySection(ctx, categories, rerender) {
 
   showDefault();
   return el('div', {}, [
-    el('div.expweek__head', {}, [
-      el('h2', {}, t('Ghi chép chi tiêu')),
-      el('button.loverhome__link', { onclick: () => ctx.navigate('/expenses/report') }, `${t('Báo cáo chi tiết')} →`),
-    ]),
-    el('div.exphistory__tools', {}, [toggle, reset]),
+    // Thay chỗ "Báo cáo chi tiết" cũ: chọn khoảng ngày ngay trên đầu mục.
+    el('div.expweek__head', {}, [el('h2', {}, t('Ghi chép chi tiêu')), toggle]),
+    el('div.exphistory__tools', {}, [reset]),
     rangeBox,
     summary,
     list, status, more,
