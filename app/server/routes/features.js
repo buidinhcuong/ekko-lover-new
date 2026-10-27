@@ -517,6 +517,9 @@ export function expensePayload(userId, spec = resolveRange()) {
     byCategory: byCategory.map((c) => ({ ...c, percent: total ? Math.round((c.total / total) * 100) : 0 })),
     categories: categories(),
     totals: { total, today: todayTotal, count: list.length },
+    // Ngày có khoản chi sớm nhất của người dùng — sổ chi ở màn Ghi chép biết khi
+    // nào đã kéo hết lịch sử, khỏi tải tiếp các tuần trống.
+    earliest: get('SELECT MIN(spent_on) d FROM expenses WHERE user_id = ?', userId)?.d || null,
     monthBudget: budgetSummary(userId, spec.month),
   };
 }
