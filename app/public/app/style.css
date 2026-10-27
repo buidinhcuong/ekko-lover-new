@@ -3368,24 +3368,23 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .loverhome__chartdiff.is-down { color: var(--text-success, #079455); }
 .loverhome__chartbody.is-loading { opacity: .5; transition: opacity .15s; }
 
-/* Ghi chép chi tiêu: sổ theo tuần, kéo xuống tải tiếp, chọn một ngày để xem. */
-.exphistory__tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-8); margin-bottom: var(--spacing-12); }
-.exphistory__pick { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: var(--radius-full); border: 1px solid var(--border-primary); background: var(--bg-primary); font-size: var(--font-size-text-xs); font-weight: var(--font-weight-semibold); color: var(--text-primary); cursor: pointer; }
-.exphistory__pick:focus-within { border-color: var(--border-brand); box-shadow: 0 0 0 3px var(--bg-brand-50); }
-/* Ô ngày phủ trong suốt lên nút: chạm vào là mở lịch của máy. */
-.exphistory__date { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.exphistory__date::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
-.exphistory__chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; border-radius: var(--radius-full); background: var(--bg-brand-50); color: var(--text-brand-500); font-size: var(--font-size-text-xs); }
-.exphistory__chip[hidden] { display: none; }
-.exphistory__chip button { height: 28px; padding: 0 10px; border: 0; border-radius: var(--radius-full); background: var(--bg-primary); color: var(--text-brand-500); font: inherit; font-weight: var(--font-weight-semibold); cursor: pointer; }
-.exphistory { display: grid; gap: var(--spacing-16); }
-.exphistory__week { display: grid; gap: var(--spacing-10); }
-.exphistory__weekhead { position: sticky; top: calc(var(--status-h) + var(--hud-height, 0px)); z-index: 3; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 14px; border-radius: var(--radius-12); background: var(--bg-brand-50); box-shadow: 0 1px 0 var(--bg-primary); font-size: var(--font-size-text-xs); color: var(--text-secondary); }
-.exphistory__weekhead b { font-size: var(--font-size-text-sm); color: var(--text-primary); }
+/* Ghi chép chi tiêu: 5 ngày gần nhất, "Xem thêm", hoặc chọn khoảng ngày. */
+.exphistory__tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-8); margin-bottom: var(--spacing-10); }
+.exphistory__pick, .exphistory__reset { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: var(--radius-full); border: 1px solid var(--border-primary); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-xs); font-weight: var(--font-weight-semibold); color: var(--text-primary); cursor: pointer; }
+.exphistory__pick[aria-expanded="true"] { border-color: var(--border-brand); color: var(--text-brand-500); background: var(--bg-brand-50); }
+.exphistory__reset { border-color: transparent; background: var(--bg-brand-50); color: var(--text-brand-500); }
+.exphistory__reset[hidden] { display: none; }
+.exphistory__pick:focus-visible, .exphistory__reset:focus-visible, .exphistory__go:focus-visible, .exphistory__more:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--bg-brand-50); }
+.exphistory__range { display: flex; align-items: center; gap: 6px; margin-bottom: var(--spacing-12); }
+.exphistory__range[hidden] { display: none; }
+.exphistory__date { flex: 1; min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--border-primary); border-radius: var(--radius-12); background: var(--bg-primary); font: inherit; font-size: 14px; }
+.exphistory__go { flex: none; height: 40px; padding: 0 16px; border: 0; border-radius: var(--radius-full); background: var(--bg-brand-500); color: #fff; font: inherit; font-weight: var(--font-weight-semibold); cursor: pointer; }
+.exphistory__summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px; margin-bottom: var(--spacing-12); padding: 10px 14px; border-radius: var(--radius-12); background: var(--bg-brand-50); font-size: var(--font-size-text-xs); color: var(--text-secondary); }
+.exphistory__summary:empty { display: none; }
+.exphistory__summary b { color: var(--text-primary); font-size: var(--font-size-text-sm); }
+.exphistory { display: grid; gap: var(--spacing-10); }
 .exphistory__gap { padding: 8px 14px; border-radius: var(--radius-12); border: 1px dashed var(--border-secondary); font-size: var(--font-size-text-xs); color: var(--text-tertiary); text-align: center; }
-.expdaycard.is-picked { box-shadow: 0 0 0 2px var(--border-brand); }
-.exphistory__sentinel { height: 1px; }
 .exphistory__status { padding: 12px 0 4px; text-align: center; font-size: var(--font-size-text-xs); }
 .exphistory__status:empty { display: none; }
-.exphistory__more { display: block; width: 100%; height: 44px; margin-top: 8px; border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); font-weight: var(--font-weight-semibold); color: var(--text-brand-500); cursor: pointer; }
+.exphistory__more { display: block; width: 100%; height: 44px; margin-top: 12px; border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-primary); font: inherit; font-size: var(--font-size-text-sm); font-weight: var(--font-weight-semibold); color: var(--text-brand-500); cursor: pointer; }
 .exphistory__more[hidden] { display: none; }
