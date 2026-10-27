@@ -388,30 +388,48 @@ function chainTile({ list, current, earned }, helpers) {
   ]);
 }
 
+/** Một bậc trong chuỗi: chạm để mở / thu ô "cách đạt" ngay dưới dòng (không tốn chỗ khi đóng). */
+function chainRow(b, ruleTextFn) {
+  const tip = b.earned ? null : badgeTip(b);
+  if (tip) tip.hidden = true;
+  const row = el(`div.row.badgechainrow${tip ? '.is-tappable' : ''}`, tip ? {
+    role: 'button', tabindex: '0', 'aria-expanded': 'false',
+    onclick: () => toggleTip(),
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTip(); } },
+  } : {}, [
+    el('span.row__icon', { style: { fontSize: '20px', filter: b.earned ? 'none' : 'grayscale(1)', opacity: b.earned ? '1' : '.5' } }, b.icon || '🏅'),
+    el('div.row__main', {}, [
+      el('div.row__title', {}, b.name),
+      el('div.row__sub', {}, b.earned
+        ? t('Đạt được ngày {day}', { day: formatDay(b.awarded_at?.slice(0, 10)) })
+        : `${b.progress || 0}/${b.rule_value} · ${ruleTextFn(b)}`),
+    ]),
+    el('span.row__value', { style: { color: b.claimable ? 'var(--text-brand-500)' : 'var(--text-secondary)' } },
+      b.claimable ? t('Chờ nhận') : `+${b.xp_reward} XP`),
+    tip ? el('span.badgechainrow__chev', { 'aria-hidden': 'true' }, '›') : null,
+  ]);
+  function toggleTip() {
+    tip.hidden = !tip.hidden;
+    row.setAttribute('aria-expanded', String(!tip.hidden));
+  }
+  return tip ? el('div.badgechain__item', {}, [row, tip]) : row;
+}
+
 function openChain(list, current, { reward, ruleText }) {
   sheet({
     title: current.name,
     body: [
       el('div', { style: { textAlign: 'center', fontSize: 'var(--font-size-display-lg)', lineHeight: '64px', filter: current.earned ? 'none' : 'grayscale(1)', opacity: current.earned ? '1' : '.45' } }, current.icon || '🏅'),
       el('p', { style: { textAlign: 'center' } }, current.description || ''),
-      el('p.muted', { style: { textAlign: 'center' } }, current.earned
-        ? t('Đạt được ngày {day}', { day: formatDay(current.awarded_at?.slice(0, 10)) })
-        : t('Điều kiện: {rule}', { rule: ruleText(current) })),
+      current.earned
+        ? el('p.muted', { style: { textAlign: 'center' } }, t('Đạt được ngày {day}', { day: formatDay(current.awarded_at?.slice(0, 10)) }))
+        : badgeTip(current),
       reward(current),
       list.length > 1 ? el('div.section-title', {}, [t('Các bậc trong chuỗi')]) : null,
       list.length > 1
-        ? el('div.card', { style: { paddingTop: '0', paddingBottom: '0' } }, list.map((b) => el('div.row', {}, [
-          el('span.row__icon', { style: { fontSize: '20px', filter: b.earned ? 'none' : 'grayscale(1)', opacity: b.earned ? '1' : '.5' } }, b.icon || '🏅'),
-          el('div.row__main', {}, [
-            el('div.row__title', {}, b.name),
-            el('div.row__sub', {}, b.earned
-              ? t('Đạt được ngày {day}', { day: formatDay(b.awarded_at?.slice(0, 10)) })
-              : `${b.progress || 0}/${b.rule_value} · ${ruleText(b)}`),
-          ]),
-          el('span.row__value', { style: { color: b.claimable ? 'var(--text-brand-500)' : 'var(--text-secondary)' } },
-            b.claimable ? t('Chờ nhận') : `+${b.xp_reward} XP`),
-        ])))
+        ? el('div.card', { style: { paddingTop: '0', paddingBottom: '0' } }, list.map((b) => chainRow(b, ruleText)))
         : null,
+      list.length > 1 ? el('p.muted.badgetip__hint', {}, t('Chạm vào một bậc để xem cách đạt.')) : null,
     ],
   });
 }
@@ -592,6 +610,54 @@ function activityRow(entry) {
       el('div.row__sub', {}, `${label} · ${formatDay(entry.day)}`),
     ]),
     entry.xp ? el('span.row__value', { style: { color: 'var(--text-brand-500)' } }, `+${entry.xp} XP`) : null,
+  ]);
+}
+
+/**
+ * Gợi ý NÊN LÀM GÌ để đạt huy hiệu (khác ruleText chỉ nói điều kiện): một câu
+ * ngắn + chức năng để mở thẳng tới. Dùng trong ô gợi ý chạm-để-mở của huy hiệu.
+ */
+const HOW_TO = {
+  lessons_completed: ['Vào Học tập, mỗi bài chỉ vài phút — học xong là được tính.', '/explore', 'Học tập'],
+  modules_completed: ['Học hết các bài trong một mô đun ở Học tập.', '/explore', 'Học tập'],
+  quiz_perfect: ['Làm bài trắc nghiệm cuối mô đun và trả lời đúng hết các câu.', '/explore', 'Học tập'],
+  features_distinct: ['Thử lần lượt các chức năng: Học tập, Mục tiêu, Ngân sách, Ghi chép, Tiết kiệm.', '/', 'Màn chính'],
+  expense_days_streak: ['Mỗi ngày ghi ít nhất một khoản chi, đừng bỏ ngày nào.', '/expenses', 'Ghi chép'],
+  quick_logs: ['Gõ nhanh ở thanh "Ghi nhanh" (vd "cà phê 35k"), nhắn Ekko bot hoặc chụp hoá đơn.', '/expenses', 'Ghi chép'],
+  budget_months_kept: ['Lập ngân sách tháng và giữ chi tiêu không vượt tới hết tháng.', '/budget', 'Ngân sách'],
+  goal_deposits: ['Mở một mục tiêu tiết kiệm và nạp tiền vào, mỗi lần nạp được tính một lần.', '/goals', 'Mục tiêu'],
+  news_read: ['Đọc các tin tức, mẹo tài chính ở cuối màn chính.', '/news', 'Tin tức'],
+  streak_days: ['Mỗi ngày làm ít nhất một việc (học, ghi chi tiêu, lập ngân sách…) để chuỗi không bị đứt.', '/', 'Màn chính'],
+  streak_recovered: ['Giữ chuỗi ngày bằng cách hoạt động đều mỗi ngày.', '/', 'Màn chính'],
+  feature_used: ['Dùng chức năng này mỗi ngày — mỗi lần làm thật (lưu, ghi, nạp…) được tính.', null, null],
+  expenses_logged: ['Ghi lại từng khoản chi ở Ghi chép, thanh Ghi nhanh hoặc nhắn Ekko bot.', '/expenses', 'Ghi chép'],
+  goals_created: ['Tạo mục tiêu tài chính mới ở Mục tiêu (vd quỹ khẩn cấp, mua xe).', '/goals', 'Mục tiêu'],
+  goals_completed: ['Nạp đủ số tiền của một mục tiêu để hoàn thành nó.', '/goals', 'Mục tiêu'],
+  budgets_created: ['Lập ngân sách cho các nhóm chi ở Ngân sách.', '/budget', 'Ngân sách'],
+  level_reached: ['Lên cấp bằng XP: học bài, ghi chi tiêu, lập ngân sách và giữ chuỗi mỗi ngày.', '/explore', 'Học tập'],
+  xp_total: ['Tích XP từ học bài, ghi chi tiêu, hoàn thành thử thách và giữ chuỗi mỗi ngày.', '/explore', 'Học tập'],
+  bot_chats: ['Nhắn tin hỏi Ekko bot về chi tiêu, tiết kiệm, quyền lợi lao động…', null, null],
+};
+const FEATURE_ROUTE = { budget: '/budget', goals: '/goals', expenses: '/expenses', savings: '/savings', plans: '/plans', explore: '/explore' };
+
+/** Ô gợi ý "cách đạt": tiến độ, còn thiếu bao nhiêu, nên làm gì, nút mở chức năng. */
+function badgeTip(badge) {
+  const [tip, route0, label0] = HOW_TO[badge.rule_type] || [null, null, null];
+  const route = route0 || (badge.rule_type === 'feature_used' ? FEATURE_ROUTE[badge.rule_target] : null);
+  const label = label0 || (badge.rule_type === 'feature_used' ? featureLabel(badge.rule_target) : null);
+  const progress = Math.min(badge.progress || 0, badge.rule_value);
+  const left = Math.max(0, badge.rule_value - progress);
+  return el('div.badgetip', {}, [
+    el('div.badgetip__progress', {}, [
+      bar(Math.round((progress / Math.max(1, badge.rule_value)) * 100)),
+      el('small', {}, left ? t('{p}/{n} · còn thiếu {left}', { p: progress, n: badge.rule_value, left }) : t('Đủ điều kiện')),
+    ]),
+    el('p.badgetip__rule', {}, [el('b', {}, t('Điều kiện: ')), ruleText(badge)]),
+    tip ? el('p.badgetip__how', {}, [el('b', {}, t('Cách đạt: ')), t(tip)]) : null,
+    route && label ? el('button.badgetip__go', {
+      type: 'button',
+      onclick: (e) => { e.stopPropagation(); closeSheet(); location.hash = route; },
+    }, t('Đi tới {name} →', { name: t(label) })) : null,
   ]);
 }
 
