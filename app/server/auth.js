@@ -164,7 +164,8 @@ function userFromToken(raw) {
   }
   if (config.devMode && seedDemoData(restored.id)) evaluateBadges(restored.id, { autoClaim: true });
   // Đã có phiên tức là đã từng vào app: đừng mở lại onboarding chỉ vì DB mới.
-  run('UPDATE user_state SET lover_intro_at = COALESCE(lover_intro_at, ?) WHERE user_id = ?', nowIso(), restored.id);
+  run(`UPDATE user_state SET lover_intro_at = COALESCE(lover_intro_at, ?), profile_prompted_at = COALESCE(profile_prompted_at, ?)
+        WHERE user_id = ?`, nowIso(), nowIso(), restored.id);
   return restored;
 }
 

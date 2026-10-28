@@ -610,6 +610,55 @@ const EN = {
   'trong {n} {unit} để bù {amount} còn thiếu': 'for {n} {unit} to cover the {amount} still missing',
   'trong {n} {unit} để đạt {amount}': 'for {n} {unit} to reach {amount}',
 
+  // --- Heo Dream Team: trưởng đội -----------------------------------------
+  'Tuỳ chọn cho {name}': 'Options for {name}',
+  'Trao quyền trưởng đội': 'Make team leader',
+  'Mời ra khỏi đội': 'Remove from team',
+  'Trao quyền trưởng đội?': 'Hand over team leader?',
+  '{name} sẽ làm trưởng đội. Bạn vẫn ở trong đội nhưng không còn mời được ai ra khỏi đội nữa.':
+    '{name} will lead the team. You stay on the team but can no longer remove anyone.',
+  'Trao quyền': 'Hand over',
+  '{name} giờ là trưởng đội': '{name} is now the team leader',
+  'Mời {name} ra khỏi đội?': 'Remove {name} from the team?',
+  '{name} sẽ không còn ở trong đội và nhận được thông báo. Muốn quay lại thì cần được mời lại.':
+    '{name} will leave the team and get a notice. They need a new invite to come back.',
+  'Đã mời {name} ra khỏi đội': '{name} was removed from the team',
+  '{name} đã trao quyền trưởng đội cho bạn': '{name} made you the team leader',
+  'Giờ bạn mời được bạn ra khỏi đội và trao quyền trưởng đội cho người khác.':
+    'You can now remove members and hand the lead to someone else.',
+  'Trưởng đội cũ': 'The former leader',
+  '{name} đã mời bạn ra khỏi đội': '{name} removed you from the team',
+  'Bạn vẫn giữ nguyên cấp heo, XP và streak. Lập đội mới hoặc nhận lời mời khác nhé.':
+    'Your pig level, XP and streak stay the same. Start a new team or accept another invite.',
+  'Bạn đang là trưởng đội. Rời đi thì {name} (vào đội sớm nhất) làm trưởng đội. Muốn chọn người khác, hãy trao quyền trưởng đội trước.':
+    'You are the team leader. If you leave, {name} (the longest member) takes over. To pick someone else, hand over the lead first.',
+
+  // --- thông tin cá nhân (views/profile.js) ------------------------------
+  'Chỉnh sửa thông tin cá nhân': 'Edit personal info',
+  'Cho Ekko biết thêm về bạn': 'Tell Ekko about yourself',
+  'Ekko dùng thông tin này để gợi ý bài học và mục tiêu hợp với bạn. Bạn sửa lại được bất cứ lúc nào ở trang Cấp độ heo.':
+    'Ekko uses this to suggest lessons and goals that suit you. You can change it any time on the Pig level page.',
+  'Tên hiển thị': 'Display name',
+  'Giới tính': 'Gender',
+  'Nam': 'Male',
+  'Nữ': 'Female',
+  'Khác': 'Other',
+  'Ngày sinh': 'Date of birth',
+  'Công việc': 'Work',
+  'Công ty': 'Company',
+  'Chức vụ': 'Job title',
+  'Phòng ban / bộ phận': 'Department / team',
+  'Tỉnh / thành phố nơi làm việc': 'City / province you work in',
+  'VD: Nguyễn Thu Hà': 'e.g. Nguyen Thu Ha',
+  'VD: Công ty May Việt Tiến': 'e.g. Viet Tien Garment',
+  'VD: Công nhân, Tổ trưởng, Kế toán': 'e.g. Worker, Team lead, Accountant',
+  'VD: Xưởng may 2': 'e.g. Sewing workshop 2',
+  'VD: TP. Hồ Chí Minh': 'e.g. Ho Chi Minh City',
+  'Lưu thông tin': 'Save',
+  'Hãy nhập tên của bạn': 'Please enter your name',
+  'Đã lưu thông tin cá nhân': 'Personal info saved',
+  'Không lưu được, thử lại nhé': 'Could not save, please try again',
+
   // --- huy hiệu và cấp độ ---------------------------------------------
   'Bộ sưu tập của bạn': 'Your collection',
   'Huy hiệu': 'Badges',
@@ -733,6 +782,7 @@ const EN = {
   'Đổi concept': 'Switch concept',
   'Người dùng mới: heo cấp 1, chưa học, chưa có dữ liệu': 'New user: level 1 pig, no lessons, no data yet',
   'Người dùng lâu năm: học hết bài, heo cấp 10, đủ dữ liệu': 'Long-time user: all lessons done, level 10 pig, full data',
+  'Trưởng Heo Dream Team: heo cấp 5, đội 4 heo': 'Dream Team leader: level 5 pig, team of 4',
   'Người dùng đang học: học được khoảng 30% số bài, đã có dữ liệu': 'Learning user: about 30% of lessons done, some data in every tool',
   // Simple mode: màn chủ, Nói để ghi, tour và onboarding riêng
   'Bài học ngắn về tiền bạc': 'Short lessons about money',

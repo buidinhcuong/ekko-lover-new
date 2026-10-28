@@ -1,15 +1,18 @@
 /**
  * Heo Dream Team (tab thứ hai của tabbar Ekko Lover) — xem server/services/teams.js.
  *
- * Từ trên xuống: ID của mình (bấm để chép) + ô mời bạn bằng ID → lời nhắc giữ
- * streak vừa nhận → lời mời đang chờ mình trả lời → đội của mình (xếp theo cấp
- * heo, kèm tiến độ và nút "Nhắc giữ streak") → lời mời mình đã gửi → Rời đội.
+ * Từ trên xuống: ID của mình (bấm để chép) + ô mời bạn bằng ID → thông báo bị
+ * mời ra khỏi đội / được trao quyền trưởng đội → lời nhắc giữ streak vừa nhận →
+ * lời mời đang chờ mình trả lời → đội của mình (xếp theo cấp heo, kèm tiến độ
+ * và nút "Nhắc giữ streak"; trưởng đội có thêm nút ⋮ trên từng bạn để trao quyền
+ * trưởng đội hoặc mời ra khỏi đội) → lời mời mình đã gửi → Rời đội.
  */
-import { api, el, guard, mount, toast, uiIcon } from '/shared/client.js';
+import { api, el, guard, mount, spriteIcon, toast, uiIcon } from '/shared/client.js';
 import { t } from '../i18n.js';
-import { confirmSheet, friendCodeChip } from '../ui.js';
+import { closeSheet, confirmSheet, friendCodeChip, sheet } from '../ui.js';
 
-const pig = (level) => el('img.teamrow__pig', { src: level?.image || '/assets/levels/pig-1.png', alt: '' });
+// Khung tròn bọc ảnh heo: Ekko Lover chỉ lấy mặt, cổ và ngực (style.css · .teamrow__pig).
+const pig = (level) => el('span.teamrow__pig', {}, [el('img', { src: level?.image || '/assets/levels/pig-1.png', alt: '' })]);
 const levelLine = (p) => t('Cấp {n} · {name}', { n: p.level?.order ?? 1, name: p.level?.name ?? '' });
 
 export default async function teamView(ctx) {
@@ -21,6 +24,11 @@ export default async function teamView(ctx) {
     api.post('/api/team/nudges/seen', {}).then(() => ctx.refreshWorld()).catch(() => {});
   }
   const nudgesToShow = board.nudges;
+  // Thông báo trưởng đội (bị mời ra / được trao quyền): hiện một lần rồi thôi.
+  const noticesToShow = board.notices || [];
+  if (noticesToShow.length) {
+    api.post('/api/team/notices/seen', {}).then(() => ctx.refreshWorld()).catch(() => {});
+  }
 
   /** Gọi một lệnh ghi, vẽ lại bằng bảng mới server trả về. */
   const act = async (button, call, success) => {
@@ -63,6 +71,22 @@ export default async function teamView(ctx) {
       el('div.teamhead__me', {}, [el('span.muted', {}, t('ID của bạn')), friendCodeChip(board.me.friendCode)]),
       form,
     ]);
+  }
+
+  // --- thông báo trưởng đội ----------------------------------------------------
+  function noticeBanners() {
+    return noticesToShow.map((n) => el(`div.card.teamnotice.teamnotice--${n.kind}`, {}, [
+      el('span.teamnotice__icon', {}, uiIcon(n.kind === 'leader' ? 'crown' : 'user-multiple', 20)),
+      el('div', {}, n.kind === 'leader'
+        ? [
+          el('b', {}, t('{name} đã trao quyền trưởng đội cho bạn', { name: n.fromName || t('Trưởng đội cũ') })),
+          el('div.muted', {}, t('Giờ bạn mời được bạn ra khỏi đội và trao quyền trưởng đội cho người khác.')),
+        ]
+        : [
+          el('b', {}, t('{name} đã mời bạn ra khỏi đội', { name: n.fromName || t('Trưởng đội') })),
+          el('div.muted', {}, t('Bạn vẫn giữ nguyên cấp heo, XP và streak. Lập đội mới hoặc nhận lời mời khác nhé.')),
+        ]),
+    ]));
   }
 
   // --- lời nhắc vừa nhận -----------------------------------------------------
@@ -114,6 +138,39 @@ export default async function teamView(ctx) {
     return el('span.teamstatus.teamstatus--off', {}, t('Chưa vào app'));
   }
 
+  /** Trưởng đội: trao quyền trưởng đội hoặc mời một bạn ra khỏi đội. */
+  function openMemberMenu(m) {
+    const transfer = async () => {
+      closeSheet();
+      const ok = await confirmSheet({
+        title: t('Trao quyền trưởng đội?'),
+        message: t('{name} sẽ làm trưởng đội. Bạn vẫn ở trong đội nhưng không còn mời được ai ra khỏi đội nữa.', { name: m.name }),
+        confirmLabel: t('Trao quyền'),
+        tone: 'primary',
+      });
+      if (ok) act(null, () => api.post(`/api/team/members/${m.userId}/owner`, {}), t('{name} giờ là trưởng đội', { name: m.name }));
+    };
+    const remove = async () => {
+      closeSheet();
+      const ok = await confirmSheet({
+        title: t('Mời {name} ra khỏi đội?', { name: m.name }),
+        message: t('{name} sẽ không còn ở trong đội và nhận được thông báo. Muốn quay lại thì cần được mời lại.', { name: m.name }),
+        confirmLabel: t('Mời ra khỏi đội'),
+      });
+      if (ok) act(null, () => api.post(`/api/team/members/${m.userId}/remove`, {}), t('Đã mời {name} ra khỏi đội', { name: m.name }));
+    };
+    sheet({
+      title: m.name,
+      body: [
+        el('div.teammenu__who', {}, [pig(m.level), el('div', {}, [el('b', {}, m.name), el('div.muted', {}, levelLine(m))])]),
+        el('div.teammenu__actions', {}, [
+          el('button.btn.btn--ghost.btn--block.teammenu__btn', { type: 'button', onclick: transfer }, [uiIcon('crown', 18), t('Trao quyền trưởng đội')]),
+          el('button.btn.btn--danger.btn--block.teammenu__btn', { type: 'button', onclick: remove }, [uiIcon('cancel-01', 18), t('Mời ra khỏi đội')]),
+        ]),
+      ],
+    });
+  }
+
   function memberRow(m) {
     let action = null;
     if (!m.isMe && !m.streak.countedToday) {
@@ -147,7 +204,18 @@ export default async function teamView(ctx) {
       // Cột phải: streak, trạng thái hôm nay, nút nhắc. Cao cố định để mọi dòng
       // (đã giữ streak / chưa giữ / chưa vào app) cao bằng nhau.
       el('div.teamrow__side', {}, [
-        el('span.teamrow__streak', {}, [uiIcon(m.streak.status === 'frozen' ? 'snow' : 'fire', 14), t('{n} ngày', { n: m.streak.count })]),
+        // Trưởng đội: nút ⋮ cạnh streak (đặt ở cột phải để không lấn chỗ của tên).
+        el('div.teamrow__sidetop', {}, [
+          el('span.teamrow__streak', {}, [uiIcon(m.streak.status === 'frozen' ? 'snow' : 'fire', 14), t('{n} ngày', { n: m.streak.count })]),
+          board.team.isOwner && !m.isMe
+            ? el('button.teamrow__more', {
+              type: 'button',
+              title: t('Tuỳ chọn cho {name}', { name: m.name }),
+              'aria-label': t('Tuỳ chọn cho {name}', { name: m.name }),
+              onclick: () => openMemberMenu(m),
+            }, spriteIcon('more-vertical-stroke', 16))
+            : null,
+        ]),
         memberStatus(m),
         action,
       ]),
@@ -197,11 +265,17 @@ export default async function teamView(ctx) {
     const button = el('button.btn.btn--ghost.btn--block.teamleave', {
       type: 'button',
       onclick: async () => {
+        // Trưởng đội rời đi: người vào đội sớm nhất làm trưởng đội (services/teams.js).
+        const heir = board.team.isOwner
+          ? board.team.members.filter((m) => !m.isMe).sort((a, b) => a.joinedAt.localeCompare(b.joinedAt) || a.userId - b.userId)[0]
+          : null;
         const ok = await confirmSheet({
           title: t('Rời đội?'),
-          message: board.team.members.length > 1
-            ? t('Bạn sẽ không còn thấy tiến độ của các bạn trong đội. Muốn quay lại thì cần được mời lại.')
-            : t('Đội chỉ còn mình bạn, rời đi thì đội sẽ giải tán.'),
+          message: board.team.members.length === 1
+            ? t('Đội chỉ còn mình bạn, rời đi thì đội sẽ giải tán.')
+            : heir
+              ? t('Bạn đang là trưởng đội. Rời đi thì {name} (vào đội sớm nhất) làm trưởng đội. Muốn chọn người khác, hãy trao quyền trưởng đội trước.', { name: heir.name })
+              : t('Bạn sẽ không còn thấy tiến độ của các bạn trong đội. Muốn quay lại thì cần được mời lại.'),
           confirmLabel: t('Rời đội'),
         });
         if (ok) act(button, () => api.post('/api/team/leave', {}), t('Đã rời đội'));
@@ -211,7 +285,7 @@ export default async function teamView(ctx) {
   }
 
   function draw() {
-    mount(root, inviteCard(), nudgeBanner(), incomingSection(), teamSection(), outgoingSection(), leaveButton());
+    mount(root, inviteCard(), noticeBanners(), nudgeBanner(), incomingSection(), teamSection(), outgoingSection(), leaveButton());
   }
   draw();
   return root;

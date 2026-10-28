@@ -38,11 +38,15 @@ Kiểm thử: `npm run smoke`, hiện có 404 kiểm tra, tất cả đều đ�
 - Ba concept giao diện: **Ekko Lover** (mặc định), **Ekko Lover Colors**,
   **Simple mode**. Concept là một lựa chọn chung cho cả sản phẩm, đổi trong
   Admin portal hoặc qua `/dev/concept?code=...`.
-- Ba người dùng mẫu, chọn bằng các nút tròn trên trang preview hoặc qua
-  `/dev/persona?as=new|mid|veteran`:
+- Bốn người dùng mẫu, chọn bằng các nút tròn trên trang preview hoặc qua
+  `/dev/persona?as=new|mid|veteran|team`:
   - `new`: người mới, heo cấp 1, chưa có dữ liệu, hiện onboarding;
   - `mid`: đã học khoảng 30% bài, có dữ liệu, còn 2 huy hiệu chờ nhận thưởng;
   - `veteran`: học hết bài, heo cấp 10.
+  - `team`: như `mid` (heo cấp 5), làm trưởng một Heo Dream Team 4 heo — 3 bạn
+    cùng đội ở cấp 6 / 4 / 3 (hai bạn nữ, có heo nữ), một bạn đã giữ streak hôm
+    nay, hai bạn chưa (để thử nút Nhắc), kèm XP nhận từ đội. Bấm lại là dựng lại
+    cả đội.
 - **Quy ước đang theo:** thay đổi giao diện mới chỉ áp cho Ekko Lover. Hai
   concept còn lại giữ nguyên trừ khi có yêu cầu riêng.
 

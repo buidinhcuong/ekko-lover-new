@@ -2,7 +2,8 @@
  * Cấp độ heo: the pig ranks.
  *
  * A rank is: a number, an icon, a name, an XP threshold, an optional perk, and
- * the pig artwork. Editing happens in a centred modal because the form reads
+ * the pig artwork — one shared image plus an optional one for members who pick
+ * "Nữ" in their profile (empty = they see the shared image). Editing happens in a centred modal because the form reads
  * better in two columns than in the side drawer.
  */
 import { el } from '/shared/client.js';
@@ -25,11 +26,14 @@ export default async function levels(ctx) {
     thresholdWarning(rows),
 
     table(
-      [{ label: '#' }, { label: 'Heo' }, { label: 'Tên' }, { label: 'Min XP' }, { label: 'Phúc lợi' }, { label: '' }],
+      [{ label: '#' }, { label: 'Heo' }, { label: 'Heo nữ' }, { label: 'Tên' }, { label: 'Min XP' }, { label: 'Phúc lợi' }, { label: '' }],
       rows,
       (row) => el('tr', {}, [
         el('td', {}, String(row.order_index)),
         el('td', {}, [row.character_image ? el('img.thumb', { src: row.character_image, alt: '' }) : '—']),
+        el('td', {}, [row.character_image_female
+          ? el('img.thumb', { src: row.character_image_female, alt: '' })
+          : el('span', { style: { color: 'var(--text-tertiary)' }, title: 'Chưa có ảnh: người dùng nữ thấy ảnh heo chung' }, '—')]),
         el('td', {}, [
           el('span', { style: { display: 'inline-flex', alignItems: 'center', gap: '8px' } }, [
             row.emoji ? cellIcon(row.emoji, 'piggy-bank') : null,
@@ -74,6 +78,12 @@ function edit(ctx, row, rows) {
     xp_required: numberField({ label: 'XP tối thiểu', value: row?.xp_required ?? 0, required: true }),
     perk: textAreaField({ label: 'Phúc lợi', value: row?.perk, rows: 3, placeholder: 'Người học được gì khi đạt cấp này' }),
     character_image: assetField({ label: 'Ảnh nhân vật heo', value: row?.character_image, uploader: ctx.uploader }),
+    character_image_female: assetField({
+      label: 'Ảnh nhân vật heo (nữ)',
+      value: row?.character_image_female,
+      hint: 'Hiện cho người dùng chọn giới tính Nữ. Để trống thì dùng ảnh heo chung.',
+      uploader: ctx.uploader,
+    }),
   };
 
   modal({
@@ -83,7 +93,7 @@ function edit(ctx, row, rows) {
       [fields.name],
       [fields.xp_required],
       [fields.perk],
-      [fields.character_image],
+      [fields.character_image, fields.character_image_female],
     ],
     onSave: async () => {
       const body = Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.get()]));

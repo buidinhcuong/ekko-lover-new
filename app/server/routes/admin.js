@@ -37,7 +37,7 @@ const UPLOAD_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'pu
 const ENTITIES = {
   levels: {
     table: 'levels',
-    columns: ['order_index', 'name', 'emoji', 'perk', 'xp_required', 'island_image', 'character_image', 'is_active'],
+    columns: ['order_index', 'name', 'emoji', 'perk', 'xp_required', 'island_image', 'character_image', 'character_image_female', 'is_active'],
     required: ['name'],
     order: 'order_index',
   },

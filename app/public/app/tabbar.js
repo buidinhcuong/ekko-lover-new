@@ -55,7 +55,7 @@ export function buildTabbar(navigate) {
     const teamTab = bar.querySelector('[data-route="/team"]');
     // Super admin tắt Heo Dream Team: ẩn tab (giữ chỗ để mascot vẫn đứng giữa).
     if (teamTab) teamTab.style.visibility = world?.modules?.team === false ? 'hidden' : '';
-    teamTab?.classList.toggle('has-dot', Boolean(alerts && (alerts.invites || alerts.nudges?.length)));
+    teamTab?.classList.toggle('has-dot', Boolean(alerts && (alerts.invites || alerts.nudges?.length || alerts.notices)));
   };
   return bar;
 }

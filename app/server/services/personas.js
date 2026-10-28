@@ -1,7 +1,7 @@
 /**
- * Ba người dùng dựng sẵn cho bản demo — nút chuyển nằm ngoài khung điện thoại,
+ * Bốn người dùng dựng sẵn cho bản demo — nút chuyển nằm ngoài khung điện thoại,
  * cạnh nút về trang chính (xem `public/app/main.js`). Chỉ dùng ở chế độ phát
- * triển / demo, qua `/dev/persona?as=new|mid|veteran`.
+ * triển / demo, qua `/dev/persona?as=new|mid|veteran|team`.
  *
  * - `new`     — người vừa vào chức năng: heo cấp 1, 0 XP, chưa học bài nào,
  *               chưa có dữ liệu ở chức năng nào, chưa xem onboarding.
@@ -10,6 +10,11 @@
  *               có dữ liệu nhưng ít hơn.
  * - `veteran` — người đã dùng Ekko Lover khoảng 4 tháng: học hết mọi bài và làm
  *               hết trắc nghiệm, heo cấp cao nhất, mọi chức năng đều có dữ liệu.
+ * - `team`    — cùng dữ liệu với `mid` (heo cấp 5), thêm Heo Dream Team 4 heo do
+ *               chính người này làm trưởng đội: 3 bạn cùng đội ở cấp và streak
+ *               khác nhau (có bạn đã giữ streak hôm nay, có bạn chưa — để thử
+ *               nút Nhắc), cùng XP nhận từ đội trong mấy tuần qua. Bạn cùng đội
+ *               là người dùng phụ `demo-persona-team:<tên>`, xoá cùng persona.
  *
  * Mỗi lần bấm là dựng lại từ đầu (xoá người dùng cũ rồi tạo lại), nên demo
  * lúc nào cũng mở ra đúng một trạng thái, dù lần trước đã bấm gì bên trong.
@@ -18,6 +23,7 @@ import { all, get, run, tx } from '../db.js';
 import { addDays, dayKey, nowIso, shiftMonth } from '../lib/time.js';
 import { evaluateBadges, learningXp, levelForXp, levels } from './progression.js';
 import { skipOnboardingChallenges } from './challenges.js';
+import { readState } from './streak.js';
 
 const EMPLOYER = 'Công ty TNHH Minh Phát';
 
@@ -25,6 +31,7 @@ export const PERSONAS = {
   new: { sub: 'demo-persona-new', name: 'Lê Minh Khang', email: 'khang.le@congty.vn' },
   mid: { sub: 'demo-persona-mid', name: 'Võ Thanh Tâm', email: 'tam.vo@congty.vn' },
   veteran: { sub: 'demo-persona-veteran', name: 'Phạm Thu Hà', email: 'ha.pham@congty.vn' },
+  team: { sub: 'demo-persona-team', name: 'Đặng Quốc Bảo', email: 'bao.dang@congty.vn' },
 };
 
 /** Mã persona của một người dùng (theo mã Ekko), hoặc null nếu là người thường. */
@@ -45,15 +52,23 @@ export function personaClaims(key) {
   return { sub: p.sub, name: p.name, email: p.email, employer: EMPLOYER, role: 'admin' };
 }
 
-/** Xoá sạch người dùng của persona (mọi bảng con xoá theo nhờ ON DELETE CASCADE). */
+/**
+ * Xoá sạch người dùng của persona và người dùng phụ của nó (bạn cùng Dream Team,
+ * `<sub>:<tên>`). Mọi bảng con xoá theo nhờ ON DELETE CASCADE, kể cả đội.
+ */
 export function dropPersona(key) {
-  run('DELETE FROM users WHERE ekko_user_id = ?', PERSONAS[key].sub);
+  const { sub } = PERSONAS[key];
+  run('DELETE FROM users WHERE ekko_user_id = ? OR ekko_user_id LIKE ?', sub, `${sub}:%`);
 }
 
 /** Nạp dữ liệu cho persona vừa tạo. Người dùng mới thì không có gì để nạp. */
 export function buildPersona(key, userId) {
   const profile = PROFILES[key];
-  if (profile) tx(() => buildActive(userId, profile));
+  if (!profile) return;
+  tx(() => {
+    buildActive(userId, profile);
+    if (profile.team) buildDreamTeam(userId, PERSONAS[key].sub, profile.team);
+  });
 }
 
 // --- người dùng đã dùng một thời gian --------------------------------------
@@ -171,6 +186,95 @@ const PROFILES = {
     topLevel: true,           // luôn ở cấp cao nhất
   },
 };
+
+/**
+ * Bạn cùng Heo Dream Team của persona `team`.
+ * [khoá, tên, giới tính, cấp, % quãng tới cấp sau, streak, kỷ lục, giữ streak lần cuối
+ *  (0 = hôm nay, 1 = hôm qua), hôm nay đã mở app, vào đội cách đây (ngày)]
+ */
+const TEAM_MATES = [
+  ['mai', 'Trần Thị Mai', 'female', 6, 0.55, 21, 21, 0, true, 34],
+  ['hung', 'Đỗ Văn Hùng', 'male', 4, 0.3, 8, 14, 1, false, 30],
+  ['linh', 'Phan Ngọc Linh', 'female', 3, 0.7, 3, 9, 1, true, 12],
+];
+
+PROFILES.team = { ...PROFILES.mid, seed: 20261028, team: TEAM_MATES };
+
+/** XP ở `share` quãng đường từ cấp `order` tới cấp kế tiếp. */
+function xpAtLevel(order, share) {
+  const list = levels();
+  const lv = list.find((l) => l.order_index === order) || list.at(-1);
+  const next = list.find((l) => l.order_index > lv.order_index);
+  return Math.round(lv.xp_required + ((next?.xp_required ?? lv.xp_required + 100) - lv.xp_required) * share);
+}
+
+/**
+ * Lập Heo Dream Team cho persona: persona là trưởng đội, mỗi bạn cùng đội là một
+ * người dùng phụ cùng công ty, vào đội qua lời mời đã chấp nhận của trưởng đội.
+ * Persona đã nhận XP từ đội (10% XP bạn kiếm, như `shareXpWithTeam`) mấy tuần
+ * qua; phần nằm trong cấp hiện tại tô vàng trên thanh tiến độ.
+ */
+function buildDreamTeam(leaderId, sub, mates) {
+  const today = dayKey();
+  const rand = seeded(PROFILES.team.seed + 7);
+  const at = (day, hour = 9) => `${day}T${String(hour).padStart(2, '0')}:00:00.000Z`;
+  const founded = addDays(today, -Math.max(...mates.map((m) => m[9])));
+
+  const teamId = Number(run('INSERT INTO teams (owner_id, created_at) VALUES (?, ?)', leaderId, at(founded)).lastInsertRowid);
+  run('INSERT INTO team_members (user_id, team_id, joined_at) VALUES (?, ?, ?)', leaderId, teamId, at(founded));
+
+  const mateIds = [];
+  for (const [key, name, gender, order, share, streak, best, lastActiveAgo, openedToday, joinedAgo] of mates) {
+    const joined = addDays(today, -joinedAgo);
+    const created = addDays(joined, -20);
+    const id = Number(run(
+      `INSERT INTO users (ekko_user_id, name, email, employer, role, created_at, last_seen_at)
+       VALUES (?, ?, ?, ?, 'member', ?, ?)`,
+      `${sub}:${key}`, name, `${key}.demo@congty.vn`, EMPLOYER, at(created), at(openedToday ? today : addDays(today, -1)),
+    ).lastInsertRowid);
+    readState(id);
+    const xp = xpAtLevel(order, share);
+    const lastActive = addDays(today, -lastActiveAgo);
+    run(
+      `UPDATE user_state SET xp = ?, level_id = ?, streak_count = ?, streak_best = ?, last_active_day = ?,
+              streak_started_day = ?, last_open_day = ?, lover_intro_at = ?, profile_prompted_at = ?, updated_at = ?
+        WHERE user_id = ?`,
+      xp, levelForXp(xp)?.id ?? null, streak, best, lastActive, addDays(lastActive, -(streak - 1)),
+      openedToday ? today : lastActive, at(created), at(created), nowIso(), id,
+    );
+    // Giới tính để thấy heo nữ trong danh sách đội.
+    run(
+      'INSERT INTO user_profiles (user_id, display_name, gender, company, updated_at) VALUES (?, ?, ?, ?, ?)',
+      id, name, gender, EMPLOYER, at(created),
+    );
+    run(
+      `INSERT INTO team_invites (from_user_id, to_user_id, status, created_at, responded_at)
+       VALUES (?, ?, 'accepted', ?, ?)`,
+      leaderId, id, at(addDays(joined, -1), 20), at(joined, 8),
+    );
+    run('INSERT INTO team_members (user_id, team_id, joined_at) VALUES (?, ?, ?)', id, teamId, at(joined, 8));
+    mateIds.push({ id, name, joined });
+  }
+
+  // XP từ đội: mỗi ngày bạn nào đã vào đội có khi học bài / check-in → trưởng đội nhận 10%.
+  let total = 0;
+  let recent = 0;
+  for (let ago = Math.max(...mates.map((m) => m[9])); ago >= 0; ago -= 1) {
+    const day = addDays(today, -ago);
+    for (const mate of mateIds) {
+      if (day < mate.joined || rand() > 0.55) continue;
+      const amount = rand() < 0.5 ? 3 : 1;   // 10% của bài học (30 XP) hoặc check-in (10 XP)
+      run(
+        'INSERT INTO activity_log (user_id, kind, ref, day, xp, meta, created_at) VALUES (?,?,?,?,?,?,?)',
+        leaderId, 'team_xp', String(mate.id), day, amount, JSON.stringify({ name: mate.name }), at(day, 19),
+      );
+      total += amount;
+      if (ago <= 10) recent += amount;
+    }
+  }
+  // XP tổng của persona giữ đúng mốc cấp 5 như `mid`; chỉ đánh dấu phần nào là từ đội.
+  run('UPDATE user_state SET team_xp_total = ?, team_xp_level = ? WHERE user_id = ?', total, recent, leaderId);
+}
 
 function buildActive(userId, P) {
   const JOINED_DAYS_AGO = P.joinedDaysAgo;
@@ -386,8 +490,8 @@ function buildActive(userId, P) {
   // ---- Trạng thái: chuỗi, đã xem onboarding, XP và cấp ------------------
   run(
     `UPDATE user_state SET streak_count = ?, streak_best = ?, last_active_day = ?, streak_started_day = ?,
-            lover_intro_at = ?, updated_at = ? WHERE user_id = ?`,
-    STREAK, P.best, today, addDays(today, -(STREAK - 1)), at(joined), nowIso(), userId,
+            lover_intro_at = ?, profile_prompted_at = ?, updated_at = ? WHERE user_id = ?`,
+    STREAK, P.best, today, addDays(today, -(STREAK - 1)), at(joined), at(joined), nowIso(), userId,
   );
   const target = P.levelOrder ? (() => {
     const list = levels();

@@ -579,6 +579,26 @@ addColumn('user_state', 'last_open_day', 'TEXT');
 // nay, và phần nằm trong cấp hiện tại (để thanh tiến độ tô màu riêng).
 addColumn('user_state', 'team_xp_total', 'INTEGER NOT NULL DEFAULT 0');
 addColumn('user_state', 'team_xp_level', 'INTEGER NOT NULL DEFAULT 0');
+// Thông tin cá nhân người dùng tự khai (services/profile.js). Tách khỏi `users` vì
+// SSO ghi đè tên / công ty mỗi lần đăng nhập, và `users.employer` còn dùng để
+// khoanh dữ liệu theo công ty — sửa hồ sơ không được đụng tới phạm vi đó.
+db.exec(`
+CREATE TABLE IF NOT EXISTS user_profiles (
+  user_id      INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  display_name TEXT,
+  gender       TEXT CHECK (gender IN ('male','female','other')),
+  birth_date   TEXT,                           -- YYYY-MM-DD
+  company      TEXT,
+  job_title    TEXT,
+  department   TEXT,
+  city         TEXT,
+  updated_at   TEXT NOT NULL
+);
+`);
+// Lúc màn "Thông tin cá nhân" tự mở lần đầu (sau onboarding + tour). NULL = chưa mở.
+addColumn('user_state', 'profile_prompted_at', 'TEXT');
+// Ảnh heo cho người dùng chọn giới tính Nữ. Trống thì dùng ảnh chung `character_image`.
+addColumn('levels', 'character_image_female', 'TEXT');
 db.exec(`
 CREATE TABLE IF NOT EXISTS teams (
   id         INTEGER PRIMARY KEY,
@@ -622,6 +642,17 @@ CREATE TABLE IF NOT EXISTS team_nudges (
   seen_at      TEXT,
   UNIQUE (from_user_id, to_user_id, day)
 );
+-- Thông báo một lần cho người bị trưởng đội mời ra khỏi đội (removed) hoặc vừa
+-- được trao quyền trưởng đội (leader) — hiện ở đầu màn Heo Dream Team.
+CREATE TABLE IF NOT EXISTS team_notices (
+  id           INTEGER PRIMARY KEY,
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind         TEXT NOT NULL CHECK (kind IN ('removed','leader')),
+  from_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at   TEXT NOT NULL,
+  seen_at      TEXT
+);
+CREATE INDEX IF NOT EXISTS team_notices_user ON team_notices(user_id, seen_at);
 `);
 // --- EkkoFeed: người lao động góp ý tới doanh nghiệp (services/ekkoFeed.js) ---
 db.exec(`

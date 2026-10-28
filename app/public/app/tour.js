@@ -51,13 +51,14 @@ let running = null;
 
 const visible = (node) => node && node.getClientRects().length > 0 && getComputedStyle(node).display !== 'none';
 
-export function startHomeTour() {
+/** `onDone`: chạy khi tour kết thúc, kể cả bấm "Bỏ qua" (onboarding.js mở Thông tin cá nhân). */
+export function startHomeTour({ onDone = null } = {}) {
   if (running) return;
   const concept = document.documentElement.dataset.concept;
   const list = concept === 'simple' ? SIMPLE_STEPS : concept === 'lover' ? LOVER_STEPS : STEPS;
   const steps = list.filter((s) => visible(document.querySelector(s.target)));
   const scroller = document.getElementById('scroll');
-  if (!steps.length) return;
+  if (!steps.length) { onDone?.(); return; }
 
   const root = getOverlayRoot();
   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -163,6 +164,7 @@ export function startHomeTour() {
     layer.remove();
     unlockScroll();
     document.body.classList.remove('is-modal');
+    onDone?.();
   }
 
   running = { stop };

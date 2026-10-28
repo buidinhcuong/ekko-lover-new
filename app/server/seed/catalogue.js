@@ -18,6 +18,8 @@
  *
  * Ảnh heo của Đi Học, Nhân Viên (sơ mi trắng, không áo khoác), Gia Đình, Phát
  * Triển và Tích Lũy là bộ vẽ mới chủ sản phẩm tải lên (`*-2.png`, `pig-saver.png`).
+ * Bộ heo nữ (`pig-female-<cấp>.png`) hiện cho người dùng chọn giới tính Nữ ở
+ * Thông tin cá nhân — xem services/profile.js.
  */
 export const LEVELS = [
   { order_index: 1,  name: 'Heo Mầm Non',     emoji: 'plant-02',       xp_required: 0,    pig: 'pig-1' },
@@ -34,6 +36,7 @@ export const LEVELS = [
   ...level,
   perk: '',
   character_image: `/assets/levels/${pig}.png`,
+  character_image_female: `/assets/levels/pig-female-${level.order_index}.png`,
 }));
 
 /** Ngưỡng XP của các bản thang trước — chỉ cấp còn đúng một trong các số này mới được đổi. */

@@ -378,6 +378,13 @@ streak chưa xem. Hai concept còn lại không có tabbar.
   người khác thì nút Đồng ý bị khoá — phải **Rời đội** trước. Đội chỉ có mình thì
   tự giải tán khi vào đội khác. Trưởng đội rời đi thì người vào sớm nhất lên thay;
   đội hết người thì xoá. Rời / đổi đội thì huỷ các lời mời mình đã gửi.
+- **Trưởng đội** có nút ⋮ cạnh streak của từng bạn: **Trao quyền trưởng đội**
+  (`POST /api/team/members/:id/owner`, mình vẫn ở trong đội) và **Mời ra khỏi
+  đội** (`POST /api/team/members/:id/remove`, huỷ lời mời người đó đã gửi). Cả hai
+  hỏi xác nhận. Người bị mời ra / được trao quyền nhận thông báo một lần ở đầu màn
+  Dream Team và chấm đỏ trên tab (`team_notices`, xem rồi thì
+  `POST /api/team/notices/seen`). Trưởng đội bấm Rời đội thì được báo trước ai sẽ
+  lên thay.
 - Danh sách thành viên xếp theo **cấp heo rồi XP**: tên, cấp, XP, thanh tiến độ
   lên cấp, streak và trạng thái hôm nay (đã giữ streak / đã vào app nhưng chưa
   giữ / chưa vào app). Thành viên không thấy chi tiêu, ngân sách hay mục tiêu của nhau.
@@ -396,6 +403,29 @@ streak chưa xem. Hai concept còn lại không có tabbar.
 
 Đáy màn hình được làm mờ dần thay cho thanh tab, để nút hành động và Ekko bot
 không trôi lơ lửng trên chữ.
+
+### Thông tin cá nhân
+
+Màn `/profile` (`public/app/views/profile.js`, Ekko Lover): tên hiển thị, giới
+tính (Nam / Nữ / Khác), ngày sinh, công ty, chức vụ, phòng ban, tỉnh / thành phố.
+
+- **Tự mở một lần** (`/profile?welcome`, có nút "Để sau") ngay sau 3 màn
+  onboarding và tour chỉ dẫn, kể cả khi bỏ qua tour hay đóng onboarding giữa
+  chừng. Người dùng có từ trước khi có màn này cũng được hỏi một lần ở màn chủ.
+  Cờ: `user_state.profile_prompted_at`, đặt qua `POST /api/me/onboarding
+  { key: 'profile' }`.
+- **Mở lại** bằng nút "Chỉnh sửa thông tin cá nhân" ở trang Cấp độ heo.
+- API: `GET / PUT /api/me/profile`. Lưu ở bảng riêng `user_profiles`
+  (`server/services/profile.js`), **không sửa `users`**: SSO ghi đè tên / công ty
+  mỗi lần đăng nhập, và `users.employer` / `employer_id` quyết định phạm vi dữ
+  liệu theo công ty (EkkoFeed, bật / tắt chức năng). Tên tự đặt thay tên hiển thị
+  trong app và Heo Dream Team; Admin vẫn thấy tên thật từ SSO.
+- **Heo nữ:** Admin → Cấp độ heo có thêm ô "Ảnh nhân vật heo (nữ)"
+  (`levels.character_image_female`). Người dùng chọn Nữ thì server trả ảnh này
+  thay cho `character_image` ở mọi chỗ (`pigFor()`); cấp chưa có ảnh nữ thì vẫn
+  dùng ảnh chung. Bộ ảnh mặc định cho 10 cấp nằm ở
+  `public/assets/levels/pig-female-<cấp>.png`, gán một lần qua seed
+  (`female_pigs_version`), chỉ điền cấp đang trống — ảnh Admin tự tải lên giữ nguyên.
 
 ---
 
