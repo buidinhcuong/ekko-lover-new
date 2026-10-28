@@ -349,6 +349,9 @@ body.is-modal .homebar { opacity: 0; }
   overflow: hidden;
 }
 .hud__avatar img { width: 34px; height: 34px; object-fit: contain; }
+/* Ekko Lover: cùng khung crop mặt, cổ, ngực như avatar thẻ hồ sơ (.profilecard__pig). */
+:root[data-concept="lover"] .hud__avatar { position: relative; }
+:root[data-concept="lover"] .hud__avatar img { position: absolute; left: -35%; top: -6.5%; width: 170%; height: 170%; max-width: none; }
 .hud__meta { min-width: 0; flex: 1; text-align: left; }
 .hud__name {
   display: block;
@@ -2432,7 +2435,11 @@ button.loverhome__navbar:active { transform: scale(.99); }
   background: linear-gradient(135deg, var(--bg-brand-500), var(--secondary-colors-violet));
 }
 .profilecard__head { display: flex; align-items: center; gap: var(--spacing-14); }
-.profilecard__avatar { width: 64px; height: 64px; flex: none; object-fit: contain; border-radius: var(--radius-full); background: color-mix(in srgb, var(--base-white) 18%, transparent); }
+.profilecard__avatar { position: relative; display: block; width: 64px; height: 64px; flex: none; overflow: hidden; border-radius: var(--radius-full); background: color-mix(in srgb, var(--base-white) 18%, transparent); }
+.profilecard__pig { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* Ekko Lover: avatar chỉ lấy mặt, cổ và phần ngực. Ảnh heo vuông, nhân vật đứng
+   giữa, đầu ở khoảng 8–45% chiều cao: phóng 1,7 lần, khung từ ~4% tới ~63%. */
+:root[data-concept="lover"] .profilecard__pig { inset: auto; left: -35%; top: -6.5%; width: 170%; height: 170%; max-width: none; }
 .profilecard__who { display: grid; gap: 2px; min-width: 0; }
 .profilecard__level { display: flex; align-items: center; gap: var(--spacing-4); min-width: 0; font-size: var(--font-size-text-md); line-height: var(--line-height-text-md); font-weight: var(--font-weight-semibold); white-space: nowrap; }
 .profilecard__level > svg { flex: none; }
@@ -3127,7 +3134,10 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
   font-size: var(--font-size-text-xs); font-weight: var(--font-weight-semibold); background: var(--bg-secondary); color: var(--text-secondary);
 }
 .teamrow:first-child .teamrow__rank { background: var(--ekko-lime); color: var(--ekko-midnight); }
-.teamrow__pig { flex: none; width: 48px; height: 48px; object-fit: contain; border-radius: var(--radius-full); background: var(--bg-brand-50); }
+.teamrow__pig { position: relative; display: block; flex: none; width: 48px; height: 48px; overflow: hidden; border-radius: var(--radius-full); background: var(--bg-brand-50); }
+.teamrow__pig img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* Ekko Lover: cùng khung crop mặt, cổ, ngực như avatar thẻ hồ sơ (.profilecard__pig). */
+:root[data-concept="lover"] .teamrow__pig img { inset: auto; left: -35%; top: -6.5%; width: 170%; height: 170%; max-width: none; }
 .teamrow__main { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .teamrow__name { display: flex; align-items: flex-start; gap: var(--spacing-6); font-weight: var(--font-weight-semibold); min-width: 0; }
 .teamrow__tag { padding: 0 var(--spacing-6); border-radius: var(--radius-full); font-size: 11px; line-height: 18px; background: var(--bg-brand-500); color: var(--text-white); }
@@ -3157,6 +3167,18 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .teamempty img { width: 88px; height: 88px; object-fit: contain; }
 .teamhint { margin: 0; text-align: center; font-size: var(--font-size-text-sm); }
 .teamleave { margin-top: var(--spacing-8); color: var(--text-error); }
+/* Trưởng đội: nút ⋮ trên từng bạn, bảng tuỳ chọn, thông báo bị mời ra / được trao quyền. */
+.teamrow__sidetop { display: flex; align-items: center; gap: 2px; height: 18px; }
+/* Vùng bấm rộng hơn hình (lề âm) nhưng không đẩy dòng cao lên. */
+.teamrow__more { flex: none; width: 24px; height: 28px; margin: -5px -6px -5px 0; display: grid; place-items: center; border-radius: var(--radius-8); color: var(--text-secondary); }
+.teamrow__more:hover, .teamrow__more:focus-visible { background: var(--bg-secondary); color: var(--text-primary); }
+.teammenu__who { display: flex; align-items: center; gap: var(--spacing-12); margin-bottom: var(--spacing-16); }
+.teammenu__actions { display: grid; gap: var(--spacing-8); }
+.teammenu__btn { gap: var(--spacing-8); }
+.teamnotice { display: flex; gap: var(--spacing-12); align-items: flex-start; }
+.teamnotice--leader { background: var(--bg-brand-50); border-color: var(--border-brand); }
+.teamnotice--removed { background: var(--bg-secondary); }
+.teamnotice__icon { flex: none; display: inline-flex; margin-top: 2px; color: var(--text-brand-500); }
 
 /* Cột phải chiếm chỗ: tên và cấp heo dài thì cắt "…" thay vì xuống dòng. */
 .teamrow__meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -3188,6 +3210,37 @@ html[data-concept="lover"].has-tabbar .quickbar.quickbar--tucked.is-open { clip-
 .authcard__error:empty { display: none; }
 .authcard__foot { margin: 0; text-align: center; font-size: var(--font-size-text-xs); }
 .authcard__demo { justify-self: center; font-size: var(--font-size-text-sm); color: var(--text-brand-500); }
+/* Thông tin cá nhân (views/profile.js) và nút mở nó ở trang Cấp độ heo. */
+.profileedit__open { gap: var(--spacing-8); margin-top: var(--spacing-4); }
+.profileedit__hero { display: grid; justify-items: center; gap: var(--spacing-8); margin: var(--spacing-4) 0 var(--spacing-16); }
+.profileedit__avatar {
+  position: relative; display: block; width: 112px; height: 112px; overflow: hidden;
+  border-radius: var(--radius-full); background: var(--bg-brand-50);
+}
+.profileedit__avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* Ekko Lover: cùng khung crop mặt, cổ, ngực như avatar thẻ hồ sơ (.profilecard__pig). */
+:root[data-concept="lover"] .profileedit__avatar img { inset: auto; left: -35%; top: -6.5%; width: 170%; height: 170%; max-width: none; }
+.profileedit__level { display: inline-flex; align-items: center; gap: var(--spacing-4); font-size: var(--font-size-text-sm); line-height: var(--line-height-text-sm); font-weight: var(--font-weight-semibold); color: var(--text-brand-500); }
+.profileedit__intro { text-align: center; margin-bottom: var(--spacing-16); }
+.profileedit__intro h2 { margin: 0 0 var(--spacing-4); font-size: var(--font-size-text-lg); line-height: var(--line-height-text-lg); }
+.profileedit__intro p { margin: 0; }
+.profileedit__card .field:last-child { margin-bottom: 0; }
+/* Nút Lưu (và "Để sau" ở lần đầu) cố định cách đáy màn 48px, nổi trên nội dung
+   đang cuộn; dải nền trắng mờ dần phía sau để chữ của form không lẫn vào nút. */
+.profileedit__actions {
+  position: fixed; left: 0; right: 0; bottom: var(--spacing-48); z-index: 20;
+  display: grid; gap: var(--spacing-8);
+  max-width: var(--shell-max); margin-inline: auto; padding: 0 var(--gutter);
+}
+.profileedit__actions::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  inset: calc(-1 * var(--spacing-24)) 0 calc(-1 * var(--spacing-48));
+  background: linear-gradient(to bottom, transparent, var(--bg-primary) var(--spacing-24));
+}
+/* Chừa chỗ cuối form cho nút cố định (hai nút ở lần đầu thì cao hơn). */
+.profileedit { padding-bottom: var(--spacing-16); }
+.profileedit--welcome { padding-bottom: var(--spacing-64); }
+
 .accountcard { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-12); flex-wrap: wrap; }
 .accountcard__who { display: grid; min-width: 0; }
 .accountcard__who span { font-size: var(--font-size-text-sm); overflow: hidden; text-overflow: ellipsis; }

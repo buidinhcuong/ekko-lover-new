@@ -14,12 +14,16 @@
  * - Tương tác chính: nhắc một bạn giữ streak khi hôm nay bạn đó chưa giữ
  *   streak (chưa vào app, hoặc vào mà chưa học / ghi chép gì). Mỗi người nhắc
  *   một bạn tối đa một lần mỗi ngày.
+ * - Trưởng đội mời được một bạn ra khỏi đội, và trao quyền trưởng đội cho một
+ *   bạn khác (mình thành thành viên). Người bị mời ra / người được trao quyền
+ *   nhận một thông báo ở đầu màn Dream Team (`team_notices`).
  */
 import { randomInt } from 'node:crypto';
 import { all, get, getSetting, run, tx } from '../db.js';
 import { dayKey, nowIso } from '../lib/time.js';
 import { levelProgress, settleLevel } from './progression.js';
 import { readState, streakStatus } from './streak.js';
+import { displayName, genderOf, pigFor } from './profile.js';
 
 export const MAX_TEAM = 10;
 /** Không có 0/O, 1/I/L: đọc qua điện thoại hay chép tay đỡ nhầm. */
@@ -101,7 +105,7 @@ export function markOpened(userId, day = dayKey()) {
 
 const teamIdOf = (userId) => get('SELECT team_id FROM team_members WHERE user_id = ?', userId)?.team_id ?? null;
 const memberCount = (teamId) => get('SELECT COUNT(*) n FROM team_members WHERE team_id = ?', teamId).n;
-const userName = (userId) => get('SELECT name FROM users WHERE id = ?', userId)?.name || '';
+const userName = displayName;
 
 /** Thông tin công khai của một người trong đội / trong lời mời. */
 function publicProfile(userId, day) {
@@ -114,7 +118,7 @@ function publicProfile(userId, day) {
     level: progress.level ? {
       order: progress.level.order_index,
       name: progress.level.name,
-      image: progress.level.character_image,
+      image: pigFor(progress.level, genderOf(userId)).character_image,
     } : null,
     xp: state.xp,
     percent: progress.percent,
@@ -124,6 +128,24 @@ function publicProfile(userId, day) {
     openedToday: state.last_open_day === day,
   };
 }
+
+/** Thông báo chưa xem: bị mời ra khỏi đội, được trao quyền trưởng đội. */
+function unseenNotices(userId) {
+  return all(
+    `SELECT n.id, n.kind, n.from_user_id, n.created_at FROM team_notices n
+      WHERE n.user_id = ? AND n.seen_at IS NULL ORDER BY n.id`,
+    userId,
+  ).map((n) => ({ id: n.id, kind: n.kind, fromName: n.from_user_id ? userName(n.from_user_id) : '', createdAt: n.created_at }));
+}
+
+export function markNoticesSeen(userId) {
+  run('UPDATE team_notices SET seen_at = ? WHERE user_id = ? AND seen_at IS NULL', nowIso(), userId);
+}
+
+const notify = (userId, kind, fromUserId) => run(
+  'INSERT INTO team_notices (user_id, kind, from_user_id, created_at) VALUES (?, ?, ?, ?)',
+  userId, kind, fromUserId, nowIso(),
+);
 
 /** Toàn bộ những gì màn Heo Dream Team cần. */
 export function teamBoard(userId, day = dayKey()) {
@@ -139,6 +161,7 @@ export function teamBoard(userId, day = dayKey()) {
         return {
           ...p,
           isMe,
+          joinedAt: m.joined_at,
           isOwner: m.user_id === row.owner_id,
           nudgedToday: nudgedByMe.has(m.user_id),
           canNudge: !isMe && !p.streak.countedToday && !nudgedByMe.has(m.user_id),
@@ -173,13 +196,15 @@ export function teamBoard(userId, day = dayKey()) {
     inTeamWithOthers: Boolean(team && team.members.length > 1),
     invites: { incoming, outgoing },
     nudges: unseenNudges(userId, day),
+    notices: unseenNotices(userId),
   };
 }
 
 /** Lời nhắc giữ streak hôm nay mà người dùng chưa xem. */
 export function unseenNudges(userId, day = dayKey()) {
   return all(
-    `SELECT n.id, u.name FROM team_nudges n JOIN users u ON u.id = n.from_user_id
+    `SELECT n.id, COALESCE(p.display_name, u.name) AS name FROM team_nudges n JOIN users u ON u.id = n.from_user_id
+       LEFT JOIN user_profiles p ON p.user_id = u.id
       WHERE n.to_user_id = ? AND n.day = ? AND n.seen_at IS NULL ORDER BY n.id`,
     userId, day,
   ).map((n) => ({ id: n.id, fromName: n.name }));
@@ -194,10 +219,13 @@ export function teamAlerts(userId, day = dayKey()) {
   return {
     invites: get("SELECT COUNT(*) n FROM team_invites WHERE to_user_id = ? AND status = 'pending'", userId).n,
     nudges: unseenNudges(userId, day),
+    // Bị mời ra khỏi đội / được trao quyền trưởng đội mà chưa xem.
+    notices: get('SELECT COUNT(*) n FROM team_notices WHERE user_id = ? AND seen_at IS NULL', userId).n,
     // Ai đã nhắc mình hôm nay (kể cả đã xem) — dòng nhắc màu vàng ở màn chủ hiện
     // suốt ngày cho tới khi giữ được streak.
     nudgedBy: all(
-      `SELECT DISTINCT u.name FROM team_nudges n JOIN users u ON u.id = n.from_user_id
+      `SELECT DISTINCT COALESCE(p.display_name, u.name) AS name FROM team_nudges n JOIN users u ON u.id = n.from_user_id
+         LEFT JOIN user_profiles p ON p.user_id = u.id
         WHERE n.to_user_id = ? AND n.day = ? ORDER BY n.id`,
       userId, day,
     ).map((r) => r.name),
@@ -208,7 +236,7 @@ export function teamAlerts(userId, day = dayKey()) {
 export function inviteByCode(userId, code) {
   const clean = normalizeCode(code);
   if (!clean) return fail('Nhập ID của bạn heo muốn mời');
-  const target = get('SELECT id, name FROM users WHERE friend_code = ?', clean);
+  const target = get('SELECT id FROM users WHERE friend_code = ?', clean);
   if (!target) return fail('Không tìm thấy bạn heo nào có ID này');
   if (target.id === userId) return fail('Đây là ID của chính bạn');
 
@@ -222,7 +250,7 @@ export function inviteByCode(userId, code) {
     return fail('Bạn này đã mời bạn vào đội — xem ở mục Lời mời');
   }
   const info = run('INSERT INTO team_invites (from_user_id, to_user_id, created_at) VALUES (?, ?, ?)', userId, target.id, nowIso());
-  return { ok: true, inviteId: Number(info.lastInsertRowid), to: { userId: target.id, name: target.name } };
+  return { ok: true, inviteId: Number(info.lastInsertRowid), to: { userId: target.id, name: displayName(target.id) } };
 }
 
 function pendingInviteTo(userId, inviteId) {
@@ -301,6 +329,44 @@ export function leaveTeam(userId) {
     removeMember(userId);
     cancelOutgoing(userId);
     return { ok: true };
+  });
+}
+
+/**
+ * Trưởng đội kiểm tra `targetId` là một bạn khác trong đội của mình. Trả về
+ * `{ teamId }` hoặc `{ error }`.
+ */
+function ownerOver(userId, targetId) {
+  const target = Number(targetId);
+  const teamId = teamIdOf(userId);
+  if (!teamId) return fail('Bạn chưa ở trong đội nào');
+  if (get('SELECT owner_id FROM teams WHERE id = ?', teamId).owner_id !== userId) return fail('Chỉ trưởng đội làm được việc này');
+  if (target === userId) return fail('Hãy chọn một bạn khác trong đội');
+  if (teamIdOf(target) !== teamId) return fail('Bạn này không ở trong đội của bạn');
+  return { teamId, target };
+}
+
+/** Trưởng đội mời một bạn ra khỏi đội. Bạn đó nhận thông báo; muốn quay lại thì cần được mời lại. */
+export function removeFromTeam(userId, targetId) {
+  return tx(() => {
+    const check = ownerOver(userId, targetId);
+    if (check.error) return check;
+    removeMember(check.target);
+    // Lời mời bạn đó đã gửi là mời vào đội này — không còn đúng nữa.
+    cancelOutgoing(check.target);
+    notify(check.target, 'removed', userId);
+    return { ok: true, removed: { userId: check.target, name: userName(check.target) } };
+  });
+}
+
+/** Trưởng đội trao quyền trưởng đội cho một bạn khác; mình vẫn ở trong đội. */
+export function transferOwnership(userId, targetId) {
+  return tx(() => {
+    const check = ownerOver(userId, targetId);
+    if (check.error) return check;
+    run('UPDATE teams SET owner_id = ? WHERE id = ?', check.target, check.teamId);
+    notify(check.target, 'leader', userId);
+    return { ok: true, owner: { userId: check.target, name: userName(check.target) } };
   });
 }
 

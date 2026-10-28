@@ -1692,4 +1692,11 @@ export const EN = {
   'Góp ý tối đa 1000 ký tự': 'Feedback can be at most 1000 characters',
   'Hôm nay bạn đã gửi đủ số lần cho phép — mai bạn gửi tiếp nhé.': 'You have reached today\'s limit — come back tomorrow.',
   'Không tìm thấy bản nháp — bạn bấm "Xem trước" lại giúp nhé': 'Draft not found — please tap "Preview" again',
+  // Heo Dream Team: trưởng đội (services/teams.js)
+  'Chỉ trưởng đội làm được việc này': 'Only the team leader can do this',
+  'Hãy chọn một bạn khác trong đội': 'Pick another member of your team',
+  // Thông tin cá nhân (services/profile.js)
+  'Hãy nhập tên của bạn': 'Please enter your name',
+  'Giới tính không hợp lệ': 'Invalid gender',
+  'Ngày sinh không hợp lệ': 'Invalid date of birth',
 };

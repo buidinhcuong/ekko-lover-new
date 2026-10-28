@@ -15,7 +15,7 @@ import { all, run } from '../db.js';
 import { bad, HttpError, Router, sendJson } from '../lib/http.js';
 import { clearCookie } from '../lib/http.js';
 import { seedDemoData } from '../seed/index.js';
-import { claimBadge, dailyCheckin, evaluateBadges } from '../services/progression.js';
+import { claimBadge, dailyCheckin, evaluateBadges, levelProgress } from '../services/progression.js';
 import { challengeBoard, claimChallenge, claimChallengeBonus } from '../services/challenges.js';
 import { readState } from '../services/streak.js';
 import { buildWorld } from '../services/world.js';
@@ -25,6 +25,7 @@ import { buildPersona, dropPersona, personaClaims, personaOf, PERSONAS } from '.
 import { nowIso } from '../lib/time.js';
 import { markOpened } from '../services/teams.js';
 import { allowAttempt, changePassword, login, publicAuthConfig, register } from '../services/localAuth.js';
+import { displayName, readProfile, saveProfile } from '../services/profile.js';
 
 export const sessionRouter = new Router();
 
@@ -89,7 +90,8 @@ sessionRouter.post('/api/session/logout', ({ req, res }) => {
 
 sessionRouter.get('/api/me', ({ user }) => (markOpened(user.id), {
   user: {
-    id: user.id, name: user.name, email: user.email, avatar: user.avatar_url,
+    // Tên hiển thị: tên người dùng tự đặt ở Thông tin cá nhân, không có thì tên SSO.
+    id: user.id, name: displayName(user.id), email: user.email, avatar: user.avatar_url,
     employer: user.employer, role: user.role,
     // Người dùng mẫu của bản demo (new | veteran) — để nút chuyển biết đang ở ai.
     persona: config.devMode ? personaOf(user.ekko_user_id) : null,
@@ -103,12 +105,37 @@ sessionRouter.get('/api/me/world', ({ user }) => {
   return buildWorld(user.id);
 });
 
-/** Đánh dấu đã xem 3 màn giới thiệu Ekko Lover (bấm Bắt đầu hoặc đóng giữa chừng). */
+/**
+ * Đánh dấu đã xem một màn chỉ hiện một lần: `lover` = 3 màn giới thiệu Ekko
+ * Lover (bấm Bắt đầu hoặc đóng giữa chừng), `profile` = màn Thông tin cá nhân tự
+ * mở sau onboarding + tour (lưu hay bấm "Để sau" đều tính là đã mở).
+ */
+const ONBOARDING_COLUMNS = { lover: 'lover_intro_at', profile: 'profile_prompted_at' };
 sessionRouter.post('/api/me/onboarding', ({ user, body }) => {
-  if (body?.key !== 'lover') throw bad('Không có màn giới thiệu này');
+  const column = ONBOARDING_COLUMNS[body?.key];
+  if (!column) throw bad('Không có màn giới thiệu này');
   readState(user.id); // tạo dòng user_state nếu người dùng mới tinh
-  run('UPDATE user_state SET lover_intro_at = COALESCE(lover_intro_at, ?) WHERE user_id = ?', nowIso(), user.id);
+  run(`UPDATE user_state SET ${column} = COALESCE(${column}, ?) WHERE user_id = ?`, nowIso(), user.id);
   return { ok: true };
+});
+
+// --- thông tin cá nhân (services/profile.js) -------------------------------
+/**
+ * Hồ sơ + ảnh heo của cấp đang đứng theo từng giới tính, để màn sửa hồ sơ đổi
+ * ảnh ngay khi người dùng chọn giới tính (chưa cần lưu).
+ */
+function profilePayload(userId, profile = readProfile(userId)) {
+  const level = levelProgress(readState(userId).xp).level;
+  const male = level?.character_image || '/assets/levels/pig-1.png';
+  return { profile, avatars: { male, female: level?.character_image_female || male } };
+}
+
+sessionRouter.get('/api/me/profile', ({ user }) => profilePayload(user.id));
+
+sessionRouter.put('/api/me/profile', ({ user, body }) => {
+  const result = saveProfile(user.id, body || {});
+  if (result.error) throw bad(result.error);
+  return profilePayload(user.id, result);
 });
 
 sessionRouter.get('/api/me/badges', ({ user }) => buildWorld(user.id).badges);

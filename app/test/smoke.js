@@ -1123,6 +1123,59 @@ async function main() {
     check('Khoá onboarding lạ bị từ chối',
       (await post('member', '/api/me/onboarding', { key: 'khac' })).status === 400);
 
+    // --- Thông tin cá nhân (services/profile.js) ---------------------------
+    const meBefore = (await get('member', '/api/me')).json;
+    check('Màn Thông tin cá nhân chưa tự mở với người mới',
+      meBefore.world.onboarding?.profile === false);
+    check('Đánh dấu đã mở màn Thông tin cá nhân',
+      (await post('member', '/api/me/onboarding', { key: 'profile' })).status === 200
+      && (await get('member', '/api/me/world')).json.onboarding?.profile === true);
+    const blankProfile = (await get('member', '/api/me/profile')).json;
+    check('Hồ sơ chưa khai: điền sẵn tên và công ty từ SSO, chưa có giới tính',
+      blankProfile.profile.displayName === meBefore.user.name
+      && blankProfile.profile.company === (meBefore.user.employer || '')
+      && blankProfile.profile.gender === null && blankProfile.profile.saved === false
+      && blankProfile.avatars.male === meBefore.world.level.character_image
+      && /^\/assets\/levels\/pig-female-\d+\.png$/.test(blankProfile.avatars.female));
+    check('Hồ sơ: tên trống bị từ chối',
+      (await put('member', '/api/me/profile', { displayName: '   ' })).status === 400);
+    check('Hồ sơ: giới tính lạ bị từ chối',
+      (await put('member', '/api/me/profile', { displayName: 'Hà', gender: 'x' })).status === 400);
+    check('Hồ sơ: ngày sinh ở tương lai / sai định dạng bị từ chối',
+      (await put('member', '/api/me/profile', { displayName: 'Hà', birthDate: '2999-01-01' })).status === 400
+      && (await put('member', '/api/me/profile', { displayName: 'Hà', birthDate: '01/02/1990' })).status === 400);
+    const savedProfile = await put('member', '/api/me/profile', {
+      displayName: '  Nguyễn   Thu Hà ', gender: 'female', birthDate: '1995-03-08',
+      company: 'Công ty tự khai', jobTitle: 'Tổ trưởng', department: 'Xưởng 2', city: 'Bình Dương',
+    });
+    const meAfter = (await get('member', '/api/me')).json;
+    check('Lưu hồ sơ: gọn khoảng trắng, đọc lại đúng',
+      savedProfile.status === 200 && savedProfile.json.profile.displayName === 'Nguyễn Thu Hà'
+      && savedProfile.json.profile.gender === 'female' && savedProfile.json.profile.birthDate === '1995-03-08'
+      && savedProfile.json.profile.jobTitle === 'Tổ trưởng' && savedProfile.json.profile.saved === true);
+    check('Tên tự đặt thay tên hiển thị trong app; công ty SSO (phạm vi dữ liệu) giữ nguyên',
+      meAfter.user.name === 'Nguyễn Thu Hà' && meAfter.world.me.name === 'Nguyễn Thu Hà'
+      && meAfter.world.me.gender === 'female' && meAfter.user.employer === meBefore.user.employer);
+    const pigLevel = meAfter.world.level;
+    const defaultFemalePig = `/assets/levels/pig-female-${pigLevel.order_index}.png`;
+    check('Giới tính Nữ: dùng bộ ảnh heo nữ có sẵn cho mọi cấp',
+      pigLevel.character_image === defaultFemalePig
+      && meAfter.world.levels.every((l) => l.character_image === `/assets/levels/pig-female-${l.order_index}.png`));
+    await patch('admin', `/api/admin/levels/${pigLevel.id}`, { character_image_female: null });
+    check('Cấp bị bỏ ảnh heo nữ: người dùng nữ thấy ảnh chung',
+      (await get('member', '/api/me/world')).json.level.character_image === meBefore.world.level.character_image);
+    const femalePig = '/assets/uploads/heo-nu-thu.png';
+    await patch('admin', `/api/admin/levels/${pigLevel.id}`, { character_image_female: femalePig });
+    const femaleWorld = (await get('member', '/api/me/world')).json;
+    check('Admin thêm ảnh heo nữ: người dùng nữ thấy ảnh đó ở cấp đang đứng và danh sách cấp',
+      femaleWorld.level.character_image === femalePig
+      && femaleWorld.levels.find((l) => l.id === pigLevel.id).character_image === femalePig
+      && (await get('member', '/api/me/profile')).json.avatars.female === femalePig);
+    await put('member', '/api/me/profile', { displayName: meBefore.user.name, gender: 'male' });
+    check('Đổi sang Nam: về ảnh heo chung',
+      (await get('member', '/api/me/world')).json.level.character_image === meBefore.world.level.character_image);
+    await patch('admin', `/api/admin/levels/${pigLevel.id}`, { character_image_female: defaultFemalePig });
+
     const quickSwitch = await get('member', '/dev/concept?code=simple&redirect=/');
     const whoConcept = (await get('member', '/api/session/whoami')).json;
     check('Nút đổi concept ở bản demo đổi được và quay về đúng trang',
@@ -1522,6 +1575,71 @@ async function main() {
     check('Khoảng ngày sai / quá 1 năm bị từ chối', (await get('learner', `/api/expenses?from=${prevTo}&to=${prevFrom}`)).status === 400
       && (await get('learner', '/api/expenses?from=2024-01-01&to=2026-01-01')).status === 400);
 
+    // Trưởng Heo Dream Team: dữ liệu như người đang học (cấp 5) + đội 4 heo.
+    await get('leader', '/dev/persona?as=team');
+    const leader = (await get('leader', '/api/me')).json;
+    const board = (await get('leader', '/api/team')).json;
+    const mates = board.team?.members.filter((m) => !m.isMe) || [];
+    check('Persona Dream Team: heo cấp 5, trưởng của đội 4 heo',
+      leader.user.persona === 'team' && leader.world.level.order_index === 5
+      && board.team?.isOwner === true && board.team.members.length === 4
+      && board.team.members.find((m) => m.isMe)?.isOwner === true,
+      JSON.stringify({ lvl: leader.world.level.order_index, n: board.team?.members.length }));
+    check('Bạn cùng đội: cấp khác nhau, có bạn chưa giữ streak hôm nay để nhắc, có heo nữ',
+      new Set(mates.map((m) => m.level?.order)).size === 3
+      && mates.filter((m) => m.canNudge).length === 2 && mates.some((m) => m.streak.countedToday)
+      && mates.some((m) => /pig-female-/.test(m.level?.image || '')));
+    check('Trưởng đội đã nhận XP từ Dream Team (tô vàng trong cấp hiện tại)',
+      leader.world.progress.teamXpTotal > 0 && leader.world.progress.teamXpIntoLevel > 0);
+    const nudge = await post('leader', `/api/team/members/${mates.find((m) => m.canNudge).userId}/nudge`);
+    check('Trưởng đội nhắc được bạn chưa giữ streak', nudge.status === 200, JSON.stringify(nudge.json).slice(0, 120));
+    // Trưởng đội: mời một bạn ra khỏi đội, trao quyền trưởng đội.
+    const kicked = mates.find((m) => m.name === 'Đỗ Văn Hùng');
+    const heir = mates.find((m) => m.name === 'Trần Thị Mai');
+    // Đăng nhập vào hai bạn cùng đội (người dùng phụ của persona) để xem phía họ.
+    const mateLogin = async (jar, key) => {
+      const r = await get(jar, `/dev/login?sub=${encodeURIComponent(`demo-persona-team:${key}`)}`);
+      await get(jar, r.headers.get('location'));
+    };
+    await mateLogin('hungJar', 'hung');
+    await mateLogin('maiJar', 'mai');
+    check('Thành viên thường không mời ai ra khỏi đội, không trao quyền được',
+      (await post('maiJar', `/api/team/members/${kicked.userId}/remove`)).status === 400
+      && (await post('maiJar', `/api/team/members/${kicked.userId}/owner`)).status === 400
+      && (await post('anon', `/api/team/members/${kicked.userId}/remove`)).status === 401);
+    check('Trưởng đội không tự mời mình ra / trao quyền cho mình',
+      (await post('leader', `/api/team/members/${leader.user.id}/remove`)).status === 400
+      && (await post('leader', `/api/team/members/${leader.user.id}/owner`)).status === 400);
+    const removed = await post('leader', `/api/team/members/${kicked.userId}/remove`);
+    check('Trưởng đội mời được một bạn ra khỏi đội',
+      removed.status === 200 && removed.json.board.team.members.length === 3
+      && !removed.json.board.team.members.some((m) => m.userId === kicked.userId));
+    check('Mời ra người đã không còn trong đội thì báo lỗi',
+      (await post('leader', `/api/team/members/${kicked.userId}/remove`)).status === 400);
+    const hungBoard = (await get('hungJar', '/api/team')).json;
+    check('Người bị mời ra: không còn đội, nhận thông báo kèm tên trưởng đội, chấm đỏ trên tab',
+      hungBoard.team === null && hungBoard.notices.length === 1 && hungBoard.notices[0].kind === 'removed'
+      && hungBoard.notices[0].fromName === 'Đặng Quốc Bảo' && (await get('hungJar', '/api/me/world')).json.team.notices === 1);
+    await post('hungJar', '/api/team/notices/seen');
+    check('Xem rồi thì thông báo không hiện lại', (await get('hungJar', '/api/team')).json.notices.length === 0);
+    const handed = await post('leader', `/api/team/members/${heir.userId}/owner`);
+    check('Trao quyền trưởng đội: người kia thành trưởng đội, mình vẫn ở trong đội',
+      handed.status === 200 && handed.json.board.team.isOwner === false && handed.json.board.team.ownerId === heir.userId
+      && handed.json.board.team.members.length === 3 && handed.json.board.team.members.find((m) => m.isMe)?.isOwner === false);
+    const maiBoard = (await get('maiJar', '/api/team')).json;
+    check('Người được trao quyền: thành trưởng đội và nhận thông báo',
+      maiBoard.team.isOwner === true && maiBoard.notices.some((n) => n.kind === 'leader' && n.fromName === 'Đặng Quốc Bảo'));
+    check('Không còn là trưởng đội thì không mời ai ra / trao quyền được nữa',
+      (await post('leader', `/api/team/members/${heir.userId}/remove`)).status === 400
+      && (await post('leader', `/api/team/members/${heir.userId}/owner`)).status === 400);
+    check('Thành viên có ngày vào đội (để biết ai làm trưởng đội khi trưởng đội rời đi)',
+      handed.json.board.team.members.every((m) => typeof m.joinedAt === 'string'));
+
+    await get('leader', '/dev/persona?as=team');
+    const rebuilt =(await get('leader', '/api/team')).json.team.members.filter((m) => !m.isMe);
+    check('Bấm lại persona Dream Team: dựng lại đội từ đầu (bạn cùng đội cũ bị xoá, lời nhắc cũ mất)',
+      rebuilt.length === 3 && rebuilt.every((m) => !m.nudgedToday) && rebuilt.filter((m) => m.canNudge).length === 2);
+
     await get('newbie', '/dev/persona?as=new');
     const newbie = (await get('newbie', '/api/me')).json;
     check('Người dùng mới: heo cấp 1, 0 XP, chưa học, chưa xem onboarding',
@@ -1599,7 +1717,8 @@ async function main() {
     check('Xem rồi thì lời nhắc không hiện lại', (await get('teamB', '/api/me/world')).json.team.nudges.length === 0);
     // Bảng điều khiển Admin: số liệu Heo Dream Team.
     const dash = (await get('admin', '/api/admin/stats/overview')).json.teams;
-    const row1 = dash?.leaderboard[0];
+    // Đội 2 người của phần thử này (đội 4 heo của persona Dream Team cũng có trong bảng).
+    const row1 = dash?.leaderboard.find((r) => r.size < 4);
     check('Bảng điều khiển có số liệu Heo Dream Team (số đội, người trong đội, lời nhắc, xếp hạng)',
       dash && dash.teams >= 1 && dash.membersInTeams === dash.leaderboard.reduce((n, r) => n + r.size, 0) && dash.nudges.today >= 1
       && dash.invites.accepted >= 1 && row1?.size >= 2 && row1.raceEligible === false && typeof row1.xpMonth === 'number'

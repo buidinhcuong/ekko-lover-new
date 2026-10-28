@@ -11,6 +11,7 @@ import { readState, streakStatus, MAX_FREEZE_DAYS } from './streak.js';
 import { challengeBoard } from './challenges.js';
 import { BADGE_GROUPS } from '../seed/catalogue.js';
 import { friendCode, teamAlerts } from './teams.js';
+import { displayName, genderOf, pigFor } from './profile.js';
 
 /**
  * Mô đun đang hiển thị đầu tiên luôn mở, bất kể cấp độ yêu cầu: Admin ẩn các mô
@@ -94,6 +95,9 @@ export function buildWorld(userId) {
     )),
   }));
 
+  // Giới tính Nữ: mọi cấp dùng ảnh heo nữ (nếu Admin đã tải lên).
+  const gender = genderOf(userId);
+
   const lessonsDone = get('SELECT COUNT(*) n FROM lesson_progress WHERE user_id = ? AND status = ?', userId, 'completed').n;
   const lessonsTotal = get('SELECT COUNT(*) n FROM lessons WHERE is_published = 1').n;
 
@@ -103,10 +107,11 @@ export function buildWorld(userId) {
     // CSS riêng của từng bản bám vào.
     concept: activeConcept(),
     // Đã xem 3 màn giới thiệu của Ekko Lover chưa — chưa thì màn chủ mở chúng ra.
-    onboarding: { lover: Boolean(state.lover_intro_at) },
-    level: progress.level,
-    nextLevel: progress.next,
-    levels: levels().map((l) => ({ ...l, unlocked: l.order_index <= levelOrder })),
+    // profile: màn Thông tin cá nhân đã tự mở lần đầu (sau onboarding + tour) chưa.
+    onboarding: { lover: Boolean(state.lover_intro_at), profile: Boolean(state.profile_prompted_at) },
+    level: pigFor(progress.level, gender),
+    nextLevel: pigFor(progress.next, gender),
+    levels: levels().map((l) => ({ ...pigFor(l, gender), unlocked: l.order_index <= levelOrder })),
     progress: {
       xp: state.xp,
       percent: progress.percent,
@@ -133,7 +138,7 @@ export function buildWorld(userId) {
     },
     challenges: { claimable: challengeBoard(userId).claimable },
     // Heo Dream Team: mã ID để chia sẻ, lời mời đang chờ, lời nhắc giữ streak chưa xem.
-    me: { friendCode: friendCode(userId), name: get('SELECT name FROM users WHERE id = ?', userId)?.name || '' },
+    me: { friendCode: friendCode(userId), name: displayName(userId), gender },
     team: teamAlerts(userId),
     // EkkoFeed: số phản hồi của công ty chưa đọc — dòng nhắc vàng ở màn chủ.
     // Chức năng đang bật / tắt (Admin → Chức năng) — app ẩn phần đang tắt.

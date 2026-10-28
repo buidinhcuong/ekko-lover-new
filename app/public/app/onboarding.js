@@ -16,7 +16,9 @@
  * xem" cho người dùng được khôi phục từ cookie, nên không cần nhớ gì ở máy.
  * Mở `/app/?intro` để xem lại (tham số được gỡ khỏi địa chỉ ngay sau đó).
  *
- * Xem hết 3 màn thì tour chỉ dẫn trên màn chủ chạy tiếp (xem `tour.js`).
+ * Xem hết 3 màn thì tour chỉ dẫn trên màn chủ chạy tiếp (xem `tour.js`). Hết
+ * onboarding và tour (xem hết, bỏ qua hay đóng giữa chừng) thì mở màn Thông tin
+ * cá nhân một lần (`views/profile.js`, `user_state.profile_prompted_at`).
  */
 import { api, el, getOverlayRoot, lockScroll, screenScale, uiIcon, unlockScroll } from '/shared/client.js';
 import { t } from './i18n.js';
@@ -72,8 +74,21 @@ export function maybeShowLoverIntro(world) {
     history.replaceState(history.state, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
   }
   if (tourOnly && !forced) { requestAnimationFrame(() => startHomeTour()); return; }
-  if (!forced && world?.onboarding?.lover) return;
+  if (!forced && world?.onboarding?.lover) {
+    // Đã xem giới thiệu nhưng chưa từng thấy màn Thông tin cá nhân (người dùng
+    // có từ trước khi có màn này, hoặc tắt app giữa tour): mở nó một lần.
+    if (!world.onboarding.profile) askProfile(world);
+    return;
+  }
   showLoverIntro(world);
+}
+
+/** Mở màn Thông tin cá nhân một lần, ngay sau onboarding và tour. */
+function askProfile(world) {
+  if (world?.onboarding?.profile) return;
+  if (world?.onboarding) world.onboarding.profile = true;
+  api.post('/api/me/onboarding', { key: 'profile' }).catch(() => { /* lần sau thử lại */ });
+  window.dispatchEvent(new CustomEvent('ekko:navigate', { detail: '/profile?welcome' }));
 }
 
 function markSeen(world) {
@@ -145,9 +160,11 @@ export function showLoverIntro(world) {
     unlockScroll();
     document.body.classList.remove('is-sheet');
     markSeen(world);
-    // Xem tới màn cuối thì dẫn đi một vòng màn chủ, chỉ từng chức năng một.
-    // Đóng giữa chừng (✕, chạm nền) nghĩa là muốn tự khám phá: không làm phiền.
-    if (index === steps.length - 1) requestAnimationFrame(() => startHomeTour());
+    // Xem tới màn cuối thì dẫn đi một vòng màn chủ, chỉ từng chức năng một, rồi
+    // mới hỏi thông tin cá nhân. Đóng giữa chừng (✕, chạm nền) nghĩa là muốn tự
+    // khám phá: bỏ tour, hỏi thông tin cá nhân luôn.
+    if (index === steps.length - 1) requestAnimationFrame(() => startHomeTour({ onDone: () => askProfile(world) }));
+    else askProfile(world);
   }
 
   function onKey(e) {

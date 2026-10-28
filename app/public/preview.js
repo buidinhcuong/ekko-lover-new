@@ -17,6 +17,7 @@ const PERSONAS = [
   { key: 'new', icon: 'plant-02', label: 'Người dùng mới: heo cấp 1, chưa học, chưa có dữ liệu' },
   { key: 'mid', icon: 'mortarboard-01', label: 'Người dùng đang học: học được khoảng 30% số bài, đã có dữ liệu' },
   { key: 'veteran', icon: 'crown', label: 'Người dùng lâu năm: học hết bài, heo cấp 10, đủ dữ liệu' },
+  { key: 'team', icon: 'user-multiple', label: 'Trưởng Heo Dream Team: heo cấp 5, đội 4 heo' },
 ];
 
 // Ba concept: bấm là đổi giao diện cho cả bản demo rồi quay lại trang này.

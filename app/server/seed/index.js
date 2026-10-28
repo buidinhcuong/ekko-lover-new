@@ -40,6 +40,7 @@ const PLANS_RENAME_VERSION = '1';
 const TEN_LEVELS_VERSION = '1';
 const OFFICE_PIG_VERSION = '1';
 const NEW_PIGS_VERSION = '1';
+const FEMALE_PIGS_VERSION = '1';
 const XP_BALANCE_VERSION = '3';
 const CHALLENGES_VERSION = '1';
 const GOAL_DEPOSITS_OFF_VERSION = '1';
@@ -75,6 +76,15 @@ export function seed() {
     if (getSetting('levels_version') !== LEVELS_VERSION) {
       seedLevels();
       setSetting('levels_version', LEVELS_VERSION);
+    }
+    // Bộ ảnh heo nữ cho mười cấp. Chạy SAU seedLevels để database mới cũng có.
+    // Chỉ điền cấp chưa có ảnh nữ — ảnh Admin đã tự tải lên thì giữ nguyên.
+    if (getSetting('female_pigs_version') !== FEMALE_PIGS_VERSION) {
+      for (const level of LEVELS) {
+        run('UPDATE levels SET character_image_female = ? WHERE order_index = ? AND character_image_female IS NULL',
+          level.character_image_female, level.order_index);
+      }
+      setSetting('female_pigs_version', FEMALE_PIGS_VERSION);
     }
     seedBadges();
     // Bỏ 1 ngày là mất streak (không còn đóng băng): huy hiệu "Hồi sinh" — cứu

@@ -29,6 +29,7 @@ import badgesView, { challengesView, levelView } from './views/badges.js';
 import newsListView from './views/news.js';
 import teamView from './views/team.js';
 import feedView from './views/feed.js';
+import profileView from './views/profile.js';
 import { openLesson } from './views/lesson.js';
 
 const root = document.getElementById('app');
@@ -82,6 +83,7 @@ const ROUTES = {
   '/team': teamView,
   '/feed': feedView,
   '/news': newsListView,
+  '/profile': profileView,
 };
 
 // Chức năng Super admin có thể tắt (Admin → Chức năng). Mở thẳng đường dẫn của
@@ -98,6 +100,7 @@ const ctx = {
   get world() { return store.world; },
   get user() { return store.user; },
   navigate,
+  goBack: () => goBack(),
   openLesson: (lessonId) => openLesson(lessonId, ctx),
   /** Đăng ký cách nút "←" lùi một bước bên trong màn đang mở (null = rời màn). */
   setInnerBack(fn) { innerBack = fn; },
@@ -205,7 +208,7 @@ function renderHud() {
 // Ba tính năng này đã có ô nhập/nút hành động riêng của chúng ngay trong màn
 // hình (ví dụ nút Thêm ngân sách, form thêm việc), nên thanh ghi nhanh + nút
 // Ekko bot nổi ở đáy màn chỉ gây rối, không liên quan tới việc đang làm ở đó.
-const HIDE_CHROME_ON = new Set(['/explore', '/budget', '/goals', '/plans', '/savings', '/feed']);
+const HIDE_CHROME_ON = new Set(['/explore', '/budget', '/goals', '/plans', '/savings', '/feed', '/profile']);
 
 function renderChrome() {
   const hide = HIDE_CHROME_ON.has(currentPath);
@@ -365,6 +368,7 @@ async function boot() {
         personaLink('new', 'plant-02', t('Người dùng mới: heo cấp 1, chưa học, chưa có dữ liệu')),
         personaLink('mid', 'mortarboard-01', t('Người dùng đang học: học được khoảng 30% số bài, đã có dữ liệu')),
         personaLink('veteran', 'crown', t('Người dùng lâu năm: học hết bài, heo cấp 10, đủ dữ liệu')),
+        personaLink('team', 'user-multiple', t('Trưởng Heo Dream Team: heo cấp 5, đội 4 heo')),
       ]),
       el('span.personaswitch__sep', { 'aria-hidden': 'true' }),
       el('div.personaswitch__group', { role: 'group', 'aria-label': t('Đổi concept') },

@@ -113,9 +113,9 @@ export default async function badgesView(ctx) {
 // --- Ekko Lover: trang Cấp độ heo -------------------------------------------
 
 /**
- * Mở khi bấm con heo trên thanh đầu hoặc thẻ heo ở màn chính: hồ sơ heo, đủ
- * mười cấp (cấp đang đứng được đánh dấu) và hoạt động gần đây. Ô "Huy hiệu"
- * trong thẻ hồ sơ dẫn sang trang Huy hiệu.
+ * Mở khi bấm con heo trên thanh đầu hoặc thẻ heo ở màn chính: hồ sơ heo, nút
+ * sửa thông tin cá nhân, đủ mười cấp (cấp đang đứng được đánh dấu) và hoạt động
+ * gần đây. Ô "Huy hiệu" trong thẻ hồ sơ dẫn sang trang Huy hiệu.
  */
 export async function levelView(ctx) {
   const world = ctx.world;
@@ -131,6 +131,10 @@ export async function levelView(ctx) {
 
   return el('div', {}, [
     card,
+    // Tên, giới tính (đổi ảnh heo), ngày sinh, công ty, chức vụ… — views/profile.js.
+    el('button.btn.btn--block.btn--ghost.profileedit__open', { type: 'button', onclick: () => ctx.navigate('/profile') }, [
+      uiIcon('pencil-edit-02', 18), t('Chỉnh sửa thông tin cá nhân'),
+    ]),
 
     el('div.section-title', {}, [t('Cấp độ heo'), el('span', {}, t('Cấp {n}/{total}', { n: world.level?.order_index ?? 1, total: world.levels.length }))]),
     el('div.card.levellist', {}, world.levels.map((level) => el('div.levelrow', {
@@ -452,7 +456,10 @@ export function profileCard(world, board = world.badges, { compact = world.conce
 
   return el('div.profilecard', {}, [
     el('div.profilecard__head', {}, [
-      el('img.profilecard__avatar', { src: level?.character_image || '/assets/levels/pig-1.png', alt: '' }),
+      // Khung tròn bọc ảnh: Ekko Lover phóng ảnh lên để chỉ thấy mặt, cổ và ngực heo (style.css).
+      el('span.profilecard__avatar', {}, [
+        el('img.profilecard__pig', { src: level?.character_image || '/assets/levels/pig-1.png', alt: '' }),
+      ]),
       el('div.profilecard__who', {}, [
         // Tên của chính người dùng — để biết đây là heo của mình (BUG-001).
         world.me?.name ? el('span.profilecard__owner', {}, world.me.name) : null,
